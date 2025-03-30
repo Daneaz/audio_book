@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, FlatList, Alert, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 
@@ -10,26 +10,21 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { useLanguage } from '@/contexts/LanguageContext';
-
-type Book = {
-  id: string;
-  title: string;
-  author?: string;
-  filePath: string;
-  fileType: string;
-  coverUrl?: string;
-  lastRead?: Date;
-};
+import { BookStorage } from '@/services/BookStorage';
+import { Book } from '@/types/Book';
 
 export default function BookshelfScreen() {
   const colorScheme = useColorScheme();
   const { t } = useLanguage();
+  const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 初始化音频系统
-  React.useEffect(() => {
-    const setupAudio = async () => {
+  // 初始化音频系统和加载书籍
+  useEffect(() => {
+    const setupApp = async () => {
       try {
+        // 初始化音频系统
         await Audio.setAudioModeAsync({
           playsInSilentModeIOS: true,
           staysActiveInBackground: true,
@@ -40,13 +35,33 @@ export default function BookshelfScreen() {
           interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
         });
         console.log("音频系统初始化成功");
+        
+        // 初始化书籍存储
+        await BookStorage.initialize();
+        
+        // 加载书籍列表
+        loadBooks();
       } catch (error) {
-        console.error("初始化音频设置失败:", error);
+        console.error("初始化应用失败:", error);
       }
     };
 
-    setupAudio();
+    setupApp();
   }, []);
+  
+  // 加载书籍列表
+  const loadBooks = async () => {
+    try {
+      setLoading(true);
+      const bookList = await BookStorage.getAllBooks();
+      setBooks(bookList);
+    } catch (error) {
+      console.error("加载书籍列表失败:", error);
+      Alert.alert(t('error'), '加载书籍列表失败');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const importBook = async () => {
     try {
@@ -76,17 +91,33 @@ export default function BookshelfScreen() {
         return;
       }
       
-      // 添加新书到列表
+      // 判断文件大小，避免过大文件
+      if (file.size && file.size > 50 * 1024 * 1024) { // 50MB
+        Alert.alert(t('fileTooLarge'), t('fileTooLarge'));
+        return;
+      }
+      
+      // 创建新书记录
       const newBook: Book = {
         id: Date.now().toString(),
         title: fileName.replace(/\.[^/.]+$/, ''), // 移除文件扩展名作为标题
-        filePath: file.uri,
+        filePath: file.uri, // 这将在BookStorage.addBook中被更新为永久路径
         fileType: fileType,
         lastRead: new Date(),
       };
       
-      setBooks(prevBooks => [...prevBooks, newBook]);
-      Alert.alert(t('importSuccess'), t('importSuccessMessage', { title: newBook.title }));
+      try {
+        // 保存书籍到本地存储并获取更新后的书籍对象
+        const savedBook = await BookStorage.addBook(newBook, file.uri);
+        
+        // 更新书籍列表
+        setBooks(prevBooks => [...prevBooks, savedBook]);
+        
+        Alert.alert(t('importSuccess'), t('importSuccessMessage', { title: newBook.title }));
+      } catch (saveError) {
+        console.error('保存书籍失败:', saveError);
+        Alert.alert(t('importFailed'), t('saveFileFailed'));
+      }
       
     } catch (error) {
       console.error('导入文件失败:', error);
@@ -94,10 +125,15 @@ export default function BookshelfScreen() {
     }
   };
 
+  // 打开书籍阅读器
+  const openBook = (book: Book) => {
+    router.push(`/reader/${book.id}`);
+  };
+
   const renderBookItem = ({ item }: { item: Book }) => (
     <TouchableOpacity
       style={styles.bookItem}
-      onPress={() => Alert.alert('提示', t('openBook', { title: item.title }))}>
+      onPress={() => openBook(item)}>
       <View style={styles.bookCover}>
         {item.coverUrl ? (
           <ThemedText>封面图片</ThemedText>
@@ -137,6 +173,8 @@ export default function BookshelfScreen() {
             keyExtractor={item => item.id}
             numColumns={3}
             contentContainerStyle={styles.bookList}
+            onRefresh={loadBooks}
+            refreshing={loading}
           />
         ) : (
           <ThemedView style={styles.emptyStateContainer}>

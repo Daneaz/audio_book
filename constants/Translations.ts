@@ -5,6 +5,8 @@ export interface TranslationKeys {
   appName: string;
   cancel: string;
   confirm: string;
+  error: string;
+  retry: string;
   
   // 标签页
   tabBookshelf: string;
@@ -31,6 +33,8 @@ export interface TranslationKeys {
   importSuccessMessage: string;
   importFailed: string;
   importFailedMessage: string;
+  fileTooLarge: string;
+  saveFileFailed: string;
   
   // 设置页面
   settingsTitle: string;
@@ -46,6 +50,8 @@ export const translations: Record<Language, TranslationKeys> = {
     appName: '有声书架',
     cancel: '取消',
     confirm: '确认',
+    error: '错误',
+    retry: '重试',
     
     // 标签页
     tabBookshelf: '书架',
@@ -72,6 +78,8 @@ export const translations: Record<Language, TranslationKeys> = {
     importSuccessMessage: '已添加《{title}》到您的书架',
     importFailed: '导入失败',
     importFailedMessage: '无法导入选定的文件，请重试',
+    fileTooLarge: '文件过大',
+    saveFileFailed: '保存书籍文件失败，请重试',
     
     // 设置页面
     settingsTitle: '设置',
@@ -86,6 +94,8 @@ export const translations: Record<Language, TranslationKeys> = {
     appName: 'AudioBook Shelf',
     cancel: 'Cancel',
     confirm: 'Confirm',
+    error: 'Error',
+    retry: 'Retry',
     
     // 标签页
     tabBookshelf: 'Bookshelf',
@@ -112,6 +122,8 @@ export const translations: Record<Language, TranslationKeys> = {
     importSuccessMessage: 'Added "{title}" to your bookshelf',
     importFailed: 'Import Failed',
     importFailedMessage: 'Unable to import the selected file, please try again',
+    fileTooLarge: 'File too large',
+    saveFileFailed: 'Failed to save book file, please try again',
     
     // 设置页面
     settingsTitle: 'Settings',
