@@ -3,10 +3,19 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native
 import StorageService from '../services/StorageService';
 import { STORAGE_KEYS } from '../utils/constants';
 import { Chapter } from '../types';
+import useSettings from '../hooks/useSettings';
+import useI18n from '../i18n';
 
 export default function ChaptersScreen({ route, navigation }: any) {
   const { bookId } = route.params;
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const { settings } = useSettings();
+  const { t } = useI18n();
+
+  const isDark = settings.theme === 'dark';
+  const bgColor = isDark ? '#121212' : '#ffffff';
+  const textColor = isDark ? '#e0e0e0' : '#333333';
+  const borderColor = isDark ? '#333' : '#eee';
 
   useEffect(() => {
     loadChapters();
@@ -23,20 +32,21 @@ export default function ChaptersScreen({ route, navigation }: any) {
   };
 
   const renderItem = ({ item }: { item: Chapter }) => (
-    <TouchableOpacity style={styles.item} onPress={() => handleChapterPress(item)}>
-      <Text style={styles.title} numberOfLines={1}>
+    <TouchableOpacity style={[styles.item, { borderBottomColor: borderColor }]} onPress={() => handleChapterPress(item)}>
+      <Text style={[styles.title, { color: textColor }]} numberOfLines={1}>
         {item.title}
       </Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
       <FlatList
         data={chapters}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        ListEmptyComponent={<Text style={[styles.emptyText, { color: textColor }]}>{t('common.loading')}</Text>}
       />
     </View>
   );
@@ -57,5 +67,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 24,
   },
 });

@@ -1,10 +1,21 @@
 import BookService from '../src/services/BookService';
 import StorageService from '../src/services/StorageService';
-import * as FileSystem from 'expo-file-system';
 import { STORAGE_KEYS } from '../src/utils/constants';
 
-jest.mock('../src/services/StorageService');
-jest.mock('expo-file-system');
+jest.mock('../src/services/StorageService', () => ({
+  __esModule: true,
+  default: {
+    getData: jest.fn(),
+    storeData: jest.fn(),
+    removeData: jest.fn(),
+  },
+}));
+
+jest.mock('expo-file-system/legacy', () => ({
+  documentDirectory: 'file://documents/',
+  copyAsync: jest.fn(),
+  deleteAsync: jest.fn(),
+}));
 
 describe('BookService', () => {
   beforeEach(() => {

@@ -5,9 +5,11 @@ import BookService from '../services/BookService';
 import ChapterService from '../services/ChapterService';
 import StorageService from '../services/StorageService';
 import { STORAGE_KEYS } from '../utils/constants';
+import useI18n from '../i18n';
 
 export default function UploadScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
+  const { t } = useI18n();
 
   const handlePickDocument = async () => {
     try {
@@ -40,28 +42,28 @@ export default function UploadScreen({ navigation }: any) {
       await StorageService.storeData(`${STORAGE_KEYS.CHAPTERS_PREFIX}${newBook.id}`, chapters);
 
       setLoading(false);
-      Alert.alert('Success', 'Book imported successfully', [
+      Alert.alert(t('upload.successTitle'), t('upload.successMessage'), [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
 
     } catch (error) {
       console.error(error);
       setLoading(false);
-      Alert.alert('Error', 'Failed to import book');
+      Alert.alert(t('upload.errorTitle'), t('upload.errorMessage'));
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Import Books</Text>
+      <Text style={styles.title}>{t('upload.title')}</Text>
       <View style={styles.buttonContainer}>
-        <Button title="Select TXT File from Device" onPress={handlePickDocument} disabled={loading} />
+        <Button title={t('upload.pickFile')} onPress={handlePickDocument} disabled={loading} />
       </View>
       
       {loading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0000ff" />
-          <Text>Importing and parsing chapters...</Text>
+          <Text>{t('upload.loading')}</Text>
         </View>
       )}
     </View>

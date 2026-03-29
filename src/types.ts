@@ -1,3 +1,5 @@
+export type AppLanguage = 'system' | 'zh' | 'en';
+
 export interface Book {
   id: string;
   title: string;
@@ -33,6 +35,10 @@ export interface ReadingProgress {
 export interface UserSettings {
   id: string;
   fontSize: number;
+  lineSpacing: number;
+  language: AppLanguage;
+  speechTimerDefaultMinutes: number | null;
+  fontPreset: 'system' | 'hei' | 'kai' | 'song' | 'mashan';
   theme: 'light' | 'dark';
   flipMode: 'scroll' | 'horizontal';
   autoFlip: boolean;

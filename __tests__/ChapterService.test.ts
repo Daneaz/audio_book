@@ -1,7 +1,14 @@
 import ChapterService from '../src/services/ChapterService';
-import * as FileSystem from 'expo-file-system';
+import { getInfoAsync, readAsStringAsync } from 'expo-file-system/legacy';
 
-jest.mock('expo-file-system');
+jest.mock('expo-file-system/legacy', () => ({
+  getInfoAsync: jest.fn(),
+  readAsStringAsync: jest.fn(),
+}));
+
+jest.mock('expo-crypto', () => ({
+  randomUUID: () => 'test-uuid',
+}));
 
 describe('ChapterService', () => {
   it('should parse chapters correctly', async () => {
@@ -11,7 +18,8 @@ describe('ChapterService', () => {
     第2章 Title 2
     Content 2
     `;
-    (FileSystem.readAsStringAsync as jest.Mock).mockResolvedValue(mockContent);
+    (getInfoAsync as jest.Mock).mockResolvedValue({ exists: true });
+    (readAsStringAsync as jest.Mock).mockResolvedValue(mockContent);
 
     const chapters = await ChapterService.parseChapters('book1', 'path/to/file');
     expect(chapters.length).toBeGreaterThan(0);
@@ -20,7 +28,8 @@ describe('ChapterService', () => {
 
   it('should fallback to length splitting if no chapters found', async () => {
     const mockContent = 'a'.repeat(10000); // 10k chars
-    (FileSystem.readAsStringAsync as jest.Mock).mockResolvedValue(mockContent);
+    (getInfoAsync as jest.Mock).mockResolvedValue({ exists: true });
+    (readAsStringAsync as jest.Mock).mockResolvedValue(mockContent);
 
     const chapters = await ChapterService.parseChapters('book1', 'path/to/file');
     // Default chunk size 5000 -> 2 chapters
