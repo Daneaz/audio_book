@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "书语",
-    "slug": "bookwhisper",
+    "name": "墨声",
+    "slug": "inkvoice",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,11 +13,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eugenewwj.bookwhisper",
+      "bundleIdentifier": "com.eugenewwj.inkvoice",
       "buildNumber": "1",
       "icon": "./assets/icon.png",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocalNetworkUsageDescription": "需要访问局域网，以便从电脑传输书籍文件。",
+        "NSBonjourServices": ["_http._tcp"]
       }
     },
     "android": {
@@ -26,7 +28,7 @@
         "backgroundColor": "#203B33"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.eugenewwj.bookwhisper",
+      "package": "com.eugenewwj.inkvoice",
       "versionCode": 1
     },
     "web": {

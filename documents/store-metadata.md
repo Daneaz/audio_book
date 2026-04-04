@@ -1,4 +1,4 @@
-# 书语 (BookWhisper) — 商店发布元数据
+# 墨声 (Inkvoice) — 商店发布元数据
 
 ---
 
@@ -7,9 +7,9 @@
 ### 基本信息
 | 字段 | 内容 |
 |------|------|
-| **App 名称** | 书语 |
-| **副标题**（30字以内）| TXT 电子书·朗读·夜间阅读 |
-| **Bundle ID** | com.eugenewwj.bookwhisper |
+| **App 名称** | 墨声 |
+| **副标题**（30字以内）| 电子书·朗读·夜间阅读 |
+| **Bundle ID** | com.eugenewwj.inkvoice |
 | **分类** | Books（主）/ Education（副） |
 | **年龄分级** | 4+（无不良内容） |
 | **隐私政策 URL** | （填入你的隐私政策地址） |
@@ -17,7 +17,7 @@
 
 ### 关键词（100字符以内，逗号分隔）
 ```
-TXT阅读,电子书,有声书,朗读,听书,夜间阅读,文字转语音,TTS,小说阅读器,离线阅读
+电子书,有声书,朗读,听书,夜间阅读,文字转语音,TTS,小说阅读器,离线阅读
 ```
 #### Slogan
 ```
@@ -28,16 +28,16 @@ When eyes tire, let your ears read on.
 ```
 
 ### 副标题（英文版 App Name + Subtitle，如需上架英文市场）
-- Name: BookWhisper
-- Subtitle: TXT Reader with Text-to-Speech
+- Name: Inkvoice
+- Subtitle: E-Book Reader with Text-to-Speech
 
 ### 描述（中文，4000字以内）
 
-书语是一款专为 TXT 电子书设计的轻量阅读器，让你用自己的方式读书、听书。
+墨声是一款轻量电子书阅读器，让你用自己的方式读书、听书。
 
 **核心功能**
 
-• **本地导入** — 从手机直接选择 TXT 文件，无需网络，保护隐私
+• **本地导入** — 从手机直接选择书籍文件，无需网络，保护隐私
 • **智能章节识别** — 自动识别章节标题，生成完整目录，一键跳转
 • **语音朗读（TTS）** — 调用系统语音引擎朗读文本，支持语速调节和声音选择，解放双眼
 • **多主题 & 字体** — 提供明亮/夜间/纸张等多种主题，搭配霞鹜文楷、思源宋体等精选中文字体
@@ -49,17 +49,17 @@ When eyes tire, let your ears read on.
 
 喜欢看网络小说、古典文学、非虚构书籍的读者；通勤、睡前或做家务时想"听书"的用户；眼睛疲劳、希望用语音代替阅读的朋友。
 
-书语不收集任何个人数据，书籍文件仅存储在本地。
+墨声不收集任何个人数据，书籍文件仅存储在本地。
 
 ---
 
 ### 描述（英文）
 
-BookWhisper is a lightweight TXT e-book reader that lets you read or listen to your books your way.
+Inkvoice is a lightweight e-book reader that lets you read or listen to your books your way.
 
 **Key Features**
 
-• **Local Import** — Pick any TXT file directly from your device. No internet required, no data collected.
+• **Local Import** — Pick any book file directly from your device. No internet required, no data collected.
 • **Smart Chapter Detection** — Automatically detects chapter headings and builds a table of contents for easy navigation.
 • **Text-to-Speech** — Uses your device's built-in TTS engine to read aloud. Adjust speed and choose your preferred voice.
 • **Themes & Fonts** — Multiple themes (light, dark, paper) with carefully selected Chinese and Latin fonts.
@@ -67,7 +67,7 @@ BookWhisper is a lightweight TXT e-book reader that lets you read or listen to y
 • **Reading Progress** — Your place is saved automatically. Open the app and pick up right where you left off.
 • **Page Modes** — Choose between vertical scroll or horizontal swipe.
 
-BookWhisper collects no personal data. All book files are stored locally on your device.
+Inkvoice collects no personal data. All book files are stored locally on your device.
 
 ---
 
@@ -93,24 +93,24 @@ BookWhisper collects no personal data. All book files are stored locally on your
 ### 基本信息
 | 字段 | 内容 |
 |------|------|
-| **应用名称** | 书语 - TXT阅读与朗读 |
-| **包名** | com.eugenewwj.bookwhisper |
+| **应用名称** | 墨声 - 电子书阅读与朗读 |
+| **包名** | com.eugenewwj.inkvoice |
 | **分类** | 图书与参考资料 |
 | **内容分级** | 适合所有人 |
 | **隐私政策 URL** | （填入你的隐私政策地址） |
 
 ### 简短描述（80字以内）
 ```
-轻量 TXT 阅读器，支持语音朗读、智能章节识别、夜间模式，书籍离线存储不上传。
+轻量电子书阅读器，支持语音朗读、智能章节识别、夜间模式，书籍离线存储不上传。
 ```
 
 ### 完整描述（4000字以内，同 App Store 中文版描述）
 
-书语是一款专为 TXT 电子书设计的轻量阅读器，让你用自己的方式读书、听书。
+墨声是一款轻量电子书阅读器，让你用自己的方式读书、听书。
 
 **核心功能**
 
-• **本地导入** — 从手机直接选择 TXT 文件，无需网络，保护隐私
+• **本地导入** — 从手机直接选择书籍文件，无需网络，保护隐私
 • **智能章节识别** — 自动识别章节标题，生成完整目录，一键跳转
 • **语音朗读（TTS）** — 调用系统语音引擎朗读文本，支持语速调节和声音选择，解放双眼
 • **多主题 & 字体** — 提供明亮/夜间/纸张等多种主题，搭配霞鹜文楷、思源宋体等精选中文字体
@@ -118,7 +118,7 @@ BookWhisper collects no personal data. All book files are stored locally on your
 • **阅读进度** — 自动保存进度，下次打开直接回到上次读到的位置
 • **翻页方式** — 支持上下滚动和左右翻页两种模式
 
-书语不收集任何个人数据，书籍文件仅存储在本地。
+墨声不收集任何个人数据，书籍文件仅存储在本地。
 
 ### 截图规格（需自行截图）
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, FlatList, ViewToken, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView } from 'react-native';
+import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
@@ -198,19 +199,28 @@ export default function ReaderScreen({ route, navigation }: any) {
   const { settings, updateSettings } = useSettings();
   const { t, language } = useI18n();
   
-  const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useAnimatedRef<Animated.FlatList<ChapterData | PageData>>();
   const autoFlipTimer = useRef<NodeJS.Timeout | null>(null);
-  const autoScrollFrameRef = useRef<number | null>(null);
-  const autoScrollLastTickRef = useRef<number | null>(null);
+  const isAutoScrollingRef = useRef(false);
   const scrollYRef = useRef(0);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const userDraggingRef = useRef(false);
   const isMomentumScrollingRef = useRef(false);
+
+  const autoScrollOffset = useSharedValue(0);
+  const autoScrollSpeed = useSharedValue(0);
+  const frameCallback = useFrameCallback((frameInfo) => {
+    'worklet';
+    const delta = autoScrollSpeed.value * Math.min(frameInfo.timeSincePreviousFrame ?? 16, 32) / 1000;
+    autoScrollOffset.value += delta;
+    scrollTo(flatListRef, 0, autoScrollOffset.value, false);
+  }, false);
   
   // Tracking
   const lastSelectionRef = useRef<{ chapterId: string, start: number, timestamp: number } | null>(null);
   const viewableItemsRef = useRef<ViewToken[]>([]);
   const loadedChapterIdsRef = useRef<Set<string>>(new Set());
+  const lastSavedChapterIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadBookData();
@@ -286,31 +296,13 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   const startAutoFlip = () => {
     stopAutoFlip();
-    if (!flatListRef.current) return;
 
     if (settings.flipMode === 'scroll') {
       const speed = Math.min(Math.max(settings.flipInterval || 30, AUTO_SCROLL_MIN_SPEED), AUTO_SCROLL_MAX_SPEED);
-      const animateScroll = (timestamp: number) => {
-        if (!flatListRef.current || userDraggingRef.current || isMomentumScrollingRef.current) {
-          autoScrollFrameRef.current = null;
-          autoScrollLastTickRef.current = null;
-          return;
-        }
-
-        const lastTick = autoScrollLastTickRef.current ?? timestamp;
-        const deltaMs = Math.min(timestamp - lastTick, 32);
-        autoScrollLastTickRef.current = timestamp;
-
-        const nextOffset = scrollYRef.current + speed * (deltaMs / 1000);
-        flatListRef.current.scrollToOffset({
-          offset: nextOffset,
-          animated: false,
-        });
-        scrollYRef.current = nextOffset;
-        autoScrollFrameRef.current = requestAnimationFrame(animateScroll);
-      };
-
-      autoScrollFrameRef.current = requestAnimationFrame(animateScroll);
+      autoScrollOffset.value = scrollYRef.current;
+      autoScrollSpeed.value = speed;
+      isAutoScrollingRef.current = true;
+      frameCallback.setActive(true);
       return;
     }
 
@@ -332,18 +324,18 @@ export default function ReaderScreen({ route, navigation }: any) {
       clearInterval(autoFlipTimer.current);
       autoFlipTimer.current = null;
     }
-    if (autoScrollFrameRef.current !== null) {
-      cancelAnimationFrame(autoScrollFrameRef.current);
-      autoScrollFrameRef.current = null;
+    if (isAutoScrollingRef.current) {
+      frameCallback.setActive(false);
+      isAutoScrollingRef.current = false;
+      scrollYRef.current = autoScrollOffset.value;
     }
-    autoScrollLastTickRef.current = null;
   };
 
   const resumeAutoFlipIfNeeded = () => {
     if (!settings.autoFlip || settings.flipMode !== 'scroll' || userDraggingRef.current || isMomentumScrollingRef.current) {
       return;
     }
-    if (autoFlipTimer.current || autoScrollFrameRef.current !== null) {
+    if (autoFlipTimer.current || isAutoScrollingRef.current) {
       return;
     }
     startAutoFlip();
@@ -456,15 +448,11 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const saveProgress = async (cId: string) => {
-      if (book) {
-          await markBookAsRecentlyRead(book);
-      }
-
       const progress: ReadingProgress = {
           id: `progress_${bookId}`,
           bookId,
           chapterId: cId,
-          currentPosition: 0, 
+          currentPosition: 0,
           currentPage: 0,
           readingMode: settings.flipMode,
           updatedAt: new Date().toISOString()
@@ -897,7 +885,10 @@ export default function ReaderScreen({ route, navigation }: any) {
     const chapter = item.chapter;
 
     setCurrentHeaderTitle(chapter.title);
-    saveProgress(chapter.id);
+    if (chapter.id !== lastSavedChapterIdRef.current) {
+      lastSavedChapterIdRef.current = chapter.id;
+      saveProgress(chapter.id);
+    }
   }, []);
 
   const handleReaderTouchStart = (event: any) => {
@@ -1007,7 +998,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           </View>
       )}
 
-      <FlatList
+      <Animated.FlatList
         ref={flatListRef}
         data={readerData}
         renderItem={renderReaderItem}
@@ -1015,9 +1006,11 @@ export default function ReaderScreen({ route, navigation }: any) {
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         onScroll={(e) => {
-          scrollYRef.current = isHorizontal 
-            ? e.nativeEvent.contentOffset.x 
-            : e.nativeEvent.contentOffset.y;
+          if (!isAutoScrollingRef.current && !autoFlipTimer.current) {
+            scrollYRef.current = isHorizontal
+              ? e.nativeEvent.contentOffset.x
+              : e.nativeEvent.contentOffset.y;
+          }
         }}
         scrollEventThrottle={16}
         onViewableItemsChanged={onReaderViewableItemsChanged}
@@ -1031,6 +1024,10 @@ export default function ReaderScreen({ route, navigation }: any) {
         showsHorizontalScrollIndicator={false}
         horizontal={isHorizontal}
         pagingEnabled={isHorizontal}
+        removeClippedSubviews={Platform.OS === 'android'}
+        windowSize={Platform.OS === 'android' ? 10 : 21}
+        maxToRenderPerBatch={Platform.OS === 'android' ? 2 : 10}
+        updateCellsBatchingPeriod={Platform.OS === 'android' ? 100 : 50}
         onTouchStart={handleReaderTouchStart}
         onTouchEnd={handleReaderTouchEnd}
         onScrollBeginDrag={handleScrollBeginDrag}

@@ -1,5 +1,5 @@
 {
-  "name": "bookwhisper",
+  "name": "inkvoice",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -26,6 +26,7 @@
     "expo-document-picker": "~14.0.8",
     "expo-file-system": "~19.0.21",
     "expo-modules-core": "~3.0.29",
+    "expo-network": "^55.0.11",
     "expo-speech": "~14.0.8",
     "expo-status-bar": "~3.0.9",
     "expo-system-ui": "~6.0.9",
@@ -40,6 +41,7 @@
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.16.0",
+    "react-native-tcp-socket": "^6.4.1",
     "react-native-vector-icons": "^10.3.0",
     "react-native-web": "^0.21.0",
     "uuid": "^13.0.0"

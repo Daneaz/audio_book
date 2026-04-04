@@ -61,6 +61,7 @@ export default function AppNavigator() {
     );
   }
 
+  // @ts-ignore
   return (
     <NavigationContainer theme={isDark ? DarkTheme : DefaultTheme} initialState={initialState}>
       <Stack.Navigator>

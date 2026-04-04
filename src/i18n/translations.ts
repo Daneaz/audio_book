@@ -48,12 +48,25 @@ export type TranslationKey =
   | 'bookshelf.coverError'
   | 'bookshelf.moreOptions'
   | 'upload.title'
+  | 'upload.subtitle'
   | 'upload.pickFile'
   | 'upload.loading'
   | 'upload.successTitle'
   | 'upload.successMessage'
   | 'upload.errorTitle'
   | 'upload.errorMessage'
+  | 'upload.localTitle'
+  | 'upload.localDesc'
+  | 'upload.wifiTitle'
+  | 'upload.wifiDesc'
+  | 'upload.wifiStart'
+  | 'upload.wifiStop'
+  | 'upload.wifiRunning'
+  | 'upload.wifiInstruction'
+  | 'upload.wifiCopy'
+  | 'upload.wifiCopied'
+  | 'upload.wifiNoNetwork'
+  | 'upload.wifiReceived'
   | 'reader.theme'
   | 'reader.autoFlipStart'
   | 'reader.autoFlipStop'
@@ -122,10 +135,10 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.voicePreviewHint': '选择后会自动试听',
     'settings.voicePreviewZh': '这是一段中文语音试听。',
     'settings.voicePreviewEn': 'This is a short English voice preview.',
-    'bookshelf.subtitle': '导入一本 TXT，开始把它摆上书架。',
+    'bookshelf.subtitle': '导入一本书，开始把它摆上书架。',
     'bookshelf.sectionTitle': '书架',
     'bookshelf.emptyTitle': '还没有书',
-    'bookshelf.emptySubtitle': '把 TXT 导进来，这里会像书架一样摆出一本本封面。',
+    'bookshelf.emptySubtitle': '导入书籍，这里会像书架一样摆出一本本封面。',
     'bookshelf.uploadButton': '上传书籍',
     'bookshelf.deleteTitle': '删除书籍',
     'bookshelf.deleteMessage': '确定要删除《{title}》吗？此操作会同时移除阅读进度。',
@@ -140,12 +153,25 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.coverError': '封面加载失败，请检查链接',
     'bookshelf.moreOptions': '更多操作',
     'upload.title': '导入书籍',
-    'upload.pickFile': '从设备选择 TXT 文件',
+    'upload.subtitle': '选择导入方式，将书籍添加到书架',
+    'upload.pickFile': '从设备选择文件',
     'upload.loading': '正在导入并解析章节...',
-    'upload.successTitle': '成功',
-    'upload.successMessage': '书籍导入成功',
-    'upload.errorTitle': '错误',
-    'upload.errorMessage': '导入书籍失败',
+    'upload.successTitle': '导入成功',
+    'upload.successMessage': '书籍已添加到书架',
+    'upload.errorTitle': '导入失败',
+    'upload.errorMessage': '导入书籍失败，请重试',
+    'upload.localTitle': '本地文件',
+    'upload.localDesc': '从设备选择文件',
+    'upload.wifiTitle': '局域网传输',
+    'upload.wifiDesc': '通过 WiFi 从电脑上传',
+    'upload.wifiStart': '启动服务',
+    'upload.wifiStop': '停止服务',
+    'upload.wifiRunning': '运行中',
+    'upload.wifiInstruction': '在电脑浏览器中打开以下地址',
+    'upload.wifiCopy': '分享链接',
+    'upload.wifiCopied': '已复制到剪贴板',
+    'upload.wifiNoNetwork': '无法获取 IP，请检查 WiFi 连接',
+    'upload.wifiReceived': '已收到 {count} 本书',
     'reader.theme': '主题',
     'reader.autoFlipStart': '自动翻页',
     'reader.autoFlipStop': '停止翻页',
@@ -211,10 +237,10 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.voicePreviewHint': 'Selecting a voice will play a preview',
     'settings.voicePreviewZh': 'This is a short Chinese voice preview.',
     'settings.voicePreviewEn': 'This is a short English voice preview.',
-    'bookshelf.subtitle': 'Import a TXT file and place it on your shelf.',
+    'bookshelf.subtitle': 'Import a book and place it on your shelf.',
     'bookshelf.sectionTitle': 'Shelf',
     'bookshelf.emptyTitle': 'No books yet',
-    'bookshelf.emptySubtitle': 'Import a TXT file and your books will appear here with covers.',
+    'bookshelf.emptySubtitle': 'Import a book and it will appear here with a cover.',
     'bookshelf.uploadButton': 'Import Book',
     'bookshelf.deleteTitle': 'Delete Book',
     'bookshelf.deleteMessage': 'Delete "{title}"? This will also remove its reading progress.',
@@ -229,12 +255,25 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.coverError': 'Failed to load cover, please check the URL',
     'bookshelf.moreOptions': 'More Options',
     'upload.title': 'Import Books',
-    'upload.pickFile': 'Select TXT File from Device',
+    'upload.subtitle': 'Choose a method to add books to your shelf',
+    'upload.pickFile': 'Select File from Device',
     'upload.loading': 'Importing and parsing chapters...',
-    'upload.successTitle': 'Success',
-    'upload.successMessage': 'Book imported successfully',
-    'upload.errorTitle': 'Error',
-    'upload.errorMessage': 'Failed to import book',
+    'upload.successTitle': 'Imported',
+    'upload.successMessage': 'Book added to shelf',
+    'upload.errorTitle': 'Import Failed',
+    'upload.errorMessage': 'Failed to import book, please try again',
+    'upload.localTitle': 'Local File',
+    'upload.localDesc': 'Browse files on this device',
+    'upload.wifiTitle': 'WiFi Transfer',
+    'upload.wifiDesc': 'Upload from computer via WiFi',
+    'upload.wifiStart': 'Start Server',
+    'upload.wifiStop': 'Stop Server',
+    'upload.wifiRunning': 'Running',
+    'upload.wifiInstruction': 'Open this address in your browser',
+    'upload.wifiCopy': 'Share Link',
+    'upload.wifiCopied': 'Copied to clipboard',
+    'upload.wifiNoNetwork': 'Cannot get IP. Check WiFi connection.',
+    'upload.wifiReceived': '{count} book(s) received',
     'reader.theme': 'Theme',
     'reader.autoFlipStart': 'Auto Flip',
     'reader.autoFlipStop': 'Stop Flip',
