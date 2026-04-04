@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon-bookwhisper-preview.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/icon-bookwhisper-preview.png",
       "resizeMode": "contain",
@@ -13,15 +13,18 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eugenewwj.bookwhisper"
+      "bundleIdentifier": "com.eugenewwj.bookwhisper",
+      "buildNumber": "1",
+      "icon": "./assets/icon-ios.png"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/icon-bookwhisper-preview.png"
+        "foregroundImage": "./assets/icon-bookwhisper-preview.png",
+        "backgroundColor": "#E6F4FE"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.eugenewwj.bookwhisper"
+      "package": "com.eugenewwj.bookwhisper",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/icon-bookwhisper-preview.png"
