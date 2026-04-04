@@ -1,4 +1,4 @@
-# Simplified WeChat Read (Audio Book App)
+# Audio Book App
 
 A simplified React Native application for reading and listening to TXT books, built with Expo.
 
