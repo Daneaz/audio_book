@@ -110,19 +110,14 @@ export default function SettingsScreen() {
   const selectedFontLabel = useMemo(
     () => {
       switch (settings.fontPreset) {
-        case 'hei':
-          return language === 'en' ? 'Hei' : '黑体';
-        case 'kai':
-          return language === 'en' ? 'Kai' : '楷体';
-        case 'song':
-          return language === 'en' ? 'Song' : '宋体';
-        case 'mashan':
-          return language === 'en' ? 'Shou Kai' : '手楷';
-        default:
-          return language === 'en' ? 'Hei' : '黑体';
+        case 'hei': return t('settings.fontHei');
+        case 'kai': return t('settings.fontKai');
+        case 'song': return t('settings.fontSong');
+        case 'mashan': return t('settings.fontMashan');
+        default: return t('settings.fontHei');
       }
     },
-    [language, settings.fontPreset]
+    [settings.fontPreset, t]
   );
   const selectedVoiceLabel = useMemo(() => {
     if (!selectedVoice || selectedVoice === 'default') return t('common.default');
@@ -132,24 +127,12 @@ export default function SettingsScreen() {
   }, [selectedVoice, t, voices]);
   const fontOptionMeta = useMemo(
     () => ({
-      hei: {
-        label: language === 'en' ? 'Hei' : '黑体',
-        description: language === 'en' ? 'Clear and crisp for long reading sessions' : '更清晰利落，适合长时间阅读',
-      },
-      kai: {
-        label: language === 'en' ? 'Kai' : '楷体',
-        description: language === 'en' ? 'A paper-book feel for literary content' : '更有纸书感，适合文学内容',
-      },
-      song: {
-        label: language === 'en' ? 'Song' : '宋体',
-        description: language === 'en' ? 'Closer to traditional book typography' : '更接近传统书籍排版',
-      },
-      mashan: {
-        label: language === 'en' ? 'Shou Kai' : '手楷',
-        description: language === 'en' ? 'Handwritten style for expressive reading' : '更有手写感，适合标题和风格化阅读',
-      },
+      hei: { label: t('settings.fontHei'), description: t('settings.fontHeiDesc') },
+      kai: { label: t('settings.fontKai'), description: t('settings.fontKaiDesc') },
+      song: { label: t('settings.fontSong'), description: t('settings.fontSongDesc') },
+      mashan: { label: t('settings.fontMashan'), description: t('settings.fontMashanDesc') },
     }),
-    [language]
+    [t]
   );
   const selectedFontFamily = getFontFamilyForPreset(settings.fontPreset);
 

@@ -12,6 +12,7 @@ import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplay
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import useSettings from '../hooks/useSettings';
 import useI18n from '../i18n';
+import { TranslationKey } from '../i18n/translations';
 
 interface ChapterData {
   chapter: Chapter;
@@ -58,27 +59,24 @@ const EXCLUDED_VOICE_NAMES = new Set([
   'Albert',
 ]);
 
-function getVoiceLanguageLabel(language: string | undefined, locale: 'zh' | 'en') {
+function getVoiceLanguageLabel(language: string | undefined, t: (key: TranslationKey) => string) {
   const normalized = (language || '').toLowerCase();
   if (normalized.startsWith('yue') || normalized.startsWith('zh-hk') || normalized.startsWith('zh-mo')) {
-    return locale === 'en' ? 'Cantonese' : '粤语';
+    return t('voice.cantonese');
   }
-  if (normalized.startsWith('zh')) {
-    return locale === 'en' ? 'Chinese' : '中文';
-  }
-  if (normalized.startsWith('en')) {
-    return locale === 'en' ? 'English' : '英文';
-  }
+  if (normalized.startsWith('zh')) return t('voice.chinese');
+  if (normalized.startsWith('en')) return t('voice.english');
   return language || '';
 }
 
 function getVoiceDisplayLabel(
   voice: { identifier: string; name?: string; language?: string } | null,
   fallback: string,
+  t: (key: TranslationKey) => string,
   locale: 'zh' | 'en'
 ) {
   if (!voice) return fallback;
-  const languageLabel = getVoiceLanguageLabel(voice.language, locale);
+  const languageLabel = getVoiceLanguageLabel(voice.language, t);
   const name = voice.name || voice.identifier;
   return languageLabel ? `${name}${locale === 'en' ? ` (${languageLabel})` : `（${languageLabel}）`}` : name;
 }
@@ -710,27 +708,17 @@ export default function ReaderScreen({ route, navigation }: any) {
       if (!settings.voiceType || settings.voiceType === 'default') return t('common.default');
       const matchedVoice = voices.find((voice) => voice.identifier === settings.voiceType);
       if (!matchedVoice) return settings.voiceType;
-      return getVoiceDisplayLabel(matchedVoice, settings.voiceType, language);
+      return getVoiceDisplayLabel(matchedVoice, settings.voiceType, t, language);
   }, [language, settings.voiceType, t, voices]);
   const fontOptionMeta = useMemo(
     () => ({
-      system: {
-        label: language === 'en' ? 'System Default' : '系统默认',
-      },
-      hei: {
-        label: language === 'en' ? 'Hei' : '黑体',
-      },
-      kai: {
-        label: language === 'en' ? 'Kai' : '楷体',
-      },
-      song: {
-        label: language === 'en' ? 'Song' : '宋体',
-      },
-      mashan: {
-        label: language === 'en' ? 'Shou Kai' : '手楷',
-      },
+      system: { label: t('settings.fontSystemDefault') },
+      hei: { label: t('settings.fontHei') },
+      kai: { label: t('settings.fontKai') },
+      song: { label: t('settings.fontSong') },
+      mashan: { label: t('settings.fontMashan') },
     }),
-    [language]
+    [t]
   );
   const typographyFontOptions = useMemo(
     () => FONT_PRESET_OPTIONS.filter((option) => option.id !== 'system'),
@@ -1152,7 +1140,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                           </TouchableOpacity>
                           {sortedVoices.slice(0, 40).map((voice) => {
                             const selected = settings.voiceType === voice.identifier;
-                            const label = getVoiceDisplayLabel(voice, voice.identifier, language);
+                            const label = getVoiceDisplayLabel(voice, voice.identifier, t, language);
                             return (
                               <TouchableOpacity
                                 key={voice.identifier}
@@ -1240,7 +1228,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
                     <View style={styles.typographyFontsInlineRow}>
                       <Text style={[styles.typographyLabel, { color: textColor }]}>
-                        {language === 'en' ? 'Font' : '字体'}
+                        {t('settings.fontSize')}
                       </Text>
                       {typographyFontOptions.map((option) => {
                         const selected = settings.fontPreset === option.id;

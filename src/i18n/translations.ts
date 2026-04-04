@@ -65,7 +65,19 @@ export type TranslationKey =
   | 'reader.timerPromptPlaceholder'
   | 'reader.fontPreview'
   | 'reader.lineSpacingPreview'
-  | 'reader.chapterCountUnit';
+  | 'reader.chapterCountUnit'
+  | 'settings.fontSystemDefault'
+  | 'settings.fontHei'
+  | 'settings.fontKai'
+  | 'settings.fontSong'
+  | 'settings.fontMashan'
+  | 'settings.fontHeiDesc'
+  | 'settings.fontKaiDesc'
+  | 'settings.fontSongDesc'
+  | 'settings.fontMashanDesc'
+  | 'voice.cantonese'
+  | 'voice.chinese'
+  | 'voice.english';
 
 type TranslationMap = Record<TranslationKey, string>;
 
@@ -138,6 +150,18 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'reader.fontPreview': '春江潮水连海平，海上明月共潮生。',
     'reader.lineSpacingPreview': '山光悦鸟性，\n潭影空人心。\n万籁此都寂，\n但余钟磬音。',
     'reader.chapterCountUnit': '章',
+    'settings.fontSystemDefault': '系统默认',
+    'settings.fontHei': '黑体',
+    'settings.fontKai': '楷体',
+    'settings.fontSong': '宋体',
+    'settings.fontMashan': '手楷',
+    'settings.fontHeiDesc': '更清晰利落，适合长时间阅读',
+    'settings.fontKaiDesc': '更有纸书感，适合文学内容',
+    'settings.fontSongDesc': '更接近传统书籍排版',
+    'settings.fontMashanDesc': '更有手写感，适合标题和风格化阅读',
+    'voice.cantonese': '粤语',
+    'voice.chinese': '中文',
+    'voice.english': '英文',
   },
   en: {
     'common.loading': 'Loading...',
@@ -207,5 +231,17 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'reader.fontPreview': 'The moon rises with the tide over the spring sea.',
     'reader.lineSpacingPreview': 'Mountain light delights the birds,\nPool shadows calm the mind.\nAll sounds fall into silence,\nLeaving only the temple bell.',
     'reader.chapterCountUnit': 'chapters',
+    'settings.fontSystemDefault': 'System Default',
+    'settings.fontHei': 'Hei',
+    'settings.fontKai': 'Kai',
+    'settings.fontSong': 'Song',
+    'settings.fontMashan': 'Shou Kai',
+    'settings.fontHeiDesc': 'Clear and crisp for long reading sessions',
+    'settings.fontKaiDesc': 'A paper-book feel for literary content',
+    'settings.fontSongDesc': 'Closer to traditional book typography',
+    'settings.fontMashanDesc': 'Handwritten style for expressive reading',
+    'voice.cantonese': 'Cantonese',
+    'voice.chinese': 'Chinese',
+    'voice.english': 'English',
   },
 };
