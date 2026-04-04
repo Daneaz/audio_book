@@ -1,7 +1,7 @@
 import StorageService from './StorageService';
 import { STORAGE_KEYS } from '../utils/constants';
 import { Book } from '../types';
-import { documentDirectory, copyAsync, deleteAsync } from 'expo-file-system/legacy';
+import { documentDirectory, copyAsync, deleteAsync, downloadAsync } from 'expo-file-system/legacy';
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 
@@ -70,9 +70,11 @@ class BookService {
     const book = books.find(b => b.id === bookId);
     if (book) {
         try {
-            // Only try to delete if it's a local file system path (not a web blob)
             if (book.filePath.startsWith('file://')) {
                 await deleteAsync(book.filePath, { idempotent: true });
+            }
+            if (book.coverImageUri?.startsWith('file://')) {
+                await deleteAsync(book.coverImageUri, { idempotent: true });
             }
         } catch (e) {
             console.error("Error deleting file", e);
@@ -92,6 +94,26 @@ class BookService {
           books[index] = updatedBook;
           await StorageService.storeData(STORAGE_KEYS.BOOKS, books);
       }
+  }
+
+  async downloadCoverFromUrl(bookId: string, url: string): Promise<Book> {
+      const books = await this.getBooks();
+      const book = books.find(b => b.id === bookId);
+      if (!book) throw new Error('Book not found');
+
+      const rawExt = url.split('?')[0].split('.').pop() || 'jpg';
+      const ext = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(rawExt.toLowerCase()) ? rawExt.toLowerCase() : 'jpg';
+      const localName = `cover_${bookId}.${ext}`;
+      const localPath = `${documentDirectory}${localName}`;
+
+      if (book.coverImageUri?.startsWith('file://') && book.coverImageUri !== localPath) {
+          try { await deleteAsync(book.coverImageUri, { idempotent: true }); } catch {}
+      }
+
+      await downloadAsync(url, localPath);
+      const updated = { ...book, coverImageUri: localPath };
+      await this.updateBook(updated);
+      return updated;
   }
 }
 

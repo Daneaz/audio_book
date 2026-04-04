@@ -4,10 +4,10 @@
     "slug": "bookwhisper",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon-bookwhisper-preview.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/icon-bookwhisper-preview.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -15,22 +15,29 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.eugenewwj.bookwhisper",
       "buildNumber": "1",
-      "icon": "./assets/icon-ios.png",
+      "icon": "./assets/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon-bookwhisper-preview.png",
-        "backgroundColor": "#E6F4FE"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#203B33"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.eugenewwj.bookwhisper",
       "versionCode": 1
     },
     "web": {
-      "favicon": "./assets/icon-bookwhisper-preview.png"
+      "favicon": "./assets/icon.png"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0d495e69-79c5-4326-949a-07c944c75d28",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     },
     "extra": {
       "eas": {

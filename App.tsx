@@ -3,7 +3,20 @@ import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as Updates from 'expo-updates';
 import AppNavigator from './src/navigation/AppNavigator';
+
+async function checkForUpdate() {
+  try {
+    const update = await Updates.checkForUpdateAsync();
+    if (update.isAvailable) {
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+    }
+  } catch {
+    // silently ignore update errors in development or network failures
+  }
+}
 
 export default function App() {
   const [fontFallbackReady, setFontFallbackReady] = useState(false);
@@ -13,6 +26,12 @@ export default function App() {
     NotoSerifSC: require('./assets/fonts/NotoSerifCJKsc-Regular.otf'),
     MaShanZheng: require('./assets/fonts/MaShanZheng-Regular.ttf'),
   });
+
+  useEffect(() => {
+    if (!__DEV__) {
+      checkForUpdate();
+    }
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

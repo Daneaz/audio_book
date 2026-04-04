@@ -28,8 +28,8 @@
     </filter>
   </defs>
 
-  <rect x="74" y="74" width="876" height="876" rx="212" fill="url(#bg)"/>
-  <rect x="74" y="74" width="876" height="876" rx="212" fill="url(#mist)"/>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#mist)"/>
   <circle cx="783" cy="219" r="120" fill="#DCE9D7" fill-opacity="0.08"/>
   <circle cx="256" cy="809" r="150" fill="#A9D1B6" fill-opacity="0.06"/>
 

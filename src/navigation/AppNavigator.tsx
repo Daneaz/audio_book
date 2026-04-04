@@ -18,8 +18,8 @@ export default function AppNavigator() {
   const { settings } = useSettings();
   const { t } = getTranslator(settings);
   const isDark = settings.theme === 'dark';
-  const [initialRouteName, setInitialRouteName] = useState<'Bookshelf' | 'Reader' | null>(null);
-  const [initialReaderParams, setInitialReaderParams] = useState<{ bookId: string } | null>(null);
+  const [ready, setReady] = useState(false);
+  const [initialState, setInitialState] = useState<object | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,22 +28,22 @@ export default function AppNavigator() {
       const books = await BookService.getBooks();
       if (cancelled) return;
 
-      if (books.length === 0) {
-        setInitialRouteName('Bookshelf');
-        return;
-      }
-
-      const mostRecentBook = [...books].sort(
-        (a, b) => new Date(b.lastReadAt || b.createdAt).getTime() - new Date(a.lastReadAt || a.createdAt).getTime()
-      )[0];
+      const mostRecentBook = books.length > 0
+        ? [...books].sort(
+            (a, b) => new Date(b.lastReadAt || b.createdAt).getTime() - new Date(a.lastReadAt || a.createdAt).getTime()
+          )[0]
+        : null;
 
       if (mostRecentBook) {
-        setInitialReaderParams({ bookId: mostRecentBook.id });
-        setInitialRouteName('Reader');
-        return;
+        setInitialState({
+          routes: [
+            { name: 'Bookshelf' },
+            { name: 'Reader', params: { bookId: mostRecentBook.id } },
+          ],
+        });
       }
 
-      setInitialRouteName('Bookshelf');
+      setReady(true);
     };
 
     resolveInitialRoute();
@@ -53,7 +53,7 @@ export default function AppNavigator() {
     };
   }, []);
 
-  if (!initialRouteName) {
+  if (!ready) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? '#121212' : '#f5f5f5' }}>
         <ActivityIndicator size="large" color={isDark ? '#ffffff' : '#1E88E5'} />
@@ -62,8 +62,8 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer theme={isDark ? DarkTheme : DefaultTheme}>
-      <Stack.Navigator initialRouteName={initialRouteName}>
+    <NavigationContainer theme={isDark ? DarkTheme : DefaultTheme} initialState={initialState}>
+      <Stack.Navigator>
         <Stack.Screen
           name="Bookshelf"
           component={BookshelfScreen}
@@ -79,7 +79,6 @@ export default function AppNavigator() {
         <Stack.Screen
           name="Reader"
           component={ReaderScreen}
-          initialParams={initialReaderParams ?? undefined}
           options={{ headerShown: false }}
         />
         <Stack.Screen name="Upload" component={UploadScreen} options={{ title: t('nav.upload') }} />

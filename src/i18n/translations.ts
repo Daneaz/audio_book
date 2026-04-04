@@ -39,6 +39,14 @@ export type TranslationKey =
   | 'bookshelf.deleteMessage'
   | 'bookshelf.chapterCount'
   | 'bookshelf.pendingParse'
+  | 'bookshelf.rename'
+  | 'bookshelf.renameTitle'
+  | 'bookshelf.renamePrompt'
+  | 'bookshelf.setCover'
+  | 'bookshelf.coverTitle'
+  | 'bookshelf.coverPrompt'
+  | 'bookshelf.coverError'
+  | 'bookshelf.moreOptions'
   | 'upload.title'
   | 'upload.pickFile'
   | 'upload.loading'
@@ -123,6 +131,14 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.deleteMessage': '确定要删除《{title}》吗？此操作会同时移除阅读进度。',
     'bookshelf.chapterCount': '{count} 章',
     'bookshelf.pendingParse': '待解析',
+    'bookshelf.rename': '重命名',
+    'bookshelf.renameTitle': '重命名书籍',
+    'bookshelf.renamePrompt': '输入新书名',
+    'bookshelf.setCover': '设置封面',
+    'bookshelf.coverTitle': '设置封面',
+    'bookshelf.coverPrompt': '输入图片 URL',
+    'bookshelf.coverError': '封面加载失败，请检查链接',
+    'bookshelf.moreOptions': '更多操作',
     'upload.title': '导入书籍',
     'upload.pickFile': '从设备选择 TXT 文件',
     'upload.loading': '正在导入并解析章节...',
@@ -204,6 +220,14 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.deleteMessage': 'Delete "{title}"? This will also remove its reading progress.',
     'bookshelf.chapterCount': '{count} chapters',
     'bookshelf.pendingParse': 'Parsing pending',
+    'bookshelf.rename': 'Rename',
+    'bookshelf.renameTitle': 'Rename Book',
+    'bookshelf.renamePrompt': 'Enter new title',
+    'bookshelf.setCover': 'Set Cover',
+    'bookshelf.coverTitle': 'Set Cover',
+    'bookshelf.coverPrompt': 'Enter image URL',
+    'bookshelf.coverError': 'Failed to load cover, please check the URL',
+    'bookshelf.moreOptions': 'More Options',
     'upload.title': 'Import Books',
     'upload.pickFile': 'Select TXT File from Device',
     'upload.loading': 'Importing and parsing chapters...',

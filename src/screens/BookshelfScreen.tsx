@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BookService from '../services/BookService';
@@ -29,8 +30,13 @@ function getCoverLabel(title: string) {
 export default function BookshelfScreen({ navigation }: any) {
   const [books, setBooks] = useState<Book[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [modalMode, setModalMode] = useState<'rename' | 'cover' | null>(null);
+  const [activeBook, setActiveBook] = useState<Book | null>(null);
+  const [inputText, setInputText] = useState('');
+  const [modalSaving, setModalSaving] = useState(false);
   const { settings } = useSettings();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
 
   const isDark = settings.theme === 'dark';
   const screenWidth = Dimensions.get('window').width;
@@ -92,6 +98,45 @@ export default function BookshelfScreen({ navigation }: any) {
     );
   };
 
+  const showMenu = (book: Book) => {
+    Alert.alert(book.title, undefined, [
+      { text: t('bookshelf.rename'), onPress: () => openModal('rename', book) },
+      { text: t('bookshelf.setCover'), onPress: () => openModal('cover', book) },
+      { text: t('common.delete'), style: 'destructive', onPress: () => confirmDelete(book) },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
+  };
+
+  const openModal = (mode: 'rename' | 'cover', book: Book) => {
+    setActiveBook(book);
+    setInputText(mode === 'rename' ? book.title : '');
+    setModalMode(mode);
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setActiveBook(null);
+    setInputText('');
+    setModalSaving(false);
+  };
+
+  const handleModalConfirm = async () => {
+    if (!activeBook || !inputText.trim()) return;
+    setModalSaving(true);
+    try {
+      if (modalMode === 'rename') {
+        await BookService.updateBook({ ...activeBook, title: inputText.trim() });
+      } else if (modalMode === 'cover') {
+        await BookService.downloadCoverFromUrl(activeBook.id, inputText.trim());
+      }
+      await loadBooks();
+      closeModal();
+    } catch {
+      setModalSaving(false);
+      Alert.alert(modalMode === 'cover' ? t('bookshelf.coverError') : t('upload.errorTitle'));
+    }
+  };
+
   const renderHeader = () => (
     <View style={styles.headerBlock}>
       <Text style={[styles.subtitle, { color: colors.subText }]}>
@@ -99,8 +144,6 @@ export default function BookshelfScreen({ navigation }: any) {
       </Text>
     </View>
   );
-
-  const renderShelf = () => <View style={[styles.shelf, { backgroundColor: colors.shelf, shadowColor: colors.shelfEdge }]} />;
 
   const renderItem = ({ item, index }: { item: Book; index: number }) => {
     const palette = getCoverPalette(item.id);
@@ -123,16 +166,24 @@ export default function BookshelfScreen({ navigation }: any) {
               },
             ]}
           >
-            <View style={[styles.cover, { backgroundColor: palette[0] }]}>
-              <View style={[styles.coverSpine, { backgroundColor: palette[2] }]} />
-              <View style={[styles.coverBand, { backgroundColor: palette[1] }]} />
-              <Text style={[styles.coverTitle, { color: '#FFF8EE' }]} numberOfLines={4}>
-                {getCoverLabel(item.title)}
-              </Text>
-              <Text style={[styles.coverAuthor, { color: 'rgba(255, 248, 238, 0.76)' }]} numberOfLines={1}>
-                {item.author || 'Unknown'}
-              </Text>
-            </View>
+            {item.coverImageUri ? (
+              <Image
+                source={{ uri: item.coverImageUri }}
+                style={[styles.cover, { width: coverWidth, height: coverHeight }]}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.cover, { backgroundColor: palette[0] }]}>
+                <View style={[styles.coverSpine, { backgroundColor: palette[2] }]} />
+                <View style={[styles.coverBand, { backgroundColor: palette[1] }]} />
+                <Text style={[styles.coverTitle, { color: '#FFF8EE' }]} numberOfLines={4}>
+                  {getCoverLabel(item.title)}
+                </Text>
+                <Text style={[styles.coverAuthor, { color: 'rgba(255, 248, 238, 0.76)' }]} numberOfLines={1}>
+                  {item.author || 'Unknown'}
+                </Text>
+              </View>
+            )}
           </View>
           <Text style={[styles.metaTitle, { color: colors.text }]} numberOfLines={2}>
             {item.title}
@@ -142,10 +193,10 @@ export default function BookshelfScreen({ navigation }: any) {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => confirmDelete(item)}
+          onPress={() => showMenu(item)}
           style={[styles.deleteButton, { backgroundColor: colors.deleteBg }]}
         >
-          <MaterialIcons name="delete-outline" size={18} color={isDark ? '#D6DCE6' : '#6F6254'} />
+          <MaterialIcons name="more-horiz" size={18} color={isDark ? '#D6DCE6' : '#6F6254'} />
         </TouchableOpacity>
       </View>
     );
@@ -175,13 +226,12 @@ export default function BookshelfScreen({ navigation }: any) {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           numColumns={3}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 120 + insets.bottom }]}
           ListHeaderComponent={
             <View>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('bookshelf.sectionTitle')}</Text>
               </View>
-              {renderShelf()}
             </View>
           }
           ItemSeparatorComponent={() => <View style={styles.rowSpacer} />}
@@ -191,10 +241,44 @@ export default function BookshelfScreen({ navigation }: any) {
       )}
 
       {books.length > 0 ? (
-        <TouchableOpacity style={[styles.fab, { backgroundColor: colors.fab }]} onPress={() => navigation.navigate('Upload')}>
+        <TouchableOpacity style={[styles.fab, { backgroundColor: colors.fab, bottom: 24 + insets.bottom }]} onPress={() => navigation.navigate('Upload')}>
           <MaterialIcons name="add" size={28} color="#FFF8EE" />
         </TouchableOpacity>
       ) : null}
+
+      <Modal visible={modalMode !== null} transparent animationType="fade" onRequestClose={closeModal}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.shelf }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              {modalMode === 'rename' ? t('bookshelf.renameTitle') : t('bookshelf.coverTitle')}
+            </Text>
+            <TextInput
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.emptyBorder }]}
+              placeholder={modalMode === 'rename' ? t('bookshelf.renamePrompt') : t('bookshelf.coverPrompt')}
+              placeholderTextColor={colors.subText}
+              value={inputText}
+              onChangeText={setInputText}
+              autoFocus
+              autoCorrect={false}
+              autoCapitalize="none"
+              returnKeyType="done"
+              onSubmitEditing={handleModalConfirm}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={closeModal} style={styles.modalBtn}>
+                <Text style={[styles.modalBtnText, { color: colors.subText }]}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleModalConfirm} style={styles.modalBtn} disabled={modalSaving}>
+                {modalSaving ? (
+                  <ActivityIndicator size="small" color={colors.fab} />
+                ) : (
+                  <Text style={[styles.modalBtnText, { color: colors.fab, fontWeight: '700' }]}>{t('common.ok')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -206,7 +290,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 18,
     paddingTop: 18,
-    paddingBottom: 120,
   },
   headerBlock: {
     marginBottom: 18,
@@ -396,5 +479,48 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    width: '80%',
+    borderRadius: 18,
+    padding: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 14,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    marginBottom: 18,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  modalBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minWidth: 52,
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    fontSize: 15,
   },
 });

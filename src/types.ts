@@ -10,6 +10,7 @@ export interface Book {
   totalPages: number;
   createdAt: string;
   lastReadAt: string;
+  coverImageUri?: string;
 }
 
 export interface Chapter {
