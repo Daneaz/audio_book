@@ -16,7 +16,7 @@ const PAGE_STRINGS: Record<'zh' | 'en', {
 }> = {
   zh: {
     title: '传书到书架',
-    subtitle: '将 TXT 文件传输到手机书架',
+    subtitle: '将文件传输到手机书架',
     dropText: '点击选择 · 或拖入文件',
     dropHint: '支持 .txt 格式，可多选',
     btnEmpty: '请先选择文件',
@@ -27,7 +27,7 @@ const PAGE_STRINGS: Record<'zh' | 'en', {
   },
   en: {
     title: 'Transfer to Shelf',
-    subtitle: 'Send TXT files to your bookshelf',
+    subtitle: 'Send files to your bookshelf',
     dropText: 'Click to select · or drag & drop',
     dropHint: 'Supports .txt, multiple files allowed',
     btnEmpty: 'Select a file first',
@@ -195,72 +195,100 @@ class WifiServerService {
     }
   }
 
-  start(onFileReceived: FileReceivedCallback, lang: 'zh' | 'en' = 'zh'): void {
-    if (this._isRunning) return;
+  async start(
+    onFileReceived: FileReceivedCallback,
+    lang: 'zh' | 'en' = 'zh',
+    onError?: (err: Error) => void,
+  ): Promise<boolean> {
+    this.stop();
     this.lang = lang;
 
-    this.server = TcpSocket.createServer((socket: any) => {
-      const chunks: Buffer[] = [];
-      let totalLen = 0;
-      let headersEndIdx = -1;
-      let reqMethod = '';
-      let reqPath = '';
-      let reqHeaders: Record<string, string> = {};
-      let contentLength = 0;
-      let handled = false;
+    const localIp = await this.getLocalIp();
 
-      socket.on('data', (data: Buffer | string) => {
-        if (handled) return;
-        const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data as string);
-        chunks.push(chunk);
-        totalLen += chunk.length;
+    return new Promise<boolean>((resolve) => {
+      this.server = TcpSocket.createServer((socket: any) => {
+        console.log('[WifiServer] client connected');
+        const chunks: Buffer[] = [];
+        let totalLen = 0;
+        let headersEndIdx = -1;
+        let reqMethod = '';
+        let reqPath = '';
+        let reqHeaders: Record<string, string> = {};
+        let contentLength = 0;
+        let handled = false;
 
-        if (headersEndIdx === -1) {
-          const combined = Buffer.concat(chunks);
-          const idx = combined.indexOf('\r\n\r\n');
-          if (idx !== -1) {
-            headersEndIdx = idx;
-            const headerStr = combined.slice(0, idx).toString('utf-8');
-            const lines = headerStr.split('\r\n');
-            const parts = lines[0].split(' ');
-            reqMethod = parts[0] ?? '';
-            reqPath = parts[1] ?? '/';
-            for (let i = 1; i < lines.length; i++) {
-              const ci = lines[i].indexOf(':');
-              if (ci > -1) {
-                reqHeaders[lines[i].slice(0, ci).toLowerCase().trim()] =
-                  lines[i].slice(ci + 1).trim();
+        socket.on('data', (data: Buffer | string) => {
+          if (handled) return;
+          const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data as string);
+          chunks.push(chunk);
+          totalLen += chunk.length;
+
+          if (headersEndIdx === -1) {
+            const combined = Buffer.concat(chunks);
+            const idx = combined.indexOf('\r\n\r\n');
+            if (idx !== -1) {
+              headersEndIdx = idx;
+              const headerStr = combined.slice(0, idx).toString('utf-8');
+              const lines = headerStr.split('\r\n');
+              const parts = lines[0].split(' ');
+              reqMethod = parts[0] ?? '';
+              reqPath = parts[1] ?? '/';
+              console.log(`[WifiServer] ${reqMethod} ${reqPath}`);
+              for (let i = 1; i < lines.length; i++) {
+                const ci = lines[i].indexOf(':');
+                if (ci > -1) {
+                  reqHeaders[lines[i].slice(0, ci).toLowerCase().trim()] =
+                    lines[i].slice(ci + 1).trim();
+                }
               }
+              contentLength = parseInt(reqHeaders['content-length'] ?? '0', 10);
             }
-            contentLength = parseInt(reqHeaders['content-length'] ?? '0', 10);
           }
-        }
 
-        if (headersEndIdx !== -1) {
-          const bodyReceived = totalLen - headersEndIdx - 4;
-          if (reqMethod === 'GET' || bodyReceived >= contentLength) {
-            handled = true;
-            this.handleRequest(
-              socket,
-              Buffer.concat(chunks),
-              reqMethod,
-              reqPath,
-              reqHeaders,
-              headersEndIdx,
-              onFileReceived,
-            );
+          if (headersEndIdx !== -1) {
+            const bodyReceived = totalLen - headersEndIdx - 4;
+            if (reqMethod === 'GET' || bodyReceived >= contentLength) {
+              handled = true;
+              this.handleRequest(
+                socket,
+                Buffer.concat(chunks),
+                reqMethod,
+                reqPath,
+                reqHeaders,
+                headersEndIdx,
+                onFileReceived,
+              );
+            }
           }
-        }
+        });
+
+        socket.on('error', (err: Error) => {
+          console.warn('[WifiServer] socket error:', err.message);
+        });
       });
 
-      socket.on('error', () => {});
-    });
+      this.server.on('listening', () => {
+        console.log(`[WifiServer] listening on ${localIp ?? '0.0.0.0'}:${WIFI_SERVER_PORT}`);
+        this._isRunning = true;
+        resolve(true);
+      });
 
-    this.server.listen({ port: WIFI_SERVER_PORT, host: '0.0.0.0' });
-    this.server.on('error', () => {
-      this._isRunning = false;
+      this.server.on('error', (err: Error) => {
+        console.error('[WifiServer] server error:', err.message);
+        this._isRunning = false;
+        this.server = null;
+        onError?.(err);
+        resolve(false);
+      });
+
+      const listenOpts: { port: number; host?: string; reuseAddress?: boolean } = {
+        port: WIFI_SERVER_PORT,
+        host: localIp ?? '0.0.0.0',
+        reuseAddress: true,
+      };
+      console.log('[WifiServer] starting on', listenOpts);
+      this.server.listen(listenOpts);
     });
-    this._isRunning = true;
   }
 
   private handleRequest(

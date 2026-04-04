@@ -114,7 +114,7 @@ export default function UploadScreen({ navigation }: any) {
     setServerUrl(url);
     setReceivedCount(0);
 
-    WifiServerService.start(
+    const started = await WifiServerService.start(
       async (fileName, tempUri) => {
         setReceivedCount(prev => prev + 1);
         const ok = await processFile(fileName, tempUri);
@@ -133,6 +133,11 @@ export default function UploadScreen({ navigation }: any) {
     );
 
     setWifiStarting(false);
+    if (!started) {
+      setServerUrl(null);
+      Alert.alert(t('upload.errorTitle'), t('upload.wifiNoNetwork'));
+      return;
+    }
     setWifiActive(true);
   };
 
