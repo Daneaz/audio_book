@@ -1514,7 +1514,9 @@ const styles = StyleSheet.create({
   },
   typographyFontChipText: {
       fontSize: 12,
+      lineHeight: 16,
       fontWeight: '500',
+      includeFontPadding: false,
   },
   speechQuickRow: {
       flexDirection: 'row',
