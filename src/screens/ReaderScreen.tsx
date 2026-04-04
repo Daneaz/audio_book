@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView } from 'react-native';
-import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback } from 'react-native-reanimated';
+import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
@@ -201,12 +201,13 @@ export default function ReaderScreen({ route, navigation }: any) {
   
   const flatListRef = useAnimatedRef<Animated.FlatList<ChapterData | PageData>>();
   const autoFlipTimer = useRef<NodeJS.Timeout | null>(null);
-  const isAutoScrollingRef = useRef(false);
-  const scrollYRef = useRef(0);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const userDraggingRef = useRef(false);
   const isMomentumScrollingRef = useRef(false);
 
+  const scrollPos = useSharedValue(0);
+  const isAutoScrolling = useSharedValue(false);
+  const isHorizontalScrollMode = useSharedValue(settings.flipMode === 'horizontal');
   const autoScrollOffset = useSharedValue(0);
   const autoScrollSpeed = useSharedValue(0);
   const frameCallback = useFrameCallback((frameInfo) => {
@@ -215,6 +216,16 @@ export default function ReaderScreen({ route, navigation }: any) {
     autoScrollOffset.value += delta;
     scrollTo(flatListRef, 0, autoScrollOffset.value, false);
   }, false);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      'worklet';
+      if (!isAutoScrolling.value) {
+        scrollPos.value = isHorizontalScrollMode.value
+          ? event.contentOffset.x
+          : event.contentOffset.y;
+      }
+    },
+  });
   
   // Tracking
   const lastSelectionRef = useRef<{ chapterId: string, start: number, timestamp: number } | null>(null);
@@ -284,6 +295,10 @@ export default function ReaderScreen({ route, navigation }: any) {
     prevSettingsRef.current = settings;
   }, [settings.speechRate, settings.voiceType, isSpeaking, currentSpeakingChapterId, currentSentenceIndex]);
 
+  useEffect(() => {
+    isHorizontalScrollMode.value = settings.flipMode === 'horizontal';
+  }, [settings.flipMode]);
+
   // Handle auto-flip / scroll
   useEffect(() => {
     if (settings.autoFlip) {
@@ -299,9 +314,9 @@ export default function ReaderScreen({ route, navigation }: any) {
 
     if (settings.flipMode === 'scroll') {
       const speed = Math.min(Math.max(settings.flipInterval || 30, AUTO_SCROLL_MIN_SPEED), AUTO_SCROLL_MAX_SPEED);
-      autoScrollOffset.value = scrollYRef.current;
+      autoScrollOffset.value = scrollPos.value;
       autoScrollSpeed.value = speed;
-      isAutoScrollingRef.current = true;
+      isAutoScrolling.value = true;
       frameCallback.setActive(true);
       return;
     }
@@ -310,12 +325,12 @@ export default function ReaderScreen({ route, navigation }: any) {
     autoFlipTimer.current = setInterval(() => {
       if (!flatListRef.current) return;
 
-      const nextOffset = scrollYRef.current + window.width;
+      const nextOffset = scrollPos.value + window.width;
       flatListRef.current.scrollToOffset({
         offset: nextOffset,
         animated: true,
       });
-      scrollYRef.current = nextOffset;
+      scrollPos.value = nextOffset;
     }, interval);
   };
 
@@ -324,10 +339,10 @@ export default function ReaderScreen({ route, navigation }: any) {
       clearInterval(autoFlipTimer.current);
       autoFlipTimer.current = null;
     }
-    if (isAutoScrollingRef.current) {
+    if (isAutoScrolling.value) {
       frameCallback.setActive(false);
-      isAutoScrollingRef.current = false;
-      scrollYRef.current = autoScrollOffset.value;
+      isAutoScrolling.value = false;
+      scrollPos.value = autoScrollOffset.value;
     }
   };
 
@@ -335,7 +350,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     if (!settings.autoFlip || settings.flipMode !== 'scroll' || userDraggingRef.current || isMomentumScrollingRef.current) {
       return;
     }
-    if (autoFlipTimer.current || isAutoScrollingRef.current) {
+    if (autoFlipTimer.current || isAutoScrolling.value) {
       return;
     }
     startAutoFlip();
@@ -884,7 +899,9 @@ export default function ReaderScreen({ route, navigation }: any) {
     const item = first.item as PageData | ChapterData;
     const chapter = item.chapter;
 
-    setCurrentHeaderTitle(chapter.title);
+    if (!isAutoScrolling.value) {
+      setCurrentHeaderTitle(chapter.title);
+    }
     if (chapter.id !== lastSavedChapterIdRef.current) {
       lastSavedChapterIdRef.current = chapter.id;
       saveProgress(chapter.id);
@@ -1004,14 +1021,8 @@ export default function ReaderScreen({ route, navigation }: any) {
         renderItem={renderReaderItem}
         keyExtractor={getReaderItemKey}
         onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
-        onScroll={(e) => {
-          if (!isAutoScrollingRef.current && !autoFlipTimer.current) {
-            scrollYRef.current = isHorizontal
-              ? e.nativeEvent.contentOffset.x
-              : e.nativeEvent.contentOffset.y;
-          }
-        }}
+        onEndReachedThreshold={3.0}
+        onScroll={scrollHandler}
         scrollEventThrottle={16}
         onViewableItemsChanged={onReaderViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}

@@ -7,6 +7,8 @@ graph TD
   A --> D[AsyncStorage]
   A --> E[Firebase Storage]
   A --> F[HTTP/WebSocket Server]
+  A --> G[Google AdMob SDK]
+  A --> H[IAP / StoreKit / Billing]
   
   subgraph "Frontend Layer"
     A
@@ -25,6 +27,11 @@ graph TD
   subgraph "Network Layer"
     F
   end
+  
+  subgraph "Monetization"
+    G
+    H
+  end
 ```
 
 ## 2. Technology Description
@@ -38,6 +45,8 @@ graph TD
   - @react-native-async-storage/async-storage: 本地数据持久化
   - firebase/storage: 云端存储（可选）
   - react-native-fs: 增强文件操作能力
+  - react-native-google-mobile-ads: AdMob广告（Banner + 激励视频），支持广告预加载与本地缓存
+  - react-native-iap: iOS App Store / Google Play 内购，支持买断制与订阅制
 
 ## 3. Route definitions
 | Route | Purpose |
@@ -47,6 +56,7 @@ graph TD
 | /upload | 书籍上传页面，提供多种上传方式 |
 | /settings | 设置页面，用户偏好设置 |
 | /chapters/:bookId | 章节目录页面，显示书籍章节列表 |
+| /membership | 会员页面，展示购买方案、会员状态 |
 
 ## 4. API definitions
 本产品为纯客户端应用，无后端API接口。所有功能通过设备原生API和第三方SDK实现。
@@ -61,6 +71,7 @@ graph TD
 erDiagram
   BOOK ||--o{ CHAPTER : contains
   BOOK ||--o{ READING_PROGRESS : has
+  USER_MEMBERSHIP ||--o{ PURCHASE_RECORD : has
   
   BOOK {
     string id PK
@@ -103,6 +114,31 @@ erDiagram
     int flipInterval
     float speechRate
     string voiceType
+  }
+  
+  USER_MEMBERSHIP {
+    string id PK
+    string type "lifetime|monthly|yearly"
+    boolean isActive
+    datetime purchasedAt
+    datetime expiresAt
+    string transactionId
+  }
+  
+  PURCHASE_RECORD {
+    string id PK
+    string membershipId FK
+    string productId
+    string type "lifetime|monthly|yearly"
+    string platform "ios|android"
+    string transactionId
+    datetime purchasedAt
+  }
+  
+  AD_STATE {
+    string id PK
+    datetime bannerHiddenUntil
+    datetime lastCacheUpdatedAt
   }
 ```
 
@@ -169,6 +205,27 @@ erDiagram
     "voiceType": "default"
   }
 }
+
+// membership 数据结构
+{
+  "membership": {
+    "id": "membership_001",
+    "type": "yearly",          // "lifetime" | "monthly" | "yearly"
+    "isActive": true,
+    "purchasedAt": "2024-01-01T00:00:00Z",
+    "expiresAt": "2025-01-01T00:00:00Z",  // lifetime 时为 null
+    "transactionId": "ios_txn_xxxxx"
+  }
+}
+
+// adState 数据结构
+{
+  "adState": {
+    "id": "ad_state_001",
+    "bannerHiddenUntil": "2024-01-15T14:30:00Z",  // 用户跳过后隐藏到此时间
+    "lastCacheUpdatedAt": "2024-01-15T10:00:00Z"
+  }
+}
 ```
 
 ## 7. 目录结构设计
@@ -185,13 +242,16 @@ src/
 │   ├── ReaderScreen.js
 │   ├── UploadScreen.js
 │   ├── SettingsScreen.js
-│   └── ChaptersScreen.js
+│   ├── ChaptersScreen.js
+│   └── MembershipScreen.js
 ├── services/            # 业务服务
 │   ├── BookService.js   # 书籍管理服务
 │   ├── ChapterService.js # 章节解析服务
 │   ├── SpeechService.js # 语音朗读服务
 │   ├── FileService.js   # 文件处理服务
-│   └── StorageService.js # 数据存储服务
+│   ├── StorageService.js # 数据存储服务
+│   ├── AdService.js     # 广告加载、缓存、展示控制
+│   └── MembershipService.js # 内购、会员状态管理
 ├── utils/               # 工具函数
 │   ├── chapterParser.js # 章节解析工具
 │   ├── fileReader.js    # 文件读取工具
@@ -214,3 +274,20 @@ src/
 - **StorageService**: 封装AsyncStorage，提供统一的数据持久化接口
 - **ReaderView**: 核心阅读组件，处理文本渲染、翻页动画、手势识别
 - **SpeechControl**: 语音播放控制面板，提供播放/暂停、语速调节等功能
+- **AdService**: 封装 AdMob SDK，负责 Banner 广告与激励视频的预加载、缓存管理、展示时机控制（含离线缓存播放和1小时隐藏逻辑）
+- **MembershipService**: 封装 react-native-iap，处理内购产品查询、支付发起、收据验证、购买恢复，维护本地会员状态
+
+## 9. 广告模块设计说明
+- **Banner展示**：仅在阅读全屏模式下，底部居中叠加，高度约为TabBar的50%，非会员用户可见
+- **离线缓存策略**：每次联网时预加载并缓存广告素材到本地文件系统；无网络时直接播放最后一次缓存广告
+- **激励视频跳过流程**：用户点击跳过 → 加载并播放激励视频 → 播放完毕 → 写入 `adState.bannerHiddenUntil = now + 1h` → Banner隐藏
+- **会员免广告**：`MembershipService.isActive()` 返回 true 时，`AdService` 不加载任何广告
+
+## 10. 会员模块设计说明
+- **产品 SKU**：
+  - `com.mosound.lifetime`：买断制（一次性付款，永久生效）
+  - `com.mosound.monthly`：月订阅（自动续订）
+  - `com.mosound.yearly`：年订阅（自动续订）
+- **本地状态**：购买成功后写入 AsyncStorage `membership`，记录类型、生效时间、到期时间
+- **订阅到期检查**：每次 App 启动时调用 `MembershipService.restore()` 与平台收据校验同步状态
+- **恢复购买**：会员页面提供"恢复购买"入口，调用 `IAP.restorePurchases()`

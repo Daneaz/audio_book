@@ -29,7 +29,13 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.eugenewwj.inkvoice",
-      "versionCode": 1
+      "versionCode": 1,
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_WIFI_STATE"
+      ]
     },
     "web": {
       "favicon": "./assets/icon.png"

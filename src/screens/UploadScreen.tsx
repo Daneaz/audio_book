@@ -114,15 +114,23 @@ export default function UploadScreen({ navigation }: any) {
     setServerUrl(url);
     setReceivedCount(0);
 
-    WifiServerService.start(async (fileName, tempUri) => {
-      setReceivedCount(prev => prev + 1);
-      const ok = await processFile(fileName, tempUri);
-      if (ok) {
-        Alert.alert(t('upload.successTitle'), t('upload.successMessage'));
-      } else {
-        Alert.alert(t('upload.errorTitle'), t('upload.errorMessage'));
-      }
-    }, language);
+    WifiServerService.start(
+      async (fileName, tempUri) => {
+        setReceivedCount(prev => prev + 1);
+        const ok = await processFile(fileName, tempUri);
+        if (ok) {
+          Alert.alert(t('upload.successTitle'), t('upload.successMessage'));
+        } else {
+          Alert.alert(t('upload.errorTitle'), t('upload.errorMessage'));
+        }
+      },
+      language,
+      () => {
+        setWifiActive(false);
+        setServerUrl(null);
+        Alert.alert(t('upload.errorTitle'), t('upload.wifiNoNetwork'));
+      },
+    );
 
     setWifiStarting(false);
     setWifiActive(true);

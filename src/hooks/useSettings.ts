@@ -44,7 +44,7 @@ export default function useSettings() {
     const data = await StorageService.getData(STORAGE_KEYS.USER_SETTINGS);
     if (data) {
       const normalizedFontPreset = VALID_FONT_PRESETS.includes(data.fontPreset) ? data.fontPreset : DEFAULT_SETTINGS.fontPreset;
-      setSettings({ ...DEFAULT_SETTINGS, ...data, fontPreset: normalizedFontPreset });
+      setSettings({ ...DEFAULT_SETTINGS, ...data, fontPreset: normalizedFontPreset, autoFlip: false });
     }
     setLoading(false);
   };
