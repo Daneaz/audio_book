@@ -19,6 +19,13 @@
 ```
 TXT阅读,电子书,有声书,朗读,听书,夜间阅读,文字转语音,TTS,小说阅读器,离线阅读
 ```
+#### Slogan
+```
+文字有声，触手可及。
+Words with a voice, always within reach.
+眼睛累了，就用耳朵读。
+When eyes tire, let your ears read on.
+```
 
 ### 副标题（英文版 App Name + Subtitle，如需上架英文市场）
 - Name: BookWhisper
@@ -125,9 +132,9 @@ BookWhisper collects no personal data. All book files are stored locally on your
 
 ## 还需要你手动填写的内容
 
-- [ ] 隐私政策 URL（两个商店都需要）
-- [ ] 支持/联系 URL
-- [ ] 实际设备截图
-- [ ] Google Play Feature Graphic 图片
+- [ ] 隐私政策 URL（两个商店都需要） https://www.termsfeed.com/live/62ce2d28-2923-484f-8568-fdbaafa439fe
+- [ ] 支持/联系 URL https://github.com/Daneaz/audio_book/issues
+- [ ] 实际设备截图 
+- [ ] Google Play Feature Graphic 图片 
 - [ ] App Store Connect 中的年龄分级问卷（需回答约10个问题）
 - [ ] Google Play 数据安全问卷（填"不收集任何数据"即可）

@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 16.0.0"
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -13,16 +14,15 @@
         "simulator": true
       }
     },
-    "production": {
+    "prod": {
       "autoIncrement": true
     }
   },
   "submit": {
-    "production": {
+    "prod": {
       "ios": {
-        "appleId": "eugenelab@foxmail.com",
-        "ascAppId": "",
-        "appleTeamId": ""
+        "appleId": "eugenewwj@gmail.com",
+        "ascAppId": "6761641396"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",

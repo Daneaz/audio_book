@@ -15,7 +15,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.eugenewwj.bookwhisper",
       "buildNumber": "1",
-      "icon": "./assets/icon-ios.png"
+      "icon": "./assets/icon-ios.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,6 +31,11 @@
     },
     "web": {
       "favicon": "./assets/icon-bookwhisper-preview.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0d495e69-79c5-4326-949a-07c944c75d28"
+      }
     }
   }
 }
