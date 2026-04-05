@@ -95,7 +95,7 @@ export function sanitizeSentenceForSpeech(sentence: string): string {
     return '';
   }
 
-  return normalized.replace(SPEECH_STRIP_EDGE_SYMBOLS_REGEX, '').trim();
+  return normalized.replace(SPEECH_STRIP_EDGE_SYMBOLS_REGEX, '').replace(/-/g, '').trim();
 }
 
 export function prepareSentenceForTts(sentence: string, mode: 'offline' | 'online'): string {
