@@ -4,7 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
+import { Audio } from 'expo-av';
 import AppNavigator from './src/navigation/AppNavigator';
+
+Audio.setAudioModeAsync({
+  playsInSilentModeIOS: true,
+  staysActiveInBackground: true,
+  shouldDuckAndroid: false,
+});
 
 async function checkForUpdate() {
   try {

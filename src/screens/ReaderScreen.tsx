@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme } from 'react-native';
 import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import BookService from '../services/BookService';
 import ChapterService from '../services/ChapterService';
 import StorageService from '../services/StorageService';
@@ -200,10 +202,12 @@ export default function ReaderScreen({ route, navigation }: any) {
   const { t, language } = useI18n();
   
   const flatListRef = useAnimatedRef<Animated.FlatList<ChapterData | PageData>>();
+  const chapterLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
   const autoFlipTimer = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const userDraggingRef = useRef(false);
   const isMomentumScrollingRef = useRef(false);
+  const lastUserScrollRef = useRef<number>(0);
 
   const scrollPos = useSharedValue(0);
   const isAutoScrolling = useSharedValue(false);
@@ -232,6 +236,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   const viewableItemsRef = useRef<ViewToken[]>([]);
   const loadedChapterIdsRef = useRef<Set<string>>(new Set());
   const lastSavedChapterIdRef = useRef<string | null>(null);
+  const pendingRestoreRef = useRef<{ offset: number; page: number; mode: string } | null>(null);
+
 
   useEffect(() => {
     loadBookData();
@@ -298,6 +304,63 @@ export default function ReaderScreen({ route, navigation }: any) {
   useEffect(() => {
     isHorizontalScrollMode.value = settings.flipMode === 'horizontal';
   }, [settings.flipMode]);
+
+  // Restore reading position after initial load
+  useEffect(() => {
+    if (loading || !pendingRestoreRef.current) return;
+    const restore = pendingRestoreRef.current;
+    pendingRestoreRef.current = null;
+    setTimeout(() => {
+      if (restore.mode === 'horizontal' && restore.page > 0) {
+        flatListRef.current?.scrollToOffset({ offset: restore.page * window.width, animated: false });
+      } else if (restore.mode === 'scroll' && restore.offset > 0) {
+        flatListRef.current?.scrollToOffset({ offset: restore.offset, animated: false });
+      }
+    }, 80);
+  }, [loading]);
+
+  // Auto-scroll to follow the speaking sentence
+  const USER_SCROLL_COOLDOWN = 60 * 1000;
+  useEffect(() => {
+    if (!isSpeaking || !currentSpeakingChapterId || userDraggingRef.current) return;
+    if (Date.now() - lastUserScrollRef.current < USER_SCROLL_COOLDOWN) return;
+
+    if (settings.flipMode === 'horizontal') {
+      const sentenceText = activeSentence?.text;
+      if (!sentenceText) return;
+      const pageIndex = horizontalPages.findIndex(
+        (page) => page.chapter.id === currentSpeakingChapterId && page.content.includes(sentenceText)
+      );
+      if (pageIndex !== -1) {
+        flatListRef.current?.scrollToIndex({ index: pageIndex, animated: true });
+      }
+    } else {
+      const chLayout = chapterLayoutsRef.current[currentSpeakingChapterId];
+      if (!chLayout) {
+        const chapterIndex = chaptersData.findIndex((c) => c.chapter.id === currentSpeakingChapterId);
+        if (chapterIndex !== -1) {
+          flatListRef.current?.scrollToIndex({ index: chapterIndex, animated: true, viewPosition: 0 });
+        }
+        return;
+      }
+      const chData = chaptersData.find((c) => c.chapter.id === currentSpeakingChapterId);
+      if (!chData) return;
+      const sentence = chData.sentences[currentSentenceIndex];
+      if (!sentence) return;
+
+      const ratio = sentence.start / Math.max(1, chData.content.length);
+      const estimatedY = chLayout.y + ratio * chLayout.height;
+      const currentOffset = scrollPos.value;
+      const screenHeight = window.height;
+
+      if (estimatedY < currentOffset + 50 || estimatedY > currentOffset + screenHeight * 0.5) {
+        flatListRef.current?.scrollToOffset({
+          offset: Math.max(0, estimatedY - screenHeight * 0.3),
+          animated: true,
+        });
+      }
+    }
+  }, [currentSentenceIndex, currentSpeakingChapterId, isSpeaking]);
 
   // Handle auto-flip / scroll
   useEffect(() => {
@@ -392,6 +455,13 @@ export default function ReaderScreen({ route, navigation }: any) {
           if (progress && progress.chapterId) {
               const idx = chaptersList.findIndex((c: Chapter) => c.id === progress.chapterId);
               if (idx !== -1) startIdx = idx;
+              if ((progress.currentPosition > 0) || (progress.currentPage > 0)) {
+                pendingRestoreRef.current = {
+                  offset: progress.currentPosition || 0,
+                  page: progress.currentPage || 0,
+                  mode: progress.readingMode || 'scroll',
+                };
+              }
           }
       }
       
@@ -463,12 +533,22 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const saveProgress = async (cId: string) => {
+      const isHoriz = settings.flipMode === 'horizontal';
+      let savedPage = 0;
+      if (isHoriz) {
+        const visibleItem = viewableItemsRef.current[0]?.item as (PageData | ChapterData) | undefined;
+        if (visibleItem && 'pageNumber' in visibleItem) {
+          const idx = horizontalPages.findIndex((p) => p.id === (visibleItem as PageData).id);
+          savedPage = Math.max(0, idx);
+        }
+      }
+      const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
       const progress: ReadingProgress = {
           id: `progress_${bookId}`,
           bookId,
           chapterId: cId,
-          currentPosition: 0,
-          currentPage: 0,
+          currentPosition: isHoriz ? 0 : Math.round(currentOffset),
+          currentPage: savedPage,
           readingMode: settings.flipMode,
           updatedAt: new Date().toISOString()
       };
@@ -579,7 +659,8 @@ export default function ReaderScreen({ route, navigation }: any) {
         speakSentence(cId, sIndex + 1);
         return;
       }
-      
+
+      Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: true, shouldDuckAndroid: false });
       Speech.speak(sentence, {
           language: 'zh-CN',
           rate: settings.speechRate,
@@ -632,7 +713,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, []);
 
   const toggleTheme = () => {
-      updateSettings({ theme: settings.theme === 'light' ? 'dark' : 'light' });
+      const next = settings.theme === 'system' ? 'dark' : settings.theme === 'dark' ? 'light' : 'system';
+      updateSettings({ theme: next });
   };
 
   const increaseFontSize = () => updateSettings({ fontSize: Math.min(settings.fontSize + 2, 30) });
@@ -673,7 +755,15 @@ export default function ReaderScreen({ route, navigation }: any) {
       return `${timerDuration}m`;
   };
 
-  const isDark = settings.theme === 'dark';
+  useEffect(() => {
+    if (settings.keepScreenAwake) {
+      activateKeepAwakeAsync();
+      return () => { deactivateKeepAwake(); };
+    }
+  }, [settings.keepScreenAwake]);
+
+  const colorScheme = useColorScheme();
+  const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
   const bgColor = isDark ? '#121212' : '#ffffff';
   const textColor = isDark ? '#e0e0e0' : '#333333';
   const window = Dimensions.get('window');
@@ -694,9 +784,15 @@ export default function ReaderScreen({ route, navigation }: any) {
   const sortedVoices = useMemo(() => {
       const zh: typeof voices = [];
       const other: typeof voices = [];
+      const iosZhAllowlist = ['tingting', 'meijia'];
       for (const v of voices) {
-        if ((v.language || '').toLowerCase().startsWith('zh')) zh.push(v);
-        else other.push(v);
+        if ((v.language || '').toLowerCase().startsWith('zh')) {
+          if (Platform.OS === 'ios') {
+            const id = (v.identifier || '').toLowerCase();
+            if (!iosZhAllowlist.some((n) => id.includes(n))) continue;
+          }
+          zh.push(v);
+        } else other.push(v);
       }
       const sortByLabel = (a: (typeof voices)[number], b: (typeof voices)[number]) => {
         const la = `${a.name || ''} ${a.language || ''} ${a.identifier}`.toLowerCase();
@@ -795,7 +891,15 @@ export default function ReaderScreen({ route, navigation }: any) {
         : [{ text: displayContent, highlighted: false }];
 
     return (
-      <View style={[styles.chapterContainer, isHorizontal && { width: windowWidth, paddingHorizontal: 20, paddingTop: insets.top + 40, marginTop: 0 }]}>
+      <View
+        style={[styles.chapterContainer, isHorizontal && { width: windowWidth, paddingHorizontal: 20, paddingTop: insets.top + 40, marginTop: 0 }]}
+        onLayout={(e) => {
+          chapterLayoutsRef.current[item.chapter.id] = {
+            y: e.nativeEvent.layout.y,
+            height: e.nativeEvent.layout.height,
+          };
+        }}
+      >
         <Text style={[styles.chapterTitle, { color: textColor }]}>{item.chapter.title}</Text>
         {isSpeaking ? (
           <Text
@@ -940,6 +1044,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const handleScrollBeginDrag = () => {
+    lastUserScrollRef.current = Date.now();
     if (!settings.autoFlip || settings.flipMode !== 'scroll') {
       return;
     }
@@ -949,10 +1054,12 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const handleScrollEndDrag = () => {
+    const visibleItem = viewableItemsRef.current[0]?.item as PageData | ChapterData | undefined;
+    if (visibleItem) saveProgress(visibleItem.chapter.id);
+
     if (!settings.autoFlip || settings.flipMode !== 'scroll') {
       return;
     }
-
     userDraggingRef.current = false;
   };
 
@@ -965,10 +1072,12 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const handleMomentumScrollEnd = () => {
+    const visibleItem = viewableItemsRef.current[0]?.item as PageData | ChapterData | undefined;
+    if (visibleItem) saveProgress(visibleItem.chapter.id);
+
     if (!settings.autoFlip || settings.flipMode !== 'scroll') {
       return;
     }
-
     isMomentumScrollingRef.current = false;
     userDraggingRef.current = false;
     resumeAutoFlipIfNeeded();

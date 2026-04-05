@@ -1,0 +1,89 @@
+<svg width="1284" height="2778" viewBox="0 0 1284 2778" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="2778" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4A6B5B"/>
+      <stop offset="0.45" stop-color="#2E4E3E"/>
+      <stop offset="1" stop-color="#1A3028"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0.72" cy="0.28" r="0.55" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#CFE4D5" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#CFE4D5" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.25" cy="0.72" r="0.38" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#A9D1B6" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#A9D1B6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paper" x1="220" y1="150" x2="460" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF7EA"/>
+      <stop offset="1" stop-color="#F3E5CF"/>
+    </linearGradient>
+    <linearGradient id="bubble" x1="332" y1="110" x2="440" y2="204" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF0C5"/>
+      <stop offset="1" stop-color="#F9C977"/>
+    </linearGradient>
+    <filter id="iconshadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="14" stdDeviation="22" flood-color="#0D1F18" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1284" height="2778" fill="url(#bg)"/>
+  <rect width="1284" height="2778" fill="url(#glow1)"/>
+  <rect width="1284" height="2778" fill="url(#glow2)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="180" cy="680" r="160" fill="#A9D1B6" fill-opacity="0.05"/>
+  <circle cx="1120" cy="360" r="120" fill="#DCE9D7" fill-opacity="0.06"/>
+  <circle cx="120" cy="2300" r="220" fill="#A9D1B6" fill-opacity="0.04"/>
+  <circle cx="1160" cy="2480" r="170" fill="#8BAF95" fill-opacity="0.04"/>
+  <circle cx="640" cy="2778" r="400" fill="#2A4538" fill-opacity="0.5"/>
+
+  <!-- Icon: scale 1.4, centered at (642, 1080) -->
+  <!-- original visual center ~(311, 235) after translate(-60,-20) -->
+  <!-- outer translate: (642 - 311*1.4, 1080 - 235*1.4) = (206.6, 751) -->
+  <g transform="translate(206, 751) scale(1.4)">
+    <g transform="translate(-60, -20)" filter="url(#iconshadow)">
+      <!-- Book page -->
+      <path d="M220 150C270 130 330 134 375 165C420 196 450 245 460 290C466 320 462 355 446 384C438 397 422 400 408 393L260 318C246 312 237 298 236 283C232 235 240 192 220 150Z" fill="url(#paper)"/>
+      <path d="M240 185C275 168 320 170 352 192C384 214 405 248 413 280" stroke="#D3B892" stroke-width="7" stroke-linecap="round"/>
+      <path d="M255 235C286 221 324 225 352 244" stroke="#D3B892" stroke-width="6" stroke-linecap="round"/>
+      <path d="M262 282C294 268 330 274 362 292" stroke="#D3B892" stroke-width="6" stroke-linecap="round"/>
+      <path d="M268 328C298 316 332 322 364 340" stroke="#D3B892" stroke-width="6" stroke-linecap="round"/>
+      <!-- Speech bubble -->
+      <path d="M385 110C415 110 440 130 440 155C440 164 437 173 432 180L436 204L414 192C406 197 397 200 385 200C356 200 332 180 332 155C332 132 354 110 385 110Z" fill="url(#bubble)"/>
+      <path d="M368 146C378 138 390 134 404 134" stroke="#FFF9EC" stroke-width="9" stroke-linecap="round"/>
+      <path d="M362 170C380 157 400 151 422 151" stroke="#FFF9EC" stroke-width="8" stroke-linecap="round" stroke-opacity="0.9"/>
+      <path d="M356 192C374 178 396 171 420 171" stroke="#FFF9EC" stroke-width="7" stroke-linecap="round" stroke-opacity="0.75"/>
+      <!-- Sound waves -->
+      <path d="M455 210C474 218 490 232 498 252" stroke="#D3E5D8" stroke-width="8" stroke-linecap="round" stroke-opacity="0.7"/>
+      <path d="M472 194C494 204 512 222 522 246" stroke="#D3E5D8" stroke-width="7" stroke-linecap="round" stroke-opacity="0.45"/>
+    </g>
+  </g>
+
+  <!-- App name: 墨声 -->
+  <text x="642" y="1520" text-anchor="middle"
+    font-family="'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif"
+    font-size="112" font-weight="700"
+    fill="#FFF8EE" letter-spacing="16">墨声</text>
+
+  <!-- English name -->
+  <text x="642" y="1616" text-anchor="middle"
+    font-family="'SF Pro Display', 'Helvetica Neue', sans-serif"
+    font-size="40" font-weight="700"
+    fill="#DDE9E3" letter-spacing="10">InkVoice</text>
+
+  <!-- Divider line -->
+  <line x1="542" y1="1668" x2="742" y2="1668" stroke="#5A8070" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Slogan -->
+  <text x="642" y="1742" text-anchor="middle"
+    font-family="'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif"
+    font-size="36" font-weight="700"
+    fill="#BDDEC8" letter-spacing="4">文字有声，触手可及。</text>
+
+  <!-- English slogan -->
+  <text x="642" y="1806" text-anchor="middle"
+    font-family="'SF Pro Display', 'Helvetica Neue', sans-serif"
+    font-size="28" font-weight="700"
+    fill="#96C4A8" letter-spacing="1">Words with a voice, always within reach.</text>
+</svg>

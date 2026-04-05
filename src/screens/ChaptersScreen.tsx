@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, useColorScheme } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
 import StorageService from '../services/StorageService';
 import { STORAGE_KEYS } from '../utils/constants';
 import { Chapter } from '../types';
@@ -12,7 +13,8 @@ export default function ChaptersScreen({ route, navigation }: any) {
   const { settings } = useSettings();
   const { t } = useI18n();
 
-  const isDark = settings.theme === 'dark';
+  const colorScheme = useColorScheme();
+  const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
   const bgColor = isDark ? '#121212' : '#ffffff';
   const textColor = isDark ? '#e0e0e0' : '#333333';
   const borderColor = isDark ? '#333' : '#eee';
@@ -27,8 +29,12 @@ export default function ChaptersScreen({ route, navigation }: any) {
   };
 
   const handleChapterPress = (chapter: Chapter) => {
-    // Navigate to Reader with specific chapter
-    navigation.navigate('Reader', { bookId, chapterId: chapter.id });
+    navigation.dispatch((state: any) => {
+      const routes = state.routes
+        .filter((r: any) => r.name !== 'Chapters')
+        .map((r: any) => r.name === 'Reader' ? { ...r, params: { bookId, chapterId: chapter.id } } : r);
+      return CommonActions.reset({ ...state, routes, index: routes.length - 1 });
+    });
   };
 
   const renderItem = ({ item }: { item: Chapter }) => (

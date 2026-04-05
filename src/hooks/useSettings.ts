@@ -13,12 +13,13 @@ const DEFAULT_SETTINGS: UserSettings = {
   language: 'system',
   speechTimerDefaultMinutes: null,
   fontPreset: 'hei',
-  theme: 'light',
+  theme: 'system',
   flipMode: 'scroll',
   autoFlip: false,
   flipInterval: 30,
   speechRate: 1.0,
   voiceType: 'default',
+  keepScreenAwake: false,
 };
 
 const SETTINGS_CHANGED_EVENT = 'SETTINGS_CHANGED';

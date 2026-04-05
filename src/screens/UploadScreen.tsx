@@ -9,6 +9,7 @@ import {
   Share,
   TextInput,
   ScrollView,
+  useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -32,7 +33,8 @@ export default function UploadScreen({ navigation }: any) {
   const { t, language } = useI18n();
   const insets = useSafeAreaInsets();
 
-  const isDark = settings.theme === 'dark';
+  const colorScheme = useColorScheme();
+  const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
 
   const c = useMemo(
     () => ({

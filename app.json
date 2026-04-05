@@ -7,11 +7,16 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff"
+      },
       "supportsTablet": true,
       "bundleIdentifier": "com.eugenewwj.inkvoice",
       "buildNumber": "1",
@@ -21,7 +26,8 @@
         "NSLocalNetworkUsageDescription": "需要访问局域网，以便从电脑传输书籍文件。",
         "NSBonjourServices": [
           "_http._tcp"
-        ]
+        ],
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
@@ -36,7 +42,9 @@
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
-        "android.permission.ACCESS_WIFI_STATE"
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "web": {

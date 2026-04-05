@@ -40,10 +40,11 @@ export interface UserSettings {
   language: AppLanguage;
   speechTimerDefaultMinutes: number | null;
   fontPreset: 'system' | 'hei' | 'kai' | 'song' | 'mashan';
-  theme: 'light' | 'dark';
+  theme: 'system' | 'light' | 'dark';
   flipMode: 'scroll' | 'horizontal';
   autoFlip: boolean;
   flipInterval: number;
   speechRate: number;
   voiceType: string;
+  keepScreenAwake: boolean;
 }

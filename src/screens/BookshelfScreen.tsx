@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
+import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, Image, ActivityIndicator, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -38,7 +38,8 @@ export default function BookshelfScreen({ navigation }: any) {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
 
-  const isDark = settings.theme === 'dark';
+  const colorScheme = useColorScheme();
+  const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
   const screenWidth = Dimensions.get('window').width;
   const horizontalPadding = 18;
   const columnGap = 16;

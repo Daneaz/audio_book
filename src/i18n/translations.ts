@@ -14,7 +14,10 @@ export type TranslationKey =
   | 'settings.languageSystem'
   | 'settings.languageChinese'
   | 'settings.languageEnglish'
-  | 'settings.darkMode'
+  | 'settings.themeMode'
+  | 'settings.themeSystem'
+  | 'settings.themeDark'
+  | 'settings.themeLight'
   | 'settings.fontSize'
   | 'settings.lineSpacing'
   | 'settings.fontFamily'
@@ -96,6 +99,7 @@ export type TranslationKey =
   | 'settings.fontKaiDesc'
   | 'settings.fontSongDesc'
   | 'settings.fontMashanDesc'
+  | 'settings.keepScreenAwake'
   | 'voice.cantonese'
   | 'voice.chinese'
   | 'voice.english';
@@ -119,7 +123,10 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.languageSystem': '跟随系统',
     'settings.languageChinese': '中文',
     'settings.languageEnglish': 'English',
-    'settings.darkMode': '深色模式',
+    'settings.themeMode': '主题模式',
+    'settings.themeSystem': '跟随系统',
+    'settings.themeDark': '深色',
+    'settings.themeLight': '浅色',
     'settings.fontSize': '字体',
     'settings.lineSpacing': '行间距',
     'settings.fontFamily': '阅读字体',
@@ -201,6 +208,7 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.fontKaiDesc': '更有纸书感，适合文学内容',
     'settings.fontSongDesc': '更接近传统书籍排版',
     'settings.fontMashanDesc': '更有手写感，适合标题和风格化阅读',
+    'settings.keepScreenAwake': '阅读时屏幕常亮',
     'voice.cantonese': '粤语',
     'voice.chinese': '中文',
     'voice.english': '英文',
@@ -221,7 +229,10 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.languageSystem': 'Follow System',
     'settings.languageChinese': 'Chinese',
     'settings.languageEnglish': 'English',
-    'settings.darkMode': 'Dark Mode',
+    'settings.themeMode': 'Theme',
+    'settings.themeSystem': 'System',
+    'settings.themeDark': 'Dark',
+    'settings.themeLight': 'Light',
     'settings.fontSize': 'Font',
     'settings.lineSpacing': 'Line Height',
     'settings.fontFamily': 'Reading Font',
@@ -303,6 +314,7 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.fontKaiDesc': 'A paper-book feel for literary content',
     'settings.fontSongDesc': 'Closer to traditional book typography',
     'settings.fontMashanDesc': 'Handwritten style for expressive reading',
+    'settings.keepScreenAwake': 'Keep Screen On While Reading',
     'voice.cantonese': 'Cantonese',
     'voice.chinese': 'Chinese',
     'voice.english': 'English',

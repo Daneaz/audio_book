@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
 import useSettings from '../hooks/useSettings';
 import * as Speech from 'expo-speech';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
@@ -136,7 +136,8 @@ export default function SettingsScreen() {
   );
   const selectedFontFamily = getFontFamilyForPreset(settings.fontPreset);
 
-  const isDark = settings.theme === 'dark';
+  const colorScheme = useColorScheme();
+  const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
   const bgColor = isDark ? '#121212' : '#f5f5f5';
   const sectionBgColor = isDark ? '#1E1E1E' : '#fff';
   const textColor = isDark ? '#e0e0e0' : '#333';
@@ -181,11 +182,33 @@ export default function SettingsScreen() {
         </View>
         
         <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.darkMode')}</Text>
-          <Switch
-            value={settings.theme === 'dark'}
-            onValueChange={(val) => updateSettings({ theme: val ? 'dark' : 'light' })}
-          />
+          <Text style={[styles.label, { color: textColor }]}>{t('settings.themeMode')}</Text>
+          <View style={styles.languageControls}>
+            <TouchableOpacity
+              onPress={() => updateSettings({ theme: 'system' })}
+              style={[styles.languageButton, { borderColor }, settings.theme === 'system' && styles.modeButtonActive]}
+            >
+              <Text style={[styles.languageButtonText, { color: textColor }, settings.theme === 'system' && styles.modeButtonTextActive]}>
+                {t('settings.themeSystem')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => updateSettings({ theme: 'dark' })}
+              style={[styles.languageButton, { borderColor }, settings.theme === 'dark' && styles.modeButtonActive]}
+            >
+              <Text style={[styles.languageButtonText, { color: textColor }, settings.theme === 'dark' && styles.modeButtonTextActive]}>
+                {t('settings.themeDark')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => updateSettings({ theme: 'light' })}
+              style={[styles.languageButton, { borderColor }, settings.theme === 'light' && styles.modeButtonActive]}
+            >
+              <Text style={[styles.languageButtonText, { color: textColor }, settings.theme === 'light' && styles.modeButtonTextActive]}>
+                {t('settings.themeLight')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.row}>
@@ -288,6 +311,13 @@ export default function SettingsScreen() {
 
       <View style={[styles.section, { backgroundColor: sectionBgColor }]}>
         <Text style={styles.sectionTitle}>{t('settings.readingMode')}</Text>
+        <View style={styles.row}>
+          <Text style={[styles.label, { color: textColor }]}>{t('settings.keepScreenAwake')}</Text>
+          <Switch
+            value={settings.keepScreenAwake}
+            onValueChange={(val) => updateSettings({ keepScreenAwake: val })}
+          />
+        </View>
         <View style={styles.row}>
             <Text style={[styles.label, { color: textColor }]}>{t('settings.flipMode')}</Text>
             <View style={styles.optionControls}>
