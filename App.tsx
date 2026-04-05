@@ -4,8 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
+import * as SplashScreen from 'expo-splash-screen';
 import { Audio } from 'expo-av';
 import AppNavigator from './src/navigation/AppNavigator';
+
+SplashScreen.preventAutoHideAsync();
+const splashStartTime = Date.now();
+const MIN_SPLASH_MS = 1000;
 
 Audio.setAudioModeAsync({
   playsInSilentModeIOS: true,
@@ -42,7 +47,12 @@ export default function App() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      return;
+      const elapsed = Date.now() - splashStartTime;
+      const delay = Math.max(0, MIN_SPLASH_MS - elapsed);
+      const timer = setTimeout(() => {
+        SplashScreen.hideAsync();
+      }, delay);
+      return () => clearTimeout(timer);
     }
 
     const timer = setTimeout(() => {

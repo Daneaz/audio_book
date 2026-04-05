@@ -31,6 +31,7 @@
     "expo-modules-core": "~3.0.29",
     "expo-network": "^55.0.11",
     "expo-speech": "~14.0.8",
+    "expo-splash-screen": "^55.0.15",
     "expo-status-bar": "~3.0.9",
     "expo-system-ui": "~6.0.9",
     "expo-updates": "~29.0.16",
