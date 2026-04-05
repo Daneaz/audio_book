@@ -19,7 +19,9 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocalNetworkUsageDescription": "需要访问局域网，以便从电脑传输书籍文件。",
-        "NSBonjourServices": ["_http._tcp"]
+        "NSBonjourServices": [
+          "_http._tcp"
+        ]
       }
     },
     "android": {
@@ -41,7 +43,6 @@
       "favicon": "./assets/icon.png"
     },
     "updates": {
-      "url": "https://u.expo.dev/0d495e69-79c5-4326-949a-07c944c75d28",
       "fallbackToCacheTimeout": 0
     },
     "runtimeVersion": {
@@ -49,8 +50,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "0d495e69-79c5-4326-949a-07c944c75d28"
+        "projectId": "e5dde792-2f6d-43f2-a4b7-64ca9fee5e87"
       }
-    }
+    },
+    "owner": "eugenewwj"
   }
 }

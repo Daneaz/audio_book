@@ -25,7 +25,7 @@
     "prod": {
       "ios": {
         "appleId": "eugenewwj@gmail.com",
-        "ascAppId": "6761641396"
+        "ascAppId": "6761668590"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",
