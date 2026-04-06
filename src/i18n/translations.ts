@@ -105,7 +105,12 @@ export type TranslationKey =
   | 'settings.keepScreenAwake'
   | 'voice.cantonese'
   | 'voice.chinese'
-  | 'voice.english';
+  | 'voice.english'
+  | 'settings.about'
+  | 'settings.appVersion'
+  | 'settings.otaVersion'
+  | 'settings.otaBuiltin'
+  | 'settings.otaChannel';
 
 type TranslationMap = Record<TranslationKey, string>;
 
@@ -218,6 +223,11 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'voice.cantonese': '粤语',
     'voice.chinese': '中文',
     'voice.english': '英文',
+    'settings.about': '关于',
+    'settings.appVersion': '版本',
+    'settings.otaVersion': 'OTA 更新',
+    'settings.otaBuiltin': '内置版本',
+    'settings.otaChannel': '渠道',
   },
   en: {
     'common.loading': 'Loading...',
@@ -327,5 +337,10 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'voice.cantonese': 'Cantonese',
     'voice.chinese': 'Chinese',
     'voice.english': 'English',
+    'settings.about': 'About',
+    'settings.appVersion': 'Version',
+    'settings.otaVersion': 'OTA Update',
+    'settings.otaBuiltin': 'Built-in',
+    'settings.otaChannel': 'Channel',
   },
 };

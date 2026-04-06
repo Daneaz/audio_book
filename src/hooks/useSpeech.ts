@@ -1,20 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { Platform } from 'react-native';
 import * as Speech from 'expo-speech';
 
 export default function useSpeech() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  useEffect(() => {
-      // Check status periodically or use listeners if available?
-      // Expo Speech doesn't have listeners for start/finish easily on all platforms in managed workflow?
-      // Actually it does: Speech.isSpeakingAsync()
-      // But we can track state locally.
-  }, []);
-
-  const speak = useCallback((text: string, options: Speech.SpeechOptions = {}) => {
+  const speak = useCallback(async (text: string, options: Speech.SpeechOptions = {}) => {
     Speech.speak(text, {
       ...options,
+      ...(Platform.OS === 'ios' && { useApplicationAudioSession: false }),
       onStart: () => setIsSpeaking(true),
       onDone: () => {
           setIsSpeaking(false);
@@ -41,7 +36,6 @@ export default function useSpeech() {
   }, []);
 
   const pause = useCallback(async () => {
-      // Expo Speech pause/resume support varies. Android/iOS support pause.
       await Speech.pause();
       setIsPaused(true);
   }, []);

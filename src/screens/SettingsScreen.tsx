@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
 import useSettings from '../hooks/useSettings';
 import * as Speech from 'expo-speech';
+import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import useI18n from '../i18n';
 
@@ -79,6 +81,7 @@ export default function SettingsScreen() {
       language: speechLanguage,
       rate: settings.speechRate,
       voice: voiceId === 'default' ? undefined : voiceId,
+      useApplicationAudioSession: false,
       onDone: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
       onStopped: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
       onError: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
@@ -457,6 +460,24 @@ export default function SettingsScreen() {
             )}
           </View>
         )}
+      </View>
+
+      <View style={[styles.section, { backgroundColor: sectionBgColor }]}>
+        <Text style={styles.sectionTitle}>{t('settings.about')}</Text>
+        <View style={styles.row}>
+          <Text style={[styles.label, { color: textColor }]}>{t('settings.appVersion')}</Text>
+          <Text style={[styles.valueText, { color: subTextColor }]}>{Constants.expoConfig?.version ?? '—'}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={[styles.label, { color: textColor }]}>{t('settings.otaChannel')}</Text>
+          <Text style={[styles.valueText, { color: subTextColor }]}>{Updates.channel ?? '—'}</Text>
+        </View>
+        <View style={[styles.row, { marginBottom: 0 }]}>
+          <Text style={[styles.label, { color: textColor }]}>{t('settings.otaVersion')}</Text>
+          <Text style={[styles.valueText, { color: subTextColor }]} numberOfLines={1}>
+            {Updates.updateId ? Updates.updateId.slice(0, 8) : t('settings.otaBuiltin')}
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );

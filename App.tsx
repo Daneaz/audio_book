@@ -5,18 +5,11 @@ import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
 import * as SplashScreen from 'expo-splash-screen';
-import { Audio } from 'expo-av';
 import AppNavigator from './src/navigation/AppNavigator';
 
 SplashScreen.preventAutoHideAsync();
 const splashStartTime = Date.now();
 const MIN_SPLASH_MS = 1000;
-
-Audio.setAudioModeAsync({
-  playsInSilentModeIOS: true,
-  staysActiveInBackground: true,
-  shouldDuckAndroid: false,
-});
 
 async function checkForUpdate() {
   try {
@@ -25,8 +18,8 @@ async function checkForUpdate() {
       await Updates.fetchUpdateAsync();
       await Updates.reloadAsync();
     }
-  } catch {
-    // silently ignore update errors in development or network failures
+  } catch (e) {
+    console.error('[OTA] checkForUpdate error:', e);
   }
 }
 

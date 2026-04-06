@@ -25,9 +25,13 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocalNetworkUsageDescription": "需要访问局域网，以便从电脑传输书籍文件。",
         "NSBonjourServices": [
+          "_http._tcp",
           "_http._tcp"
         ],
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio",
+          "audio"
+        ]
       }
     },
     "android": {
@@ -44,6 +48,11 @@
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.ACCESS_WIFI_STATE",
         "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
@@ -51,7 +60,8 @@
       "favicon": "./assets/icon.png"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/e5dde792-2f6d-43f2-a4b7-64ca9fee5e87"
     },
     "runtimeVersion": {
       "policy": "appVersion"
