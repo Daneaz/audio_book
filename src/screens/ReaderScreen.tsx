@@ -1395,8 +1395,8 @@ export default function ReaderScreen({ route, navigation }: any) {
                     </TouchableOpacity>
                     
                     <TouchableOpacity onPress={toggleSpeech} style={styles.controlButton}>
-                        <Ionicons name={isSpeaking ? "headset" : "headset-outline"} size={28} color={textColor} />
-                        <Text style={{ fontSize: 12, color: textColor }}>{isSpeaking ? t('reader.pause') : t('reader.read')}</Text>
+                        <Ionicons name={isSpeaking ? "stop-circle" : "headset-outline"} size={28} color={isSpeaking ? 'red' : textColor} />
+                        <Text style={{ fontSize: 12, color: isSpeaking ? 'red' : textColor }}>{isSpeaking ? t('reader.pause') : t('reader.read')}</Text>
                     </TouchableOpacity>
                 </View>
               )}
