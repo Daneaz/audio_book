@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View, useColorScheme } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +17,8 @@ const Stack = createStackNavigator();
 export default function AppNavigator() {
   const { settings } = useSettings();
   const { t } = getTranslator(settings);
-  const isDark = settings.theme === 'dark';
+  const colorScheme = useColorScheme();
+  const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
   const [ready, setReady] = useState(false);
   const [initialState, setInitialState] = useState<object | undefined>(undefined);
 
