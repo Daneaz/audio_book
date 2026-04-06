@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, Image, ActivityIndicator, useColorScheme } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -138,6 +140,47 @@ export default function BookshelfScreen({ navigation }: any) {
     }
   };
 
+  const handlePickLocalCover = async () => {
+    if (!activeBook) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.9,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setModalSaving(true);
+    try {
+      await BookService.setCoverFromLocalUri(activeBook.id, result.assets[0].uri);
+      await loadBooks();
+      closeModal();
+    } catch {
+      setModalSaving(false);
+      Alert.alert(t('bookshelf.coverError'));
+    }
+  };
+
+  const handlePasteClipboardCover = async () => {
+    if (!activeBook) return;
+    const imageUri = await Clipboard.getImageAsync({ format: 'png' });
+    if (!imageUri?.data) {
+      Alert.alert(t('bookshelf.coverClipboardEmpty'));
+      return;
+    }
+    setModalSaving(true);
+    try {
+      // data is a base64 string; write it as a temp file then copy via BookService
+      const { documentDirectory, writeAsStringAsync, EncodingType } = await import('expo-file-system/legacy');
+      const tmpPath = `${documentDirectory}clipboard_cover_tmp.png`;
+      await writeAsStringAsync(tmpPath, imageUri.data, { encoding: EncodingType.Base64 });
+      await BookService.setCoverFromLocalUri(activeBook.id, tmpPath);
+      await loadBooks();
+      closeModal();
+    } catch {
+      setModalSaving(false);
+      Alert.alert(t('bookshelf.coverError'));
+    }
+  };
+
   const renderHeader = () => (
     <View style={styles.headerBlock}>
       <Text style={[styles.subtitle, { color: colors.subText }]}>
@@ -265,17 +308,35 @@ export default function BookshelfScreen({ navigation }: any) {
               returnKeyType="done"
               onSubmitEditing={handleModalConfirm}
             />
+            {modalMode === 'cover' && (
+              <View style={styles.coverAltRow}>
+                <TouchableOpacity
+                  style={[styles.coverAltBtn, { borderColor: colors.emptyBorder }]}
+                  onPress={handlePickLocalCover}
+                  disabled={modalSaving}
+                >
+                  <Text style={[styles.coverAltBtnText, { color: colors.fab }]}>{t('bookshelf.coverPickLocal')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.coverAltBtn, { borderColor: colors.emptyBorder }]}
+                  onPress={handlePasteClipboardCover}
+                  disabled={modalSaving}
+                >
+                  <Text style={[styles.coverAltBtnText, { color: colors.fab }]}>{t('bookshelf.coverPasteClipboard')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             <View style={styles.modalActions}>
               <TouchableOpacity onPress={closeModal} style={styles.modalBtn}>
                 <Text style={[styles.modalBtnText, { color: colors.subText }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleModalConfirm} style={styles.modalBtn} disabled={modalSaving}>
-                {modalSaving ? (
-                  <ActivityIndicator size="small" color={colors.fab} />
-                ) : (
-                  <Text style={[styles.modalBtnText, { color: colors.fab, fontWeight: '700' }]}>{t('common.ok')}</Text>
-                )}
-              </TouchableOpacity>
+              {modalSaving ? (
+                <ActivityIndicator size="small" color={colors.fab} style={styles.modalBtn} />
+              ) : (
+                <TouchableOpacity onPress={handleModalConfirm} style={styles.modalBtn} disabled={modalMode === 'cover' && !inputText.trim()}>
+                  <Text style={[styles.modalBtnText, { color: modalMode === 'cover' && !inputText.trim() ? colors.subText : colors.fab, fontWeight: '700' }]}>{t('common.ok')}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -523,5 +584,21 @@ const styles = StyleSheet.create({
   },
   modalBtnText: {
     fontSize: 15,
+  },
+  coverAltRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  coverAltBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  coverAltBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
