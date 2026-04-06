@@ -713,7 +713,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, []);
 
   const toggleTheme = () => {
-      const next = settings.theme === 'system' ? 'dark' : settings.theme === 'dark' ? 'light' : 'system';
+      const next = settings.theme === 'dark' ? 'light' : 'dark';
       updateSettings({ theme: next });
   };
 
