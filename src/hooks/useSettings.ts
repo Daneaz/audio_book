@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   flipInterval: 30,
   speechRate: 1.0,
   voiceType: 'default',
-  keepScreenAwake: false,
+  keepScreenAwake: true,
 };
 
 const SETTINGS_CHANGED_EVENT = 'SETTINGS_CHANGED';

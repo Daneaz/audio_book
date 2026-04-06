@@ -115,6 +115,26 @@ class BookService {
       await this.updateBook(updated);
       return updated;
   }
+
+  async setCoverFromLocalUri(bookId: string, sourceUri: string): Promise<Book> {
+      const books = await this.getBooks();
+      const book = books.find(b => b.id === bookId);
+      if (!book) throw new Error('Book not found');
+
+      const rawExt = sourceUri.split('?')[0].split('.').pop() || 'jpg';
+      const ext = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(rawExt.toLowerCase()) ? rawExt.toLowerCase() : 'jpg';
+      const localName = `cover_${bookId}.${ext}`;
+      const localPath = `${documentDirectory}${localName}`;
+
+      if (book.coverImageUri?.startsWith('file://') && book.coverImageUri !== localPath) {
+          try { await deleteAsync(book.coverImageUri, { idempotent: true }); } catch {}
+      }
+
+      await copyAsync({ from: sourceUri, to: localPath });
+      const updated = { ...book, coverImageUri: localPath };
+      await this.updateBook(updated);
+      return updated;
+  }
 }
 
 export default new BookService();

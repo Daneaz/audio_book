@@ -48,6 +48,9 @@ export type TranslationKey =
   | 'bookshelf.setCover'
   | 'bookshelf.coverTitle'
   | 'bookshelf.coverPrompt'
+  | 'bookshelf.coverPickLocal'
+  | 'bookshelf.coverPasteClipboard'
+  | 'bookshelf.coverClipboardEmpty'
   | 'bookshelf.coverError'
   | 'bookshelf.moreOptions'
   | 'upload.title'
@@ -157,6 +160,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.setCover': '设置封面',
     'bookshelf.coverTitle': '设置封面',
     'bookshelf.coverPrompt': '输入图片 URL',
+    'bookshelf.coverPickLocal': '从相册选择',
+    'bookshelf.coverPasteClipboard': '从剪贴板粘贴',
+    'bookshelf.coverClipboardEmpty': '剪贴板中没有图片',
     'bookshelf.coverError': '封面加载失败，请检查链接',
     'bookshelf.moreOptions': '更多操作',
     'upload.title': '导入书籍',
@@ -263,6 +269,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.setCover': 'Set Cover',
     'bookshelf.coverTitle': 'Set Cover',
     'bookshelf.coverPrompt': 'Enter image URL',
+    'bookshelf.coverPickLocal': 'Choose from Photos',
+    'bookshelf.coverPasteClipboard': 'Paste from Clipboard',
+    'bookshelf.coverClipboardEmpty': 'No image found in clipboard',
     'bookshelf.coverError': 'Failed to load cover, please check the URL',
     'bookshelf.moreOptions': 'More Options',
     'upload.title': 'Import Books',
