@@ -627,6 +627,18 @@ export default function ReaderScreen({ route, navigation }: any) {
                const sIdx = chData.sentences.findIndex(s => s.end > rawOffset);
                startSentenceIndex = sIdx !== -1 ? sIdx : 0;
              }
+           } else {
+             // Scroll mode: estimate character offset from scroll position
+             const chLayout = chapterLayoutsRef.current[startChapterId];
+             const chData = chaptersData.find(c => c.chapter.id === startChapterId);
+             if (chLayout && chData && chLayout.height > 0) {
+               const currentOffset = scrollPos.value;
+               const relativeY = Math.max(0, currentOffset - chLayout.y);
+               const ratio = Math.min(1, relativeY / chLayout.height);
+               const estimatedCharOffset = Math.floor(ratio * chData.content.length);
+               const sIdx = chData.sentences.findIndex(s => s.end > estimatedCharOffset);
+               startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+             }
            }
         }
       }
