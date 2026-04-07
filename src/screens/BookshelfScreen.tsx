@@ -213,7 +213,7 @@ export default function BookshelfScreen({ navigation }: any) {
             {item.coverImageUri ? (
               <Image
                 source={{ uri: item.coverImageUri }}
-                style={[styles.cover, { width: coverWidth, height: coverHeight }]}
+                style={{ width: coverWidth, height: coverHeight, borderRadius: 14, overflow: 'hidden' }}
                 resizeMode="cover"
               />
             ) : (
