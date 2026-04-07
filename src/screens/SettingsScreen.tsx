@@ -7,21 +7,18 @@ import Constants from 'expo-constants';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import useI18n from '../i18n';
 
-const EXCLUDED_VOICE_NAMES = new Set([
-  'Zarvox',
-  'Wobble',
-  'Whisper',
-  'Trinoids',
-  'Organ',
-  'Jester',
-  'Good News',
-  'Cellos',
-  'Bubbles',
-  'Boing',
-  'Bells',
-  'Bahh',
-  'Bad News',
-  'Albert',
+const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
+  'Daniel',
+  'Karen',
+  'Moira',
+  'Rishi',
+  'Samantha',
+  'Tessa',
+]);
+
+const ALLOWED_CHINESE_VOICE_NAMES = new Set([
+  'Tingting',
+  'Meijia',
 ]);
 
 export default function SettingsScreen() {
@@ -51,9 +48,9 @@ export default function SettingsScreen() {
           .filter((v) => {
             if (!v.identifier) return false;
             const language = (v.language || '').toLowerCase();
-            if (!(language.startsWith('zh') || language.startsWith('en'))) return false;
-            if (v.name && EXCLUDED_VOICE_NAMES.has(v.name)) return false;
-            return true;
+            if (language.startsWith('zh')) return v.name ? ALLOWED_CHINESE_VOICE_NAMES.has(v.name) : false;
+            if (language.startsWith('en')) return v.name ? ALLOWED_ENGLISH_VOICE_NAMES.has(v.name) : false;
+            return false;
           });
 
         setVoices(normalized);
