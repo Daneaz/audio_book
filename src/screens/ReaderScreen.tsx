@@ -28,6 +28,7 @@ interface PageData {
   content: string;
   pageNumber: number;
   pageCount: number;
+  charStart: number; // offset in normalized chapter content
 }
 
 interface HighlightFragment {
@@ -602,11 +603,31 @@ export default function ReaderScreen({ route, navigation }: any) {
           if (sIdx !== -1) startSentenceIndex = sIdx;
         }
       } else {
-        // 2. From visible area (Topmost visible chapter)
+        // 2. From visible area (Topmost visible item)
         if (viewableItemsRef.current.length > 0) {
            const firstVisible = viewableItemsRef.current[0].item as PageData | ChapterData;
            startChapterId = firstVisible.chapter.id;
-           startSentenceIndex = 0; // Default to start of chapter
+           if ('charStart' in firstVisible) {
+             // Horizontal page mode: find sentence at page start
+             const chData = chaptersData.find(c => c.chapter.id === startChapterId);
+             if (chData && firstVisible.charStart > 0) {
+               // charStart is offset in normalized content (\r\n -> \n)
+               // Convert to raw content offset
+               const rawContent = chData.content;
+               let rawOffset = 0;
+               let normOffset = 0;
+               while (rawOffset < rawContent.length && normOffset < firstVisible.charStart) {
+                 if (rawContent[rawOffset] === '\r' && rawContent[rawOffset + 1] === '\n') {
+                   rawOffset += 2;
+                 } else {
+                   rawOffset++;
+                 }
+                 normOffset++;
+               }
+               const sIdx = chData.sentences.findIndex(s => s.end > rawOffset);
+               startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+             }
+           }
         }
       }
       
@@ -853,13 +874,19 @@ export default function ReaderScreen({ route, navigation }: any) {
     return chaptersData.flatMap((chapterData) => {
       const displayContent = normalizeDisplayParagraphSpacing(chapterData.content);
       const pages = splitChapterIntoPages(displayContent, estimatedCharsPerPage);
-      return pages.map((pageContent, index) => ({
-        id: `${chapterData.chapter.id}_page_${index + 1}`,
-        chapter: chapterData.chapter,
-        content: pageContent,
-        pageNumber: index + 1,
-        pageCount: pages.length,
-      }));
+      let cumOffset = 0;
+      return pages.map((pageContent, index) => {
+        const charStart = cumOffset;
+        cumOffset += pageContent.length;
+        return {
+          id: `${chapterData.chapter.id}_page_${index + 1}`,
+          chapter: chapterData.chapter,
+          content: pageContent,
+          pageNumber: index + 1,
+          pageCount: pages.length,
+          charStart,
+        };
+      });
     });
   }, [chaptersData, estimatedCharsPerPage, settings.flipMode]);
 
