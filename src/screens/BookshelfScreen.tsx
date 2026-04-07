@@ -162,23 +162,46 @@ export default function BookshelfScreen({ navigation }: any) {
   const handlePasteClipboardCover = async () => {
     if (!activeBook) return;
     const imageUri = await Clipboard.getImageAsync({ format: 'png' });
-    if (!imageUri?.data) {
-      Alert.alert(t('bookshelf.coverClipboardEmpty'));
+    if (imageUri?.data) {
+      setModalSaving(true);
+      try {
+        const { documentDirectory, writeAsStringAsync, EncodingType } = await import('expo-file-system/legacy');
+        const tmpPath = `${documentDirectory}clipboard_cover_tmp.png`;
+        const base64Data = imageUri.data.replace(/^data:image\/\w+;base64,/, '');
+        await writeAsStringAsync(tmpPath, base64Data, { encoding: EncodingType.Base64 });
+        await BookService.setCoverFromLocalUri(activeBook.id, tmpPath);
+        await loadBooks();
+        closeModal();
+      } catch {
+        setModalSaving(false);
+        Alert.alert(t('bookshelf.coverError'));
+      }
       return;
     }
-    setModalSaving(true);
-    try {
-      // data is a base64 string; write it as a temp file then copy via BookService
-      const { documentDirectory, writeAsStringAsync, EncodingType } = await import('expo-file-system/legacy');
-      const tmpPath = `${documentDirectory}clipboard_cover_tmp.png`;
-      await writeAsStringAsync(tmpPath, imageUri.data, { encoding: EncodingType.Base64 });
-      await BookService.setCoverFromLocalUri(activeBook.id, tmpPath);
-      await loadBooks();
-      closeModal();
-    } catch {
-      setModalSaving(false);
-      Alert.alert(t('bookshelf.coverError'));
+
+    const text = await Clipboard.getStringAsync();
+    if (text && /^https?:\/\/.+/i.test(text.trim())) {
+      setModalSaving(true);
+      try {
+        const { documentDirectory, downloadAsync } = await import('expo-file-system/legacy');
+        const tmpPath = `${documentDirectory}clipboard_cover_tmp.png`;
+        const result = await downloadAsync(text, tmpPath);
+        if (result?.uri) {
+          await BookService.setCoverFromLocalUri(activeBook.id, result.uri);
+          await loadBooks();
+          closeModal();
+        } else {
+          setModalSaving(false);
+          Alert.alert(t('bookshelf.coverError'));
+        }
+      } catch {
+        setModalSaving(false);
+        Alert.alert(t('bookshelf.coverError'));
+      }
+      return;
     }
+
+    Alert.alert(t('bookshelf.coverClipboardEmpty'));
   };
 
   const renderHeader = () => (

@@ -74,7 +74,7 @@ class BookService {
                 await deleteAsync(book.filePath, { idempotent: true });
             }
             if (book.coverImageUri?.startsWith('file://')) {
-                await deleteAsync(book.coverImageUri, { idempotent: true });
+                await deleteAsync(book.coverImageUri.split('?')[0], { idempotent: true });
             }
         } catch (e) {
             console.error("Error deleting file", e);
@@ -106,12 +106,12 @@ class BookService {
       const localName = `cover_${bookId}.${ext}`;
       const localPath = `${documentDirectory}${localName}`;
 
-      if (book.coverImageUri?.startsWith('file://') && book.coverImageUri !== localPath) {
-          try { await deleteAsync(book.coverImageUri, { idempotent: true }); } catch {}
+      if (book.coverImageUri?.startsWith('file://') && book.coverImageUri.split('?')[0] !== localPath) {
+          try { await deleteAsync(book.coverImageUri.split('?')[0], { idempotent: true }); } catch {}
       }
 
       await downloadAsync(url, localPath);
-      const updated = { ...book, coverImageUri: localPath };
+      const updated = { ...book, coverImageUri: `${localPath}?t=${Date.now()}` };
       await this.updateBook(updated);
       return updated;
   }
@@ -126,12 +126,12 @@ class BookService {
       const localName = `cover_${bookId}.${ext}`;
       const localPath = `${documentDirectory}${localName}`;
 
-      if (book.coverImageUri?.startsWith('file://') && book.coverImageUri !== localPath) {
-          try { await deleteAsync(book.coverImageUri, { idempotent: true }); } catch {}
+      if (book.coverImageUri?.startsWith('file://') && book.coverImageUri.split('?')[0] !== localPath) {
+          try { await deleteAsync(book.coverImageUri.split('?')[0], { idempotent: true }); } catch {}
       }
 
       await copyAsync({ from: sourceUri, to: localPath });
-      const updated = { ...book, coverImageUri: localPath };
+      const updated = { ...book, coverImageUri: `${localPath}?t=${Date.now()}` };
       await this.updateBook(updated);
       return updated;
   }
