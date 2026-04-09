@@ -236,7 +236,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const viewableItemsRef = useRef<ViewToken[]>([]);
   const loadedChapterIdsRef = useRef<Set<string>>(new Set());
   const lastSavedChapterIdRef = useRef<string | null>(null);
-  const pendingRestoreRef = useRef<{ offset: number; page: number; mode: string } | null>(null);
+  const pendingRestoreRef = useRef<{ offset: number; page: number; mode: string; scrollToItemIndex?: number } | null>(null);
 
 
   useEffect(() => {
@@ -311,10 +311,27 @@ export default function ReaderScreen({ route, navigation }: any) {
     const restore = pendingRestoreRef.current;
     pendingRestoreRef.current = null;
     setTimeout(() => {
-      if (restore.mode === 'horizontal' && restore.page > 0) {
-        flatListRef.current?.scrollToOffset({ offset: restore.page * window.width, animated: false });
+      if (restore.scrollToItemIndex !== undefined) {
+        if (restore.mode === 'horizontal') {
+          const targetChapter = chaptersData[restore.scrollToItemIndex];
+          if (targetChapter) {
+            const pageIdx = horizontalPages.findIndex(p => p.chapter.id === targetChapter.chapter.id);
+            if (pageIdx !== -1) {
+              const offset = pageIdx * window.width;
+              flatListRef.current?.scrollToOffset({ offset, animated: false });
+              scrollPos.value = offset;
+            }
+          }
+        } else {
+          flatListRef.current?.scrollToIndex({ index: restore.scrollToItemIndex, animated: false });
+        }
+      } else if (restore.mode === 'horizontal' && restore.page > 0) {
+        const offset = restore.page * window.width;
+        flatListRef.current?.scrollToOffset({ offset, animated: false });
+        scrollPos.value = offset;
       } else if (restore.mode === 'scroll' && restore.offset > 0) {
         flatListRef.current?.scrollToOffset({ offset: restore.offset, animated: false });
+        scrollPos.value = restore.offset;
       }
     }, 80);
   }, [loading]);
@@ -445,9 +462,11 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       // Determine start chapter index
       let startIdx = 0;
+      let isChapterJump = false;
       if (chapterId) {
           const idx = chaptersList.findIndex((c: Chapter) => c.id === chapterId);
           if (idx !== -1) startIdx = idx;
+          isChapterJump = true;
       } else {
           // Load progress
           const progressKey = `${STORAGE_KEYS.READING_PROGRESS_PREFIX}${bookId}`;
@@ -464,9 +483,26 @@ export default function ReaderScreen({ route, navigation }: any) {
               }
           }
       }
-      
-      // Load current chapter and next chapter initially
-      await loadChaptersBatch(chaptersList, startIdx, 2, recentlyReadBook, true);
+
+      if (isChapterJump) {
+        setLoading(true);
+        scrollPos.value = 0;
+        viewableItemsRef.current = [];
+      }
+      chapterLayoutsRef.current = {};
+      if (isChapterJump && startIdx > 0) {
+        // Load previous chapter (for backward navigation) + target + next
+        await loadChaptersBatch(chaptersList, startIdx - 1, 3, recentlyReadBook, true);
+        pendingRestoreRef.current = {
+          offset: 0,
+          page: 0,
+          mode: settings.flipMode,
+          scrollToItemIndex: 1,
+        };
+      } else {
+        // Load current chapter and next chapter
+        await loadChaptersBatch(chaptersList, startIdx, 2, recentlyReadBook, true);
+      }
       
       setLoading(false);
     } catch (e) {
@@ -603,20 +639,19 @@ export default function ReaderScreen({ route, navigation }: any) {
           if (sIdx !== -1) startSentenceIndex = sIdx;
         }
       } else {
-        // 2. From visible area (Topmost visible item)
+        // 2. From current page start
         if (viewableItemsRef.current.length > 0) {
            const firstVisible = viewableItemsRef.current[0].item as PageData | ChapterData;
            startChapterId = firstVisible.chapter.id;
            if ('charStart' in firstVisible) {
-             // Horizontal page mode: find sentence at page start
+             // Horizontal page mode: find first sentence on this page
              const chData = chaptersData.find(c => c.chapter.id === startChapterId);
-             if (chData && firstVisible.charStart > 0) {
-               // charStart is offset in normalized content (\r\n -> \n)
-               // Convert to raw content offset
+             if (chData) {
+               const pageStartNorm = firstVisible.charStart;
                const rawContent = chData.content;
                let rawOffset = 0;
                let normOffset = 0;
-               while (rawOffset < rawContent.length && normOffset < firstVisible.charStart) {
+               while (rawOffset < rawContent.length && normOffset < pageStartNorm) {
                  if (rawContent[rawOffset] === '\r' && rawContent[rawOffset + 1] === '\n') {
                    rawOffset += 2;
                  } else {
@@ -628,16 +663,19 @@ export default function ReaderScreen({ route, navigation }: any) {
                startSentenceIndex = sIdx !== -1 ? sIdx : 0;
              }
            } else {
-             // Scroll mode: estimate character offset from scroll position
-             const chLayout = chapterLayoutsRef.current[startChapterId];
-             const chData = chaptersData.find(c => c.chapter.id === startChapterId);
-             if (chLayout && chData && chLayout.height > 0) {
-               const currentOffset = scrollPos.value;
-               const relativeY = Math.max(0, currentOffset - chLayout.y);
-               const ratio = Math.min(1, relativeY / chLayout.height);
-               const estimatedCharOffset = Math.floor(ratio * chData.content.length);
-               const sIdx = chData.sentences.findIndex(s => s.end > estimatedCharOffset);
-               startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+             // Scroll mode: find first sentence at screen top
+             const topY = scrollPos.value;
+             for (const cd of chaptersData) {
+               const cl = chapterLayoutsRef.current[cd.chapter.id];
+               if (!cl) continue;
+               if (topY < cl.y + cl.height) {
+                 startChapterId = cd.chapter.id;
+                 const ratio = Math.max(0, Math.min(1, (topY - cl.y) / cl.height));
+                 const estimatedCharOffset = Math.floor(ratio * cd.content.length);
+                 const sIdx = cd.sentences.findIndex(s => s.end > estimatedCharOffset);
+                 startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+                 break;
+               }
              }
            }
         }

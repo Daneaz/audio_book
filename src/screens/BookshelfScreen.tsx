@@ -124,19 +124,15 @@ export default function BookshelfScreen({ navigation }: any) {
   };
 
   const handleModalConfirm = async () => {
-    if (!activeBook || !inputText.trim()) return;
+    if (!activeBook || !inputText.trim() || modalMode !== 'rename') return;
     setModalSaving(true);
     try {
-      if (modalMode === 'rename') {
-        await BookService.updateBook({ ...activeBook, title: inputText.trim() });
-      } else if (modalMode === 'cover') {
-        await BookService.downloadCoverFromUrl(activeBook.id, inputText.trim());
-      }
+      await BookService.updateBook({ ...activeBook, title: inputText.trim() });
       await loadBooks();
       closeModal();
     } catch {
       setModalSaving(false);
-      Alert.alert(modalMode === 'cover' ? t('bookshelf.coverError') : t('upload.errorTitle'));
+      Alert.alert(t('upload.errorTitle'));
     }
   };
 
@@ -319,48 +315,62 @@ export default function BookshelfScreen({ navigation }: any) {
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {modalMode === 'rename' ? t('bookshelf.renameTitle') : t('bookshelf.coverTitle')}
             </Text>
-            <TextInput
-              style={[styles.modalInput, { color: colors.text, borderColor: colors.emptyBorder }]}
-              placeholder={modalMode === 'rename' ? t('bookshelf.renamePrompt') : t('bookshelf.coverPrompt')}
-              placeholderTextColor={colors.subText}
-              value={inputText}
-              onChangeText={setInputText}
-              autoFocus
-              autoCorrect={false}
-              autoCapitalize="none"
-              returnKeyType="done"
-              onSubmitEditing={handleModalConfirm}
-            />
-            {modalMode === 'cover' && (
-              <View style={styles.coverAltRow}>
-                <TouchableOpacity
-                  style={[styles.coverAltBtn, { borderColor: colors.emptyBorder }]}
-                  onPress={handlePickLocalCover}
-                  disabled={modalSaving}
-                >
-                  <Text style={[styles.coverAltBtnText, { color: colors.fab }]}>{t('bookshelf.coverPickLocal')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.coverAltBtn, { borderColor: colors.emptyBorder }]}
-                  onPress={handlePasteClipboardCover}
-                  disabled={modalSaving}
-                >
-                  <Text style={[styles.coverAltBtnText, { color: colors.fab }]}>{t('bookshelf.coverPasteClipboard')}</Text>
-                </TouchableOpacity>
-              </View>
+            {modalMode === 'rename' ? (
+              <>
+                <TextInput
+                  style={[styles.modalInput, { color: colors.text, borderColor: colors.emptyBorder }]}
+                  placeholder={t('bookshelf.renamePrompt')}
+                  placeholderTextColor={colors.subText}
+                  value={inputText}
+                  onChangeText={setInputText}
+                  autoFocus
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  returnKeyType="done"
+                  onSubmitEditing={handleModalConfirm}
+                />
+                <View style={styles.modalActions}>
+                  <TouchableOpacity onPress={closeModal} style={styles.modalBtn}>
+                    <Text style={[styles.modalBtnText, { color: colors.subText }]}>{t('common.cancel')}</Text>
+                  </TouchableOpacity>
+                  {modalSaving ? (
+                    <ActivityIndicator size="small" color={colors.fab} style={styles.modalBtn} />
+                  ) : (
+                    <TouchableOpacity onPress={handleModalConfirm} style={styles.modalBtn} disabled={!inputText.trim()}>
+                      <Text style={[styles.modalBtnText, { color: !inputText.trim() ? colors.subText : colors.fab, fontWeight: '700' }]}>{t('common.ok')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            ) : (
+              <>
+                {modalSaving ? (
+                  <ActivityIndicator size="small" color={colors.fab} style={{ marginVertical: 20 }} />
+                ) : (
+                  <View style={styles.coverActionCol}>
+                    <TouchableOpacity
+                      style={[styles.coverActionBtn, { backgroundColor: isDark ? '#2a2a2a' : '#f0f4f8' }]}
+                      onPress={handlePickLocalCover}
+                    >
+                      <MaterialIcons name="photo-library" size={22} color={colors.fab} />
+                      <Text style={[styles.coverActionText, { color: colors.text }]}>{t('bookshelf.coverPickLocal')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.coverActionBtn, { backgroundColor: isDark ? '#2a2a2a' : '#f0f4f8' }]}
+                      onPress={handlePasteClipboardCover}
+                    >
+                      <MaterialIcons name="content-paste" size={22} color={colors.fab} />
+                      <Text style={[styles.coverActionText, { color: colors.text }]}>{t('bookshelf.coverPasteClipboard')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <View style={styles.modalActions}>
+                  <TouchableOpacity onPress={closeModal} style={styles.modalBtn}>
+                    <Text style={[styles.modalBtnText, { color: colors.subText }]}>{t('common.cancel')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
-            <View style={styles.modalActions}>
-              <TouchableOpacity onPress={closeModal} style={styles.modalBtn}>
-                <Text style={[styles.modalBtnText, { color: colors.subText }]}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-              {modalSaving ? (
-                <ActivityIndicator size="small" color={colors.fab} style={styles.modalBtn} />
-              ) : (
-                <TouchableOpacity onPress={handleModalConfirm} style={styles.modalBtn} disabled={modalMode === 'cover' && !inputText.trim()}>
-                  <Text style={[styles.modalBtnText, { color: modalMode === 'cover' && !inputText.trim() ? colors.subText : colors.fab, fontWeight: '700' }]}>{t('common.ok')}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -608,20 +618,21 @@ const styles = StyleSheet.create({
   modalBtnText: {
     fontSize: 15,
   },
-  coverAltRow: {
-    flexDirection: 'row',
+  coverActionCol: {
     gap: 10,
+    marginTop: 4,
     marginBottom: 18,
   },
-  coverAltBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
+  coverActionBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  coverAltBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
+  coverActionText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 });

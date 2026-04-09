@@ -47,7 +47,6 @@ export type TranslationKey =
   | 'bookshelf.renamePrompt'
   | 'bookshelf.setCover'
   | 'bookshelf.coverTitle'
-  | 'bookshelf.coverPrompt'
   | 'bookshelf.coverPickLocal'
   | 'bookshelf.coverPasteClipboard'
   | 'bookshelf.coverClipboardEmpty'
@@ -164,7 +163,6 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.renamePrompt': '输入新书名',
     'bookshelf.setCover': '设置封面',
     'bookshelf.coverTitle': '设置封面',
-    'bookshelf.coverPrompt': '输入图片 URL',
     'bookshelf.coverPickLocal': '从相册选择',
     'bookshelf.coverPasteClipboard': '从剪贴板粘贴',
     'bookshelf.coverClipboardEmpty': '剪贴板中没有图片',
@@ -278,7 +276,6 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.renamePrompt': 'Enter new title',
     'bookshelf.setCover': 'Set Cover',
     'bookshelf.coverTitle': 'Set Cover',
-    'bookshelf.coverPrompt': 'Enter image URL',
     'bookshelf.coverPickLocal': 'Choose from Photos',
     'bookshelf.coverPasteClipboard': 'Paste from Clipboard',
     'bookshelf.coverClipboardEmpty': 'No image found in clipboard',
