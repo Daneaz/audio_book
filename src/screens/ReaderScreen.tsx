@@ -172,6 +172,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [chaptersData, setChaptersData] = useState<ChapterData[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const loadingPrevRef = useRef(false);
   
   // Navigation & UI state
   const [currentHeaderTitle, setCurrentHeaderTitle] = useState('');
@@ -555,10 +556,10 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   const handleEndReached = () => {
     if (loadingMore || loading || !book) return;
-    
+
     const lastLoaded = chaptersData[chaptersData.length - 1];
     if (!lastLoaded) return;
-    
+
     const lastIndex = allChapters.findIndex(c => c.id === lastLoaded.chapter.id);
     if (lastIndex !== -1 && lastIndex < allChapters.length - 1) {
       setLoadingMore(true);
@@ -567,6 +568,35 @@ export default function ReaderScreen({ route, navigation }: any) {
       });
     }
   };
+
+  const handleStartReached = async () => {
+    if (loadingPrevRef.current || loading || !book) return;
+
+    const firstLoaded = chaptersData[0];
+    if (!firstLoaded) return;
+
+    const firstIndex = allChapters.findIndex(c => c.id === firstLoaded.chapter.id);
+    if (firstIndex <= 0) return;
+
+    const ch = allChapters[firstIndex - 1];
+    if (loadedChapterIdsRef.current.has(ch.id)) return;
+
+    loadingPrevRef.current = true;
+    try {
+      const content = await ChapterService.getChapterContent(book.filePath, ch.startPosition, ch.endPosition);
+      const sentences = parseSentences(content);
+      const newChapter: ChapterData = { chapter: ch, content, sentences };
+      loadedChapterIdsRef.current.add(ch.id);
+      setChaptersData(prev => [newChapter, ...prev]);
+    } catch (e) {
+      console.error(`Error loading previous chapter ${ch.id}`, e);
+    } finally {
+      loadingPrevRef.current = false;
+    }
+  };
+
+  const handleStartReachedRef = useRef<() => Promise<void>>(async () => {});
+  handleStartReachedRef.current = handleStartReached;
 
   const saveProgress = async (cId: string) => {
       const isHoriz = settings.flipMode === 'horizontal';
@@ -1087,6 +1117,10 @@ export default function ReaderScreen({ route, navigation }: any) {
       lastSavedChapterIdRef.current = chapter.id;
       saveProgress(chapter.id);
     }
+
+    if (first.index === 0) {
+      handleStartReachedRef.current?.();
+    }
   }, []);
 
   const handleReaderTouchStart = (event: any) => {
@@ -1208,6 +1242,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         keyExtractor={getReaderItemKey}
         onEndReached={handleEndReached}
         onEndReachedThreshold={3.0}
+        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         onViewableItemsChanged={onReaderViewableItemsChanged}
