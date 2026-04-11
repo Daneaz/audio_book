@@ -215,10 +215,10 @@ const ReaderChapterItem = React.memo(({
   onLayoutChapter,
   onSelectSentence,
 }: ReaderChapterItemProps) => {
-  const displayContent = normalizeDisplayParagraphSpacing(item.content);
-  const fragments = activeSentence
+  const displayContent = useMemo(() => normalizeDisplayParagraphSpacing(item.content), [item.content]);
+  const fragments = useMemo(() => activeSentence
     ? getHighlightedFragments(displayContent, activeSentence)
-    : [{ text: displayContent, highlighted: false }];
+    : [{ text: displayContent, highlighted: false }], [displayContent, activeSentence]);
 
   return (
     <View
@@ -310,9 +310,9 @@ const ReaderPageItem = React.memo(({
   isMenuVisible,
   activeSentenceText,
 }: ReaderPageItemProps) => {
-  const fragments = activeSentenceText
+  const fragments = useMemo(() => activeSentenceText
     ? getPageHighlightedFragments(item.content, activeSentenceText)
-    : [{ text: item.content, highlighted: false }];
+    : [{ text: item.content, highlighted: false }], [item.content, activeSentenceText]);
 
   return (
     <View style={[styles.pageContainer, { width: windowWidth, paddingTop: topPadding, paddingBottom: bottomPadding }]}>
@@ -772,6 +772,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       const ch = all[i];
       if (loadedChapterIdsRef.current.has(ch.id) && !reset) continue;
       
+      loadedChapterIdsRef.current.add(ch.id);
       try {
         const content = await ChapterService.getChapterContent(currentBook.filePath, ch.startPosition, ch.endPosition);
         const sentences = parseSentences(content);
@@ -780,8 +781,8 @@ export default function ReaderScreen({ route, navigation }: any) {
           content,
           sentences
         });
-        loadedChapterIdsRef.current.add(ch.id);
       } catch (e) {
+        if (!reset) loadedChapterIdsRef.current.delete(ch.id);
         console.error(`Error loading chapter ${ch.id}`, e);
       }
     }
@@ -799,7 +800,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const handleEndReached = () => {
-    if (loadingMore || loading || !book) return;
+    if (loadingMore || loading || !book || isPreloadingRef.current) return;
 
     const lastLoaded = chaptersData[chaptersData.length - 1];
     if (!lastLoaded) return;
@@ -827,13 +828,14 @@ export default function ReaderScreen({ route, navigation }: any) {
     if (loadedChapterIdsRef.current.has(ch.id)) return; // already loaded or was evicted (handled by overscroll)
 
     loadingPrevRef.current = true;
+    loadedChapterIdsRef.current.add(ch.id);
     try {
       const content = await ChapterService.getChapterContent(book.filePath, ch.startPosition, ch.endPosition);
       const sentences = parseSentences(content);
-      loadedChapterIdsRef.current.add(ch.id);
       setChaptersData(prev => [{ chapter: ch, content, sentences }, ...prev]);
       setChapterWindow(prev => ({ ...prev, prevId: ch.id }));
     } catch (e) {
+      loadedChapterIdsRef.current.delete(ch.id);
       console.error(`Error loading previous chapter ${ch.id}`, e);
     } finally {
       loadingPrevRef.current = false;
@@ -852,12 +854,14 @@ export default function ReaderScreen({ route, navigation }: any) {
     if (firstIndex <= 0) return;
 
     const ch = allChapters[firstIndex - 1];
+    if (loadedChapterIdsRef.current.has(ch.id)) return;
+
     loadingPrevRef.current = true;
     setChapterWindow(prev => ({ ...prev, isBackLoading: true }));
+    loadedChapterIdsRef.current.add(ch.id);
     try {
       const content = await ChapterService.getChapterContent(book.filePath, ch.startPosition, ch.endPosition);
       const sentences = parseSentences(content);
-      loadedChapterIdsRef.current.add(ch.id);
       setChaptersData(prev => [{ chapter: ch, content, sentences }, ...prev]);
       setChapterWindow(prev => ({ ...prev, prevId: ch.id, isBackLoading: false }));
 
@@ -884,6 +888,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         }, 80);
       }
     } catch (e) {
+      loadedChapterIdsRef.current.delete(ch.id);
       console.error(`Error back-loading chapter ${ch.id}`, e);
       backLoadFailedRef.current = true;
       setChapterWindow(prev => ({ ...prev, isBackLoading: false }));
@@ -928,15 +933,18 @@ export default function ReaderScreen({ route, navigation }: any) {
       const currentIdx = allChapters.findIndex(c => c.id === chapterWindow.currentId);
       if (currentIdx !== -1 && currentIdx < allChapters.length - 1) {
         const nextChapter = allChapters[currentIdx + 1];
+        if (loadedChapterIdsRef.current.has(nextChapter.id)) return;
+
         isPreloadingRef.current = true;
         setChapterWindow(prev => ({ ...prev, isPreloading: true }));
+        loadedChapterIdsRef.current.add(nextChapter.id);
         try {
           const content = await ChapterService.getChapterContent(book.filePath, nextChapter.startPosition, nextChapter.endPosition);
           const sentences = parseSentences(content);
-          loadedChapterIdsRef.current.add(nextChapter.id);
           setChaptersData(prev => [...prev, { chapter: nextChapter, content, sentences }]);
           setChapterWindow(prev => ({ ...prev, nextId: nextChapter.id, isPreloading: false }));
         } catch (e) {
+          loadedChapterIdsRef.current.delete(nextChapter.id);
           setChapterWindow(prev => ({ ...prev, isPreloading: false }));
         } finally {
           isPreloadingRef.current = false;
@@ -1479,7 +1487,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         lineHeight={lineHeight}
         fontFamily={fontFamily}
         isDark={isDark}
-        isSpeaking={isSpeaking}
+        isSpeaking={isSpeaking && currentSpeakingChapterId === chapterItem.chapter.id}
         activeSentence={currentSpeakingChapterId === chapterItem.chapter.id ? activeSentence : null}
         onLayoutChapter={handleChapterLayout}
         onSelectSentence={handleSentenceSelection}
@@ -1709,9 +1717,9 @@ export default function ReaderScreen({ route, navigation }: any) {
         pagingEnabled={isHorizontal}
         removeClippedSubviews={Platform.OS === 'android'}
         initialNumToRender={isHorizontal ? 3 : 2}
-        windowSize={Platform.OS === 'android' ? 10 : 21}
-        maxToRenderPerBatch={Platform.OS === 'android' ? 2 : 10}
-        updateCellsBatchingPeriod={Platform.OS === 'android' ? 100 : 50}
+        windowSize={5}
+        maxToRenderPerBatch={2}
+        updateCellsBatchingPeriod={50}
         onTouchStart={handleReaderTouchStart}
         onTouchEnd={handleReaderTouchEnd}
         onScrollBeginDrag={handleScrollBeginDrag}
