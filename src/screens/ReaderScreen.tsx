@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps, AppState } from 'react-native';
 import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -419,18 +419,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   const lastSavedChapterIdRef = useRef<string | null>(null);
   const pendingRestoreRef = useRef<{ offset: number; page: number; mode: string; scrollToItemIndex?: number } | null>(null);
 
-
-  useEffect(() => {
-    loadBookData();
-    return () => {
-      Speech.stop();
-      stopAutoFlip();
-      if (scrollToIndexRetryTimerRef.current) {
-        clearTimeout(scrollToIndexRetryTimerRef.current);
-        scrollToIndexRetryTimerRef.current = null;
-      }
-    };
-  }, [bookId, chapterId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1175,6 +1163,65 @@ export default function ReaderScreen({ route, navigation }: any) {
     return chapterData.sentences[currentSentenceIndex] || null;
   }, [chaptersData, currentSentenceIndex, currentSpeakingChapterId, isSpeaking]);
 
+  const getCurrentVisibleReaderItem = useCallback((): PageData | ChapterData | null => {
+    const visibleItem = viewableItemsRef.current[0]?.item as PageData | ChapterData | undefined;
+    if (visibleItem) {
+      return visibleItem;
+    }
+
+    if (settings.flipMode === 'horizontal') {
+      if (horizontalPages.length === 0) return null;
+      const pageIndex = Math.max(0, Math.min(horizontalPages.length - 1, Math.round(scrollPos.value / Math.max(window.width, 1))));
+      return horizontalPages[pageIndex] || null;
+    }
+
+    const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
+    const chapterFromLayout = chaptersData.find((chapterData) => {
+      const layout = chapterLayoutsRef.current[chapterData.chapter.id];
+      if (!layout) return false;
+      return currentOffset >= layout.y && currentOffset < layout.y + layout.height;
+    });
+
+    return chapterFromLayout || chaptersData[0] || null;
+  }, [chaptersData, horizontalPages, settings.flipMode, window.width]);
+
+  const saveCurrentProgress = useCallback(() => {
+    const currentItem = getCurrentVisibleReaderItem();
+    if (!currentItem) return;
+    lastSavedChapterIdRef.current = currentItem.chapter.id;
+    void saveProgress(currentItem.chapter.id);
+  }, [getCurrentVisibleReaderItem]);
+
+  useEffect(() => {
+    loadBookData();
+    return () => {
+      saveCurrentProgress();
+      Speech.stop();
+      stopAutoFlip();
+      if (scrollToIndexRetryTimerRef.current) {
+        clearTimeout(scrollToIndexRetryTimerRef.current);
+        scrollToIndexRetryTimerRef.current = null;
+      }
+    };
+  }, [bookId, chapterId, saveCurrentProgress]);
+
+  useEffect(() => {
+    const unsubscribeBeforeRemove = navigation.addListener('beforeRemove', () => {
+      saveCurrentProgress();
+    });
+
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'inactive' || nextAppState === 'background') {
+        saveCurrentProgress();
+      }
+    });
+
+    return () => {
+      unsubscribeBeforeRemove();
+      subscription.remove();
+    };
+  }, [navigation, saveCurrentProgress]);
+
   const handleChapterLayout = useCallback((chapterId: string, y: number, height: number) => {
     chapterLayoutsRef.current[chapterId] = { y, height };
   }, []);
@@ -1380,6 +1427,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const handleBack = () => {
+    saveCurrentProgress();
     if (navigation.canGoBack()) {
       navigation.goBack();
       return;
