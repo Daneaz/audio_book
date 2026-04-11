@@ -598,9 +598,9 @@ export default function ReaderScreen({ route, navigation }: any) {
       const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
       const screenHeight = window.height;
 
-      // Follow when it goes near the bottom (e.g. 80%) or above the top
-      if (estimatedY < currentOffset + 50 || estimatedY > currentOffset + screenHeight * 0.8) {
-        const targetOffset = Math.max(0, estimatedY - screenHeight * 0.3);
+      // Follow when it goes near the bottom (e.g. 80%)
+      if (estimatedY > currentOffset + screenHeight * 0.55) {
+        const targetOffset = Math.max(0, estimatedY);
         if (isAutoScrolling.value) {
           autoScrollOffset.value = targetOffset;
         }
@@ -1076,11 +1076,19 @@ export default function ReaderScreen({ route, navigation }: any) {
              for (const cd of chaptersData) {
                const cl = chapterLayoutsRef.current[cd.chapter.id];
                if (!cl) continue;
-               if (topY < cl.y + cl.height) {
+               // We only want the chapter that is currently visible at the top of the screen
+               if (topY >= cl.y && topY < cl.y + cl.height) {
                  startChapterId = cd.chapter.id;
                  const ratio = Math.max(0, Math.min(1, (topY - cl.y) / cl.height));
                  const estimatedCharOffset = Math.floor(ratio * cd.content.length);
-                 const sIdx = cd.sentences.findIndex(s => s.end > estimatedCharOffset);
+                 
+                 // Find the start of the paragraph that contains this offset
+                 let pStart = estimatedCharOffset;
+                 while (pStart > 0 && cd.content[pStart - 1] !== '\n') {
+                   pStart--;
+                 }
+                 
+                 const sIdx = cd.sentences.findIndex(s => s.start >= pStart);
                  startSentenceIndex = sIdx !== -1 ? sIdx : 0;
                  break;
                }
@@ -1088,6 +1096,9 @@ export default function ReaderScreen({ route, navigation }: any) {
            }
         }
       }
+      
+      // Prevent auto-scroll jump when speech starts
+      lastUserScrollRef.current = Date.now();
       
       if (startChapterId) {
         speakSentence(startChapterId, startSentenceIndex);
