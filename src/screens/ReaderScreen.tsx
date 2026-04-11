@@ -565,7 +565,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, [loading]);
 
   // Auto-scroll to follow the speaking sentence
-  const USER_SCROLL_COOLDOWN = 60 * 1000;
+  const USER_SCROLL_COOLDOWN = 5 * 1000; // Reduced from 60s to 5s for better tracking resumption
   useEffect(() => {
     if (!isSpeaking || !currentSpeakingChapterId || userDraggingRef.current) return;
     if (Date.now() - lastUserScrollRef.current < USER_SCROLL_COOLDOWN) return;
@@ -595,12 +595,17 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       const ratio = sentence.start / Math.max(1, chData.content.length);
       const estimatedY = chLayout.y + ratio * chLayout.height;
-      const currentOffset = scrollPos.value;
+      const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
       const screenHeight = window.height;
 
-      if (estimatedY < currentOffset + 50 || estimatedY > currentOffset + screenHeight * 0.5) {
+      // Follow when it goes near the bottom (e.g. 80%) or above the top
+      if (estimatedY < currentOffset + 50 || estimatedY > currentOffset + screenHeight * 0.8) {
+        const targetOffset = Math.max(0, estimatedY - screenHeight * 0.3);
+        if (isAutoScrolling.value) {
+          autoScrollOffset.value = targetOffset;
+        }
         flatListRef.current?.scrollToOffset({
-          offset: Math.max(0, estimatedY - screenHeight * 0.3),
+          offset: targetOffset,
           animated: true,
         });
       }
