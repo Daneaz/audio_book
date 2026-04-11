@@ -511,23 +511,12 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, []);
 
   // Handle speech settings changes
-  const prevSettingsRef = useRef(settings);
+  // When speech settings change, we don't stop the current reading.
+  // Instead, the next sentence will use the new settings because we use settingsRef.
+  const settingsRef = useRef(settings);
   useEffect(() => {
-    const prev = prevSettingsRef.current;
-    if (isSpeaking && (prev.speechRate !== settings.speechRate || prev.voiceType !== settings.voiceType)) {
-      // 停止当前朗读，然后用新的设置重新开始朗读当前句子
-      Speech.stop();
-      if (currentSpeakingChapterId !== null) {
-        // 给一点点延迟让原生模块完全停止
-        setTimeout(() => {
-          if (isSpeakingRef.current) {
-            speakSentence(currentSpeakingChapterId, currentSentenceIndex);
-          }
-        }, 100);
-      }
-    }
-    prevSettingsRef.current = settings;
-  }, [settings.speechRate, settings.voiceType, isSpeaking, currentSpeakingChapterId, currentSentenceIndex]);
+    settingsRef.current = settings;
+  }, [settings]);
 
   useEffect(() => {
     isHorizontalScrollMode.value = settings.flipMode === 'horizontal';
@@ -1010,6 +999,8 @@ export default function ReaderScreen({ route, navigation }: any) {
           setSpeechTimerMinutes(defaultMinutes ?? 0);
           setIsSpeechTimerEnabled((defaultMinutes ?? 0) > 0);
           setIsSpeechTimerPanelVisible(true);
+          const duration = (defaultMinutes ?? 0) > 0 ? defaultMinutes : null;
+          startSpeech(duration, false);
       }
   };
 
@@ -1019,10 +1010,12 @@ export default function ReaderScreen({ route, navigation }: any) {
       setIsTypographyPanelVisible((visible) => !visible);
   };
 
-  const startSpeech = (duration: number | null = timerDuration) => {
+  const startSpeech = (duration: number | null = timerDuration, hidePanel: boolean = true) => {
       setIsSpeaking(true);
       isSpeakingRef.current = true;
-      setIsSpeechTimerPanelVisible(false);
+      if (hidePanel) {
+          setIsSpeechTimerPanelVisible(false);
+      }
       setTimerDuration(duration);
       if (duration !== null) {
           setTimerRemaining(duration * 60);
@@ -1151,8 +1144,8 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       Speech.speak(sentence, {
           language: 'zh-CN',
-          rate: settings.speechRate,
-          voice: settings.voiceType === 'default' ? undefined : settings.voiceType,
+          rate: settingsRef.current.speechRate,
+          voice: settingsRef.current.voiceType === 'default' ? undefined : settingsRef.current.voiceType,
           useApplicationAudioSession: false,
           onDone: () => {
              setTimeout(() => {
@@ -1217,6 +1210,12 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const previewVoice = async (voiceId: string, voiceLanguage?: string) => {
+      // If we are already speaking, do not interrupt to preview.
+      // The new voice will naturally take effect on the next sentence.
+      if (isSpeakingRef.current) {
+          return;
+      }
+
       const normalizedLanguage = (voiceLanguage || '').toLowerCase();
       const previewText = normalizedLanguage.startsWith('zh') ? t('settings.voicePreviewZh') : t('settings.voicePreviewEn');
       const speechLanguage = normalizedLanguage.startsWith('zh') ? 'zh-CN' : 'en-US';
@@ -1332,6 +1331,17 @@ export default function ReaderScreen({ route, navigation }: any) {
             : rawMinutes;
       setSpeechTimerMinutes(snappedMinutes);
       setIsSpeechTimerEnabled(snappedMinutes > 0);
+
+      // If already speaking, update the running timer immediately
+      if (isSpeakingRef.current) {
+          if (snappedMinutes > 0) {
+              setTimerDuration(snappedMinutes);
+              setTimerRemaining(snappedMinutes * 60);
+          } else {
+              setTimerDuration(null);
+              setTimerRemaining(null);
+          }
+      }
   };
 
   const horizontalPages = useMemo<PageData[]>(() => {
@@ -1884,8 +1894,8 @@ export default function ReaderScreen({ route, navigation }: any) {
                   </View>
 
                   <View style={styles.timerPanelActions}>
-                    <TouchableOpacity onPress={startSpeechWithTimer} style={styles.timerPanelActionButton}>
-                      <Ionicons name="play-circle" size={36} color="#1E88E5" />
+                    <TouchableOpacity onPress={isSpeaking ? stopSpeech : startSpeechWithTimer} style={styles.timerPanelActionButton}>
+                      <Ionicons name={isSpeaking ? "pause-circle" : "play-circle"} size={36} color="#1E88E5" />
                     </TouchableOpacity>
                   </View>
                 </View>
