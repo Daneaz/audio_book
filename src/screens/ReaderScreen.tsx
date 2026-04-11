@@ -84,38 +84,61 @@ function getVoiceDisplayLabel(
   return languageLabel ? `${name}${locale === 'en' ? ` (${languageLabel})` : `（${languageLabel}）`}` : name;
 }
 
-function splitChapterIntoPages(content: string, charsPerPage: number): string[] {
+function splitChapterIntoPages(content: string, charsPerLine: number, linesPerPage: number): string[] {
   const normalized = content.replace(/\r\n/g, '\n');
   if (!normalized.trim()) return [''];
-  if (charsPerPage <= 0 || normalized.length <= charsPerPage) return [normalized];
+  if (charsPerLine <= 0 || linesPerPage <= 0) return [normalized];
 
   const pages: string[] = [];
-  let start = 0;
+  let pos = 0;
 
-  while (start < normalized.length) {
-    const hardEnd = Math.min(start + charsPerPage, normalized.length);
+  while (pos < normalized.length) {
+    let lineCount = 0;
+    let lineChars = 0;
+    let i = pos;
 
-    if (hardEnd >= normalized.length) {
-      pages.push(normalized.slice(start));
+    for (; i < normalized.length; i++) {
+      const char = normalized[i];
+
+      if (char === '\n') {
+        lineCount++;
+        lineChars = 0;
+        if (lineCount >= linesPerPage) {
+          i++;
+          break;
+        }
+      } else {
+        lineChars++;
+        if (lineChars > charsPerLine) {
+          lineCount++;
+          lineChars = 1;
+          if (lineCount >= linesPerPage) {
+            break;
+          }
+        }
+      }
+    }
+
+    if (i >= normalized.length) {
+      pages.push(normalized.slice(pos));
       break;
     }
 
-    const searchStart = Math.max(start, hardEnd - PAGE_BREAK_SEARCH_RANGE);
-    let breakIndex = -1;
-
-    for (let i = hardEnd; i >= searchStart; i--) {
-      if (PAGE_BREAK_REGEX.test(normalized[i])) {
-        breakIndex = i + 1;
+    const searchStart = Math.max(pos, i - PAGE_BREAK_SEARCH_RANGE);
+    let breakAt = -1;
+    for (let j = i - 1; j >= searchStart; j--) {
+      if (PAGE_BREAK_REGEX.test(normalized[j])) {
+        breakAt = j + 1;
         break;
       }
     }
 
-    const pageEnd = breakIndex > start ? breakIndex : hardEnd;
-    pages.push(normalized.slice(start, pageEnd));
-    start = pageEnd;
+    const pageEnd = breakAt > pos ? breakAt : i;
+    pages.push(normalized.slice(pos, pageEnd));
+    pos = pageEnd;
   }
 
-  return pages;
+  return pages.length > 0 ? pages : [''];
 }
 
 function getHighlightedFragments(
@@ -1055,7 +1078,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   const horizontalContentHeight = Math.max(window.height - horizontalTopPadding - horizontalBottomPadding, horizontalLineHeight);
   const charsPerLine = Math.max(Math.floor(horizontalContentWidth / (settings.fontSize * 1.05)), 1);
   const linesPerPage = Math.max(Math.floor(horizontalContentHeight / horizontalLineHeight), 1);
-  const estimatedCharsPerPage = Math.max(charsPerLine * linesPerPage, 120);
   const speechTimerRatio = speechTimerMinutes / 120;
   const speechTimerThumbOffset = speechTimerRatio * speechTimerWidth;
   const sortedVoices = useMemo(() => {
@@ -1129,7 +1151,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
     return chaptersData.flatMap((chapterData) => {
       const displayContent = normalizeDisplayParagraphSpacing(chapterData.content);
-      const pages = splitChapterIntoPages(displayContent, estimatedCharsPerPage);
+      const pages = splitChapterIntoPages(displayContent, charsPerLine, linesPerPage);
       let cumOffset = 0;
       return pages.map((pageContent, index) => {
         const charStart = cumOffset;
@@ -1144,7 +1166,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         };
       });
     });
-  }, [chaptersData, estimatedCharsPerPage, settings.flipMode]);
+  }, [chaptersData, charsPerLine, linesPerPage, settings.flipMode]);
 
   const activeSentence = useMemo(() => {
     if (!isSpeaking) {
