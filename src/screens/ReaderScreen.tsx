@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps, AppState } from 'react-native';
-import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler } from 'react-native-reanimated';
+import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
@@ -375,6 +375,16 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingPrevRef = useRef(false);
   const [readerListKey, setReaderListKey] = useState(0);
+
+  // Chapter sliding window state
+  const [chapterWindow, setChapterWindow] = useState<{
+    prevId: string | null;
+    currentId: string;
+    nextId: string | null;
+    isPreloading: boolean;
+    isBackLoading: boolean;
+  }>({ prevId: null, currentId: '', nextId: null, isPreloading: false, isBackLoading: false });
+  const chapterProgressRef = useRef(0);
   
   // Navigation & UI state
   const [currentHeaderTitle, setCurrentHeaderTitle] = useState('');
@@ -418,29 +428,51 @@ export default function ReaderScreen({ route, navigation }: any) {
   const isHorizontalScrollMode = useSharedValue(settings.flipMode === 'horizontal');
   const autoScrollOffset = useSharedValue(0);
   const autoScrollSpeed = useSharedValue(0);
+  // Must be declared before scrollHandler so worklet closure captures the initialized value
+  const overscrollBackLoadTriggeredShared = useSharedValue(false);
+
   const frameCallback = useFrameCallback((frameInfo) => {
     'worklet';
     const delta = autoScrollSpeed.value * Math.min(frameInfo.timeSincePreviousFrame ?? 16, 32) / 1000;
     autoScrollOffset.value += delta;
     scrollTo(flatListRef, 0, autoScrollOffset.value, false);
   }, false);
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      'worklet';
-      if (!isAutoScrolling.value) {
-        scrollPos.value = isHorizontalScrollMode.value
-          ? event.contentOffset.x
-          : event.contentOffset.y;
-      }
-    },
-  });
-  
+
   // Tracking
   const lastSelectionRef = useRef<{ chapterId: string, start: number, timestamp: number } | null>(null);
   const viewableItemsRef = useRef<ViewToken[]>([]);
+  const triggerProgressCheckRef = useRef<() => void>(() => {});
+  const isPreloadingRef = useRef(false);
+  const backLoadFailedRef = useRef(false);
+  const suppressStartReachedRef = useRef(false);
+  const handleOverscrollBackLoadRef = useRef<() => Promise<void>>(async () => {});
+
+  const _onOverscrollJS = () => { handleOverscrollBackLoadRef.current(); };
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      'worklet';
+      const rawOffset = isHorizontalScrollMode.value
+        ? event.contentOffset.x
+        : event.contentOffset.y;
+      if (!isAutoScrolling.value) {
+        scrollPos.value = rawOffset;
+      }
+      // Detect pull past start boundary (overscroll): negative offset beyond threshold
+      if (rawOffset < -60 && !overscrollBackLoadTriggeredShared.value) {
+        overscrollBackLoadTriggeredShared.value = true;
+        runOnJS(_onOverscrollJS)();
+      }
+    },
+    onEndDrag: () => {
+      'worklet';
+      // Reset per-gesture guard so next drag can trigger again if needed
+      overscrollBackLoadTriggeredShared.value = false;
+    },
+  });
   const loadedChapterIdsRef = useRef<Set<string>>(new Set());
   const lastSavedChapterIdRef = useRef<string | null>(null);
   const pendingRestoreRef = useRef<{ offset: number; page: number; mode: string; scrollToItemIndex?: number } | null>(null);
+  const saveCurrentProgressRef = useRef<() => void>(() => {});
 
 
   useEffect(() => {
@@ -692,9 +724,22 @@ export default function ReaderScreen({ route, navigation }: any) {
         setReaderListKey((prev) => prev + 1);
       }
       chapterLayoutsRef.current = {};
-      // Chapter jump should start exactly from the target chapter.
-      // Previous chapters can still be loaded lazily when the user scrolls upward.
-      await loadChaptersBatch(chaptersList, startIdx, 2, recentlyReadBook, true);
+      chapterProgressRef.current = 0;
+      isPreloadingRef.current = false;
+      backLoadFailedRef.current = false;
+      suppressStartReachedRef.current = true; // cleared on first user scroll
+      // Load only the current chapter; next chapter is preloaded lazily when user reaches 80%
+      await loadChaptersBatch(chaptersList, startIdx, 1, recentlyReadBook, true);
+      const startChapter = chaptersList[startIdx];
+      if (startChapter) {
+        setChapterWindow({
+          prevId: null,
+          currentId: startChapter.id,
+          nextId: null,
+          isPreloading: false,
+          isBackLoading: false,
+        });
+      }
       if (isChapterJump) {
         pendingRestoreRef.current = {
           offset: 0,
@@ -768,6 +813,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     }
   };
 
+  // Case 1: lazy-load the previous chapter when user scrolls to top (normal flow)
   const handleStartReached = async () => {
     if (loadingPrevRef.current || loading || !book) return;
 
@@ -778,15 +824,15 @@ export default function ReaderScreen({ route, navigation }: any) {
     if (firstIndex <= 0) return;
 
     const ch = allChapters[firstIndex - 1];
-    if (loadedChapterIdsRef.current.has(ch.id)) return;
+    if (loadedChapterIdsRef.current.has(ch.id)) return; // already loaded or was evicted (handled by overscroll)
 
     loadingPrevRef.current = true;
     try {
       const content = await ChapterService.getChapterContent(book.filePath, ch.startPosition, ch.endPosition);
       const sentences = parseSentences(content);
-      const newChapter: ChapterData = { chapter: ch, content, sentences };
       loadedChapterIdsRef.current.add(ch.id);
-      setChaptersData(prev => [newChapter, ...prev]);
+      setChaptersData(prev => [{ chapter: ch, content, sentences }, ...prev]);
+      setChapterWindow(prev => ({ ...prev, prevId: ch.id }));
     } catch (e) {
       console.error(`Error loading previous chapter ${ch.id}`, e);
     } finally {
@@ -794,8 +840,128 @@ export default function ReaderScreen({ route, navigation }: any) {
     }
   };
 
+  // Case 2: user actively pulled past the start boundary — reload evicted chapter B
+  const handleOverscrollBackLoad = async () => {
+    if (loadingPrevRef.current || loading || !book || backLoadFailedRef.current) return;
+    if (chapterWindow.prevId !== null) return; // B is still in memory, nothing to reload
+
+    const firstLoaded = chaptersData[0];
+    if (!firstLoaded) return;
+
+    const firstIndex = allChapters.findIndex(c => c.id === firstLoaded.chapter.id);
+    if (firstIndex <= 0) return;
+
+    const ch = allChapters[firstIndex - 1];
+    loadingPrevRef.current = true;
+    setChapterWindow(prev => ({ ...prev, isBackLoading: true }));
+    try {
+      const content = await ChapterService.getChapterContent(book.filePath, ch.startPosition, ch.endPosition);
+      const sentences = parseSentences(content);
+      loadedChapterIdsRef.current.add(ch.id);
+      setChaptersData(prev => [{ chapter: ch, content, sentences }, ...prev]);
+      setChapterWindow(prev => ({ ...prev, prevId: ch.id, isBackLoading: false }));
+
+      if (settings.flipMode === 'scroll') {
+        setTimeout(() => {
+          const layout = chapterLayoutsRef.current[ch.id];
+          if (layout) {
+            flatListRef.current?.scrollToOffset({
+              offset: Math.max(0, layout.y + layout.height - window.height * 0.8),
+              animated: false,
+            });
+          }
+        }, 150);
+      } else {
+        setTimeout(() => {
+          const pages = horizontalPages.filter(p => p.chapter.id === ch.id);
+          const lastPage = pages[pages.length - 1];
+          if (lastPage) {
+            const lastIdx = horizontalPages.findIndex(p => p.id === lastPage.id);
+            if (lastIdx >= 0) {
+              flatListRef.current?.scrollToIndex({ index: lastIdx, animated: false });
+            }
+          }
+        }, 80);
+      }
+    } catch (e) {
+      console.error(`Error back-loading chapter ${ch.id}`, e);
+      backLoadFailedRef.current = true;
+      setChapterWindow(prev => ({ ...prev, isBackLoading: false }));
+    } finally {
+      loadingPrevRef.current = false;
+    }
+  };
+
   const handleStartReachedRef = useRef<() => Promise<void>>(async () => {});
   handleStartReachedRef.current = handleStartReached;
+  handleOverscrollBackLoadRef.current = handleOverscrollBackLoad;
+
+  const getChapterReadProgress = (): number => {
+    const isHoriz = settings.flipMode === 'horizontal';
+    const currentId = chapterWindow.currentId;
+    if (!currentId) return 0;
+
+    if (isHoriz) {
+      if (horizontalPages.length === 0) return 0;
+      const pageIndex = Math.max(0, Math.round(scrollPos.value / Math.max(window.width, 1)));
+      const chapterPageIndices: number[] = [];
+      horizontalPages.forEach((p, i) => { if (p.chapter.id === currentId) chapterPageIndices.push(i); });
+      if (chapterPageIndices.length === 0) return 0;
+      const posInChapter = pageIndex - chapterPageIndices[0];
+      return Math.min(1, Math.max(0, posInChapter / chapterPageIndices.length));
+    } else {
+      const layout = chapterLayoutsRef.current[currentId];
+      if (!layout || layout.height === 0) return 0;
+      return Math.min(1, Math.max(0, (scrollPos.value - layout.y) / layout.height));
+    }
+  };
+
+  const handleProgressChange = async (progress: number) => {
+    if (!book) return;
+
+    // Trigger: >80% in current chapter → silently preload next chapter
+    if (
+      progress >= 0.8 &&
+      !isPreloadingRef.current &&
+      chapterWindow.nextId === null
+    ) {
+      const currentIdx = allChapters.findIndex(c => c.id === chapterWindow.currentId);
+      if (currentIdx !== -1 && currentIdx < allChapters.length - 1) {
+        const nextChapter = allChapters[currentIdx + 1];
+        isPreloadingRef.current = true;
+        setChapterWindow(prev => ({ ...prev, isPreloading: true }));
+        try {
+          const content = await ChapterService.getChapterContent(book.filePath, nextChapter.startPosition, nextChapter.endPosition);
+          const sentences = parseSentences(content);
+          loadedChapterIdsRef.current.add(nextChapter.id);
+          setChaptersData(prev => [...prev, { chapter: nextChapter, content, sentences }]);
+          setChapterWindow(prev => ({ ...prev, nextId: nextChapter.id, isPreloading: false }));
+        } catch (e) {
+          setChapterWindow(prev => ({ ...prev, isPreloading: false }));
+        } finally {
+          isPreloadingRef.current = false;
+        }
+      }
+    }
+
+    // Trigger: >50% in current chapter AND prev chapter exists → unload prev chapter
+    if (progress >= 0.5 && chapterWindow.prevId !== null) {
+      const idToUnload = chapterWindow.prevId;
+      setChaptersData(prev => prev.filter(c => c.chapter.id !== idToUnload));
+      loadedChapterIdsRef.current.delete(idToUnload);
+      setChapterWindow(prev => ({ ...prev, prevId: null }));
+    }
+  };
+
+  const maybeHandleProgress = () => {
+    const progress = getChapterReadProgress();
+    if (Math.abs(progress - chapterProgressRef.current) >= 0.05) {
+      chapterProgressRef.current = progress;
+      void handleProgressChange(progress);
+    }
+  };
+
+  triggerProgressCheckRef.current = maybeHandleProgress;
 
   const saveProgress = async (cId: string) => {
       const isHoriz = settings.flipMode === 'horizontal';
@@ -1149,11 +1315,11 @@ export default function ReaderScreen({ route, navigation }: any) {
       return [];
     }
 
-    return chaptersData.flatMap((chapterData) => {
+    const pages = chaptersData.flatMap((chapterData) => {
       const displayContent = normalizeDisplayParagraphSpacing(chapterData.content);
-      const pages = splitChapterIntoPages(displayContent, charsPerLine, linesPerPage);
+      const splitPages = splitChapterIntoPages(displayContent, charsPerLine, linesPerPage);
       let cumOffset = 0;
-      return pages.map((pageContent, index) => {
+      return splitPages.map((pageContent, index) => {
         const charStart = cumOffset;
         cumOffset += pageContent.length;
         return {
@@ -1161,11 +1327,13 @@ export default function ReaderScreen({ route, navigation }: any) {
           chapter: chapterData.chapter,
           content: pageContent,
           pageNumber: index + 1,
-          pageCount: pages.length,
+          pageCount: splitPages.length,
           charStart,
         };
       });
     });
+
+    return pages;
   }, [chaptersData, charsPerLine, linesPerPage, settings.flipMode]);
 
   const activeSentence = useMemo(() => {
@@ -1215,9 +1383,13 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, [getCurrentVisibleReaderItem]);
 
   useEffect(() => {
+    saveCurrentProgressRef.current = saveCurrentProgress;
+  }, [saveCurrentProgress]);
+
+  useEffect(() => {
     loadBookData();
     return () => {
-      saveCurrentProgress();
+      saveCurrentProgressRef.current();
       Speech.stop();
       stopAutoFlip();
       if (scrollToIndexRetryTimerRef.current) {
@@ -1225,16 +1397,16 @@ export default function ReaderScreen({ route, navigation }: any) {
         scrollToIndexRetryTimerRef.current = null;
       }
     };
-  }, [bookId, chapterId, saveCurrentProgress]);
+  }, [bookId, chapterId]);
 
   useEffect(() => {
     const unsubscribeBeforeRemove = navigation.addListener('beforeRemove', () => {
-      saveCurrentProgress();
+      saveCurrentProgressRef.current();
     });
 
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'inactive' || nextAppState === 'background') {
-        saveCurrentProgress();
+        saveCurrentProgressRef.current();
       }
     });
 
@@ -1242,7 +1414,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       unsubscribeBeforeRemove();
       subscription.remove();
     };
-  }, [navigation, saveCurrentProgress]);
+  }, [navigation]);
 
   const handleChapterLayout = useCallback((chapterId: string, y: number, height: number) => {
     chapterLayoutsRef.current[chapterId] = { y, height };
@@ -1276,6 +1448,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const renderReaderItem = useCallback(({ item }: { item: PageData | ChapterData }) => {
     if (isHorizontal) {
       const pageItem = item as PageData;
+
       return (
         <ReaderPageItem
           item={pageItem}
@@ -1372,9 +1545,21 @@ export default function ReaderScreen({ route, navigation }: any) {
       saveProgress(chapter.id);
     }
 
-    if (first.index === 0) {
+    // Detect chapter transition B→C
+    setChapterWindow(prev => {
+      if (prev.nextId && chapter.id === prev.nextId) {
+        chapterProgressRef.current = 0;
+        return { ...prev, prevId: prev.currentId, currentId: prev.nextId, nextId: null };
+      }
+      return prev;
+    });
+
+    if (first.index === 0 && !suppressStartReachedRef.current) {
       handleStartReachedRef.current?.();
     }
+
+    // Check reading progress for preload/unload triggers
+    triggerProgressCheckRef.current();
   }, []);
 
   const handleReaderTouchStart = (event: any) => {
@@ -1409,6 +1594,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const handleScrollBeginDrag = () => {
+    suppressStartReachedRef.current = false;
     lastUserScrollRef.current = Date.now();
     if (!settings.autoFlip || settings.flipMode !== 'scroll') {
       return;
@@ -1498,6 +1684,13 @@ export default function ReaderScreen({ route, navigation }: any) {
         keyExtractor={getReaderItemKey}
         getItemLayout={isHorizontal ? (getHorizontalItemLayout as any) : undefined}
         onScrollToIndexFailed={handleScrollToIndexFailed}
+        ListHeaderComponent={
+          !isHorizontal && chapterWindow.isBackLoading ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={textColor} />
+            </View>
+          ) : null
+        }
         onEndReached={handleEndReached}
         onEndReachedThreshold={3.0}
         maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
@@ -1526,6 +1719,13 @@ export default function ReaderScreen({ route, navigation }: any) {
         onMomentumScrollBegin={handleMomentumScrollBegin}
         onMomentumScrollEnd={handleMomentumScrollEnd}
       />
+
+      {/* Back-loading overlay for horizontal mode */}
+      {isHorizontal && chapterWindow.isBackLoading && (
+        <View style={[StyleSheet.absoluteFillObject, { justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' }]} pointerEvents="none">
+          <ActivityIndicator size="large" color={textColor} />
+        </View>
+      )}
 
       {/* Footer Controls */}
       {isMenuVisible && (
