@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps } from 'react-native';
 import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -161,6 +161,184 @@ function getPageHighlightedFragments(
   ].filter((fragment) => fragment.text.length > 0);
 }
 
+interface ReaderChapterItemProps {
+  item: ChapterData;
+  isHorizontal: boolean;
+  windowWidth: number;
+  topInset: number;
+  textColor: string;
+  fontSize: number;
+  lineHeight: number;
+  fontFamily: string | undefined;
+  isDark: boolean;
+  isSpeaking: boolean;
+  activeSentence: ParsedSentence | null;
+  onLayoutChapter: (chapterId: string, y: number, height: number) => void;
+  onSelectSentence: (chapterId: string, sentences: ParsedSentence[], start: number) => void;
+}
+
+const ReaderChapterItem = React.memo(({
+  item,
+  isHorizontal,
+  windowWidth,
+  topInset,
+  textColor,
+  fontSize,
+  lineHeight,
+  fontFamily,
+  isDark,
+  isSpeaking,
+  activeSentence,
+  onLayoutChapter,
+  onSelectSentence,
+}: ReaderChapterItemProps) => {
+  const displayContent = normalizeDisplayParagraphSpacing(item.content);
+  const fragments = activeSentence
+    ? getHighlightedFragments(displayContent, activeSentence)
+    : [{ text: displayContent, highlighted: false }];
+
+  return (
+    <View
+      style={[styles.chapterContainer, isHorizontal && { width: windowWidth, paddingHorizontal: 20, paddingTop: topInset + 40, marginTop: 0 }]}
+      onLayout={(e) => {
+        onLayoutChapter(item.chapter.id, e.nativeEvent.layout.y, e.nativeEvent.layout.height);
+      }}
+    >
+      <Text style={[styles.chapterTitle, { color: textColor }]}>{item.chapter.title}</Text>
+      {isSpeaking ? (
+        <Text
+          selectable
+          style={[styles.content, { fontSize, color: textColor, lineHeight, fontFamily }]}
+        >
+          {fragments.map((fragment, index) => (
+            <Text
+              key={`${item.chapter.id}_fragment_${index}`}
+              style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#1E3A2A' : '#E8F7EA', color: textColor }] : undefined}
+            >
+              {fragment.text}
+            </Text>
+          ))}
+        </Text>
+      ) : (
+        <TextInput
+          value={displayContent}
+          multiline
+          editable={false}
+          scrollEnabled={false}
+          style={[styles.content, { fontSize, color: textColor, lineHeight, fontFamily }]}
+          onSelectionChange={(e) => onSelectSentence(item.chapter.id, item.sentences, e.nativeEvent.selection.start)}
+        />
+      )}
+      {!isHorizontal && <View style={styles.chapterDivider} />}
+    </View>
+  );
+}, (prev, next) => {
+  const prevSentence = prev.activeSentence;
+  const nextSentence = next.activeSentence;
+  const sentenceUnchanged =
+    prevSentence === nextSentence ||
+    (
+      prevSentence?.start === nextSentence?.start &&
+      prevSentence?.end === nextSentence?.end &&
+      prevSentence?.text === nextSentence?.text
+    );
+
+  return (
+    prev.item === next.item &&
+    prev.isHorizontal === next.isHorizontal &&
+    prev.windowWidth === next.windowWidth &&
+    prev.topInset === next.topInset &&
+    prev.textColor === next.textColor &&
+    prev.fontSize === next.fontSize &&
+    prev.lineHeight === next.lineHeight &&
+    prev.fontFamily === next.fontFamily &&
+    prev.isDark === next.isDark &&
+    prev.isSpeaking === next.isSpeaking &&
+    sentenceUnchanged
+  );
+});
+
+interface ReaderPageItemProps {
+  item: PageData;
+  windowWidth: number;
+  topPadding: number;
+  bottomPadding: number;
+  textColor: string;
+  fontSize: number;
+  lineHeight: number;
+  fontFamily: string | undefined;
+  contentHeight: number;
+  isDark: boolean;
+  isMenuVisible: boolean;
+  activeSentenceText: string | null;
+}
+
+const ReaderPageItem = React.memo(({
+  item,
+  windowWidth,
+  topPadding,
+  bottomPadding,
+  textColor,
+  fontSize,
+  lineHeight,
+  fontFamily,
+  contentHeight,
+  isDark,
+  isMenuVisible,
+  activeSentenceText,
+}: ReaderPageItemProps) => {
+  const fragments = activeSentenceText
+    ? getPageHighlightedFragments(item.content, activeSentenceText)
+    : [{ text: item.content, highlighted: false }];
+
+  return (
+    <View style={[styles.pageContainer, { width: windowWidth, paddingTop: topPadding, paddingBottom: bottomPadding }]}>
+      {item.pageNumber === 1 ? (
+        <Text style={[styles.chapterTitle, { color: textColor }]} numberOfLines={1}>
+          {item.chapter.title}
+        </Text>
+      ) : null}
+      <Text
+        style={[
+          styles.pageContent,
+          {
+            color: textColor,
+            fontSize,
+            lineHeight,
+            fontFamily,
+            height: contentHeight,
+          },
+        ]}
+      >
+        {fragments.map((fragment, index) => (
+          <Text
+            key={`${item.id}_fragment_${index}`}
+            style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#1E3A2A' : '#E8F7EA', color: textColor }] : undefined}
+          >
+            {fragment.text}
+          </Text>
+        ))}
+      </Text>
+      <Text style={[styles.pageIndicator, styles.pageIndicatorOverlay, { color: isDark ? '#888' : '#777', opacity: isMenuVisible ? 1 : 0 }]}>
+        {item.pageNumber} / {item.pageCount}
+      </Text>
+    </View>
+  );
+}, (prev, next) => (
+  prev.item === next.item &&
+  prev.windowWidth === next.windowWidth &&
+  prev.topPadding === next.topPadding &&
+  prev.bottomPadding === next.bottomPadding &&
+  prev.textColor === next.textColor &&
+  prev.fontSize === next.fontSize &&
+  prev.lineHeight === next.lineHeight &&
+  prev.fontFamily === next.fontFamily &&
+  prev.contentHeight === next.contentHeight &&
+  prev.isDark === next.isDark &&
+  prev.isMenuVisible === next.isMenuVisible &&
+  prev.activeSentenceText === next.activeSentenceText
+));
+
 export default function ReaderScreen({ route, navigation }: any) {
   const { bookId, chapterId } = route.params;
   const insets = useSafeAreaInsets();
@@ -173,6 +351,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingPrevRef = useRef(false);
+  const [readerListKey, setReaderListKey] = useState(0);
   
   // Navigation & UI state
   const [currentHeaderTitle, setCurrentHeaderTitle] = useState('');
@@ -205,6 +384,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const flatListRef = useAnimatedRef<Animated.FlatList<ChapterData | PageData>>();
   const chapterLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
   const autoFlipTimer = useRef<NodeJS.Timeout | null>(null);
+  const scrollToIndexRetryTimerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const userDraggingRef = useRef(false);
   const isMomentumScrollingRef = useRef(false);
@@ -245,6 +425,10 @@ export default function ReaderScreen({ route, navigation }: any) {
     return () => {
       Speech.stop();
       stopAutoFlip();
+      if (scrollToIndexRetryTimerRef.current) {
+        clearTimeout(scrollToIndexRetryTimerRef.current);
+        scrollToIndexRetryTimerRef.current = null;
+      }
     };
   }, [bookId, chapterId]);
 
@@ -489,20 +673,24 @@ export default function ReaderScreen({ route, navigation }: any) {
         setLoading(true);
         scrollPos.value = 0;
         viewableItemsRef.current = [];
+        lastSavedChapterIdRef.current = null;
+        setSelectedSentence(null);
+        setCurrentSpeakingChapterId(null);
+        setCurrentSentenceIndex(0);
+        setChaptersData([]);
+        setReaderListKey((prev) => prev + 1);
       }
       chapterLayoutsRef.current = {};
-      if (isChapterJump && startIdx > 0) {
-        // Load previous chapter (for backward navigation) + target + next
-        await loadChaptersBatch(chaptersList, startIdx - 1, 3, recentlyReadBook, true);
+      // Chapter jump should start exactly from the target chapter.
+      // Previous chapters can still be loaded lazily when the user scrolls upward.
+      await loadChaptersBatch(chaptersList, startIdx, 2, recentlyReadBook, true);
+      if (isChapterJump) {
         pendingRestoreRef.current = {
           offset: 0,
           page: 0,
           mode: settings.flipMode,
-          scrollToItemIndex: 1,
+          scrollToItemIndex: 0,
         };
-      } else {
-        // Load current chapter and next chapter
-        await loadChaptersBatch(chaptersList, startIdx, 2, recentlyReadBook, true);
       }
       
       setLoading(false);
@@ -987,120 +1175,117 @@ export default function ReaderScreen({ route, navigation }: any) {
     return chapterData.sentences[currentSentenceIndex] || null;
   }, [chaptersData, currentSentenceIndex, currentSpeakingChapterId, isSpeaking]);
 
-  const renderChapterItem = ({ item }: { item: ChapterData }) => {
-    // 左右滑动模式下，我们需要强制容器宽度等于屏幕宽度
-    const isHorizontal = settings.flipMode === 'horizontal';
-    const windowWidth = window.width;
-    const displayContent = normalizeDisplayParagraphSpacing(item.content);
-    const fragments =
-      currentSpeakingChapterId === item.chapter.id
-        ? getHighlightedFragments(displayContent, activeSentence)
-        : [{ text: displayContent, highlighted: false }];
+  const handleChapterLayout = useCallback((chapterId: string, y: number, height: number) => {
+    chapterLayoutsRef.current[chapterId] = { y, height };
+  }, []);
 
-    return (
-      <View
-        style={[styles.chapterContainer, isHorizontal && { width: windowWidth, paddingHorizontal: 20, paddingTop: insets.top + 40, marginTop: 0 }]}
-        onLayout={(e) => {
-          chapterLayoutsRef.current[item.chapter.id] = {
-            y: e.nativeEvent.layout.y,
-            height: e.nativeEvent.layout.height,
-          };
-        }}
-      >
-        <Text style={[styles.chapterTitle, { color: textColor }]}>{item.chapter.title}</Text>
-        {isSpeaking ? (
-          <Text
-            selectable
-            style={[styles.content, { fontSize: settings.fontSize, color: textColor, lineHeight, fontFamily }]}
-          >
-            {fragments.map((fragment, index) => (
-              <Text
-                key={`${item.chapter.id}_fragment_${index}`}
-                style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#1E3A2A' : '#E8F7EA', color: textColor }] : undefined}
-              >
-                {fragment.text}
-              </Text>
-            ))}
-          </Text>
-        ) : (
-          <TextInput
-            value={displayContent}
-            multiline
-            editable={false}
-            scrollEnabled={false}
-            style={[styles.content, { fontSize: settings.fontSize, color: textColor, lineHeight, fontFamily }]}
-            onSelectionChange={(e) => {
-              const start = e.nativeEvent.selection.start;
-              const sentenceIndex = item.sentences.findIndex(
-                (sentence) => start >= sentence.start && start < sentence.end
-              );
-
-              if (sentenceIndex !== -1) {
-                setSelectedSentence({ chapterId: item.chapter.id, sentenceIndex });
-              }
-
-              lastSelectionRef.current = {
-                chapterId: item.chapter.id,
-                start,
-                timestamp: Date.now(),
-              };
-            }}
-          />
-        )}
-        {!isHorizontal && <View style={styles.chapterDivider} />}
-      </View>
+  const handleSentenceSelection = useCallback((chapterId: string, sentences: ParsedSentence[], start: number) => {
+    const sentenceIndex = sentences.findIndex(
+      (sentence) => start >= sentence.start && start < sentence.end
     );
-  };
 
-  const renderPageItem = ({ item }: { item: PageData }) => {
-    const fragments =
-      currentSpeakingChapterId === item.chapter.id
-        ? getPageHighlightedFragments(item.content, activeSentence?.text || null)
-        : [{ text: item.content, highlighted: false }];
+    if (sentenceIndex !== -1) {
+      setSelectedSentence({ chapterId, sentenceIndex });
+    }
 
-    return (
-      <View style={[styles.pageContainer, { width: window.width, paddingTop: horizontalTopPadding, paddingBottom: horizontalBottomPadding }]}>
-        {item.pageNumber === 1 ? (
-          <Text style={[styles.chapterTitle, { color: textColor }]} numberOfLines={1}>
-            {item.chapter.title}
-          </Text>
-        ) : null}
-        <Text
-          style={[
-            styles.pageContent,
-            {
-              color: textColor,
-              fontSize: settings.fontSize,
-              lineHeight: horizontalLineHeight,
-              fontFamily,
-              height: horizontalContentHeight,
-            },
-          ]}
-        >
-          {fragments.map((fragment, index) => (
-            <Text
-              key={`${item.id}_fragment_${index}`}
-              style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#1E3A2A' : '#E8F7EA', color: textColor }] : undefined}
-            >
-              {fragment.text}
-            </Text>
-          ))}
-        </Text>
-        <Text style={[styles.pageIndicator, styles.pageIndicatorOverlay, { color: isDark ? '#888' : '#777', opacity: isMenuVisible ? 1 : 0 }]}>
-          {item.pageNumber} / {item.pageCount}
-        </Text>
-      </View>
-    );
-  };
+    lastSelectionRef.current = {
+      chapterId,
+      start,
+      timestamp: Date.now(),
+    };
+  }, []);
 
   const isHorizontal = settings.flipMode === 'horizontal';
   const readerData = isHorizontal ? horizontalPages : chaptersData;
-  const renderReaderItem = isHorizontal
-    ? ({ item }: { item: PageData | ChapterData }) => renderPageItem({ item: item as PageData })
-    : ({ item }: { item: PageData | ChapterData }) => renderChapterItem({ item: item as ChapterData });
+  const flatListData = readerData as ArrayLike<ChapterData | PageData>;
+  const getHorizontalItemLayout = useCallback((_: ArrayLike<PageData> | null | undefined, index: number) => ({
+    length: window.width,
+    offset: window.width * index,
+    index,
+  }), [window.width]);
 
-  const getReaderItemKey = (item: PageData | ChapterData) =>
-    'pageNumber' in item ? item.id : item.chapter.id;
+  const renderReaderItem = useCallback(({ item }: { item: PageData | ChapterData }) => {
+    if (isHorizontal) {
+      const pageItem = item as PageData;
+      return (
+        <ReaderPageItem
+          item={pageItem}
+          windowWidth={window.width}
+          topPadding={horizontalTopPadding}
+          bottomPadding={horizontalBottomPadding}
+          textColor={textColor}
+          fontSize={settings.fontSize}
+          lineHeight={horizontalLineHeight}
+          fontFamily={fontFamily}
+          contentHeight={horizontalContentHeight}
+          isDark={isDark}
+          isMenuVisible={isMenuVisible}
+          activeSentenceText={currentSpeakingChapterId === pageItem.chapter.id ? activeSentence?.text || null : null}
+        />
+      );
+    }
+
+    const chapterItem = item as ChapterData;
+    return (
+      <ReaderChapterItem
+        item={chapterItem}
+        isHorizontal={false}
+        windowWidth={window.width}
+        topInset={insets.top}
+        textColor={textColor}
+        fontSize={settings.fontSize}
+        lineHeight={lineHeight}
+        fontFamily={fontFamily}
+        isDark={isDark}
+        isSpeaking={isSpeaking}
+        activeSentence={currentSpeakingChapterId === chapterItem.chapter.id ? activeSentence : null}
+        onLayoutChapter={handleChapterLayout}
+        onSelectSentence={handleSentenceSelection}
+      />
+    );
+  }, [
+    activeSentence,
+    currentSpeakingChapterId,
+    fontFamily,
+    handleChapterLayout,
+    handleSentenceSelection,
+    horizontalBottomPadding,
+    horizontalContentHeight,
+    horizontalLineHeight,
+    horizontalTopPadding,
+    insets.top,
+    isDark,
+    isHorizontal,
+    isMenuVisible,
+    isSpeaking,
+    lineHeight,
+    settings.fontSize,
+    textColor,
+    window.width,
+  ]);
+
+  const getReaderItemKey = useCallback((item: PageData | ChapterData) =>
+    'pageNumber' in item ? item.id : item.chapter.id, []);
+
+  const handleScrollToIndexFailed = useCallback<NonNullable<FlatListProps<ChapterData | PageData>['onScrollToIndexFailed']>>((info) => {
+    const estimatedOffset = Math.max(0, info.averageItemLength * info.index);
+    flatListRef.current?.scrollToOffset({
+      offset: estimatedOffset,
+      animated: false,
+    });
+
+    if (scrollToIndexRetryTimerRef.current) {
+      clearTimeout(scrollToIndexRetryTimerRef.current);
+    }
+
+    scrollToIndexRetryTimerRef.current = setTimeout(() => {
+      flatListRef.current?.scrollToIndex({
+        index: info.index,
+        animated: false,
+        viewPosition: 0,
+      });
+    }, 120);
+  }, []);
 
   const onReaderViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     viewableItemsRef.current = viewableItems;
@@ -1236,10 +1421,13 @@ export default function ReaderScreen({ route, navigation }: any) {
       )}
 
       <Animated.FlatList
+        key={`${settings.flipMode}:${readerListKey}`}
         ref={flatListRef}
-        data={readerData}
+        data={flatListData}
         renderItem={renderReaderItem}
         keyExtractor={getReaderItemKey}
+        getItemLayout={isHorizontal ? (getHorizontalItemLayout as any) : undefined}
+        onScrollToIndexFailed={handleScrollToIndexFailed}
         onEndReached={handleEndReached}
         onEndReachedThreshold={3.0}
         maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
@@ -1257,6 +1445,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         horizontal={isHorizontal}
         pagingEnabled={isHorizontal}
         removeClippedSubviews={Platform.OS === 'android'}
+        initialNumToRender={isHorizontal ? 3 : 2}
         windowSize={Platform.OS === 'android' ? 10 : 21}
         maxToRenderPerBatch={Platform.OS === 'android' ? 2 : 10}
         updateCellsBatchingPeriod={Platform.OS === 'android' ? 100 : 50}
