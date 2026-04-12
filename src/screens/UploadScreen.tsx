@@ -36,19 +36,23 @@ export default function UploadScreen({ navigation }: any) {
   const colorScheme = useColorScheme();
   const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
 
+  const WIFI_GREEN = '#5A9E5A';
+
   const c = useMemo(
     () => ({
-      bg: isDark ? '#121212' : '#f0f4f8',
-      card: isDark ? '#1E1E1E' : '#ffffff',
-      cardBorder: isDark ? '#2a2a2a' : '#e8edf2',
-      text: isDark ? '#e0e0e0' : '#1a1a2e',
-      subText: isDark ? '#888888' : '#888888',
-      iconLocalBg: isDark ? '#1a2d42' : '#e8f1fb',
-      iconWifiBg: isDark ? '#1a2d1e' : '#e8f5e9',
-      urlBox: isDark ? '#0d1f10' : '#f0faf2',
-      urlBorder: isDark ? '#1e4025' : '#c3e6cb',
-      wifiActiveBorder: isDark ? '#2e6e3a' : '#81c784',
-      divider: isDark ? '#2a2a2a' : '#f0f0f0',
+      bg:          isDark ? '#0E0C0A' : '#FAF7F0',
+      card:        isDark ? '#1C1916' : '#F3ECE0',
+      cardBorder:  isDark ? '#2A2520' : '#E0D4C0',
+      text:        isDark ? '#E8E0D0' : '#2C1A0E',
+      subText:     isDark ? '#6A5A44' : '#9A7A5A',
+      accent:      isDark ? '#C4A96A' : '#A0621A',
+      iconBox:     isDark ? '#2A2520' : '#E8DCC8',
+      urlBox:      isDark ? '#0A0806' : '#EFF8EE',
+      urlBorder:   isDark ? '#1E3A20' : '#B8DDB5',
+      divider:     isDark ? '#2A2520' : '#E0D4C0',
+      wifiActive:  isDark ? '#1E3A20' : '#D0EED0',
+      chevron:     isDark ? '#3A3028' : '#C0A880',
+      wifiActiveBorder: isDark ? '#2E6E3A' : '#81C784',
     }),
     [isDark],
   );
@@ -173,17 +177,17 @@ export default function UploadScreen({ navigation }: any) {
         disabled={localLoading}
         activeOpacity={0.7}
       >
-        <View style={[styles.iconCircle, { backgroundColor: c.iconLocalBg }]}>
-          <MaterialIcons name="folder-open" size={22} color="#1E88E5" />
+        <View style={[styles.iconCircle, { backgroundColor: c.iconBox }]}>
+          <MaterialIcons name="folder-open" size={22} color={c.accent} />
         </View>
         <View style={styles.cardBody}>
           <Text style={[styles.cardTitle, { color: c.text }]}>{t('upload.localTitle')}</Text>
           <Text style={[styles.cardDesc, { color: c.subText }]}>{t('upload.localDesc')}</Text>
         </View>
         {localLoading ? (
-          <ActivityIndicator size="small" color="#1E88E5" />
+          <ActivityIndicator size="small" color={c.accent} />
         ) : (
-          <MaterialIcons name="chevron-right" size={20} color={c.subText} />
+          <MaterialIcons name="chevron-right" size={20} color={c.chevron} />
         )}
       </TouchableOpacity>
 
@@ -205,11 +209,11 @@ export default function UploadScreen({ navigation }: any) {
           disabled={wifiStarting}
           activeOpacity={0.7}
         >
-          <View style={[styles.iconCircle, { backgroundColor: c.iconWifiBg }]}>
+          <View style={[styles.iconCircle, { backgroundColor: wifiActive ? (isDark ? '#1A2A1A' : '#D8EED8') : c.iconBox }]}>
             {wifiStarting ? (
-              <ActivityIndicator size="small" color="#43A047" />
+              <ActivityIndicator size="small" color={WIFI_GREEN} />
             ) : (
-              <MaterialIcons name="wifi" size={22} color={wifiActive ? '#43A047' : '#1E88E5'} />
+              <MaterialIcons name="wifi" size={22} color={wifiActive ? WIFI_GREEN : c.accent} />
             )}
           </View>
           <View style={styles.cardBody}>
@@ -217,12 +221,12 @@ export default function UploadScreen({ navigation }: any) {
             <Text style={[styles.cardDesc, { color: c.subText }]}>{t('upload.wifiDesc')}</Text>
           </View>
           {wifiActive ? (
-            <View style={styles.runningBadge}>
-              <View style={styles.dot} />
-              <Text style={styles.runningText}>{t('upload.wifiRunning')}</Text>
+            <View style={[styles.runningBadge, { backgroundColor: c.wifiActive }]}>
+              <View style={[styles.dot, { backgroundColor: WIFI_GREEN }]} />
+              <Text style={[styles.runningText, { color: WIFI_GREEN }]}>{t('upload.wifiRunning')}</Text>
             </View>
           ) : (
-            <MaterialIcons name="chevron-right" size={20} color={c.subText} />
+            <MaterialIcons name="chevron-right" size={20} color={c.chevron} />
           )}
         </TouchableOpacity>
 
@@ -238,26 +242,33 @@ export default function UploadScreen({ navigation }: any) {
                 value={serverUrl}
                 editable={false}
                 selectTextOnFocus
-                style={[styles.urlText, { color: '#43A047' }]}
+                style={[styles.urlText, { color: WIFI_GREEN }]}
               />
               <TouchableOpacity onPress={handleShareUrl} style={styles.shareBtn} activeOpacity={0.7}>
-                <MaterialIcons name="share" size={18} color="#43A047" />
+                <MaterialIcons name="share" size={18} color={WIFI_GREEN} />
               </TouchableOpacity>
             </View>
 
             {receivedCount > 0 && (
               <View style={styles.receivedRow}>
-                <MaterialIcons name="check-circle" size={14} color="#43A047" />
-                <Text style={styles.receivedText}>
+                <MaterialIcons name="check-circle" size={14} color={WIFI_GREEN} />
+                <Text style={[styles.receivedText, { color: WIFI_GREEN }]}>
                   {' '}
                   {t('upload.wifiReceived').replace('{count}', String(receivedCount))}
                 </Text>
               </View>
             )}
 
-            <TouchableOpacity style={styles.stopBtn} onPress={handleWifiStop} activeOpacity={0.7}>
-              <MaterialIcons name="stop-circle" size={16} color="#e53935" />
-              <Text style={styles.stopText}>{t('upload.wifiStop')}</Text>
+            <TouchableOpacity
+              style={[styles.stopBtn, {
+                borderColor: 'rgba(214,64,64,0.2)',
+                backgroundColor: isDark ? '#1A0A0A' : '#FFF5F5',
+              }]}
+              onPress={handleWifiStop}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="stop-circle" size={16} color="#D64040" />
+              <Text style={[styles.stopText, { color: '#D64040' }]}>{t('upload.wifiStop')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -321,7 +332,6 @@ const styles = StyleSheet.create({
   runningBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e8f5e9',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
@@ -330,12 +340,10 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#43A047',
     marginRight: 5,
   },
   runningText: {
     fontSize: 12,
-    color: '#43A047',
     fontWeight: '600',
   },
   wifiExpanded: {
@@ -385,12 +393,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ffcdd2',
-    backgroundColor: '#fff5f5',
   },
   stopText: {
     fontSize: 13,
-    color: '#e53935',
     marginLeft: 4,
     fontWeight: '500',
   },
