@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -68,6 +69,8 @@ export default function AppNavigator() {
 
   // @ts-ignore
   return (
+    <>
+    <StatusBar style={isDark ? 'light' : 'dark'} />
     <NavigationContainer theme={navTheme} initialState={initialState}>
       <Stack.Navigator screenOptions={{ headerTintColor: isDark ? '#C4A96A' : '#A0621A' }}>
         <Stack.Screen
@@ -92,5 +95,6 @@ export default function AppNavigator() {
         <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ title: t('nav.chapters') }} />
       </Stack.Navigator>
     </NavigationContainer>
+    </>
   );
 }

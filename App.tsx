@@ -61,7 +61,7 @@ export default function App() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f5f5' }}>
           <ActivityIndicator size="large" color="#1E88E5" />
         </View>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
       </SafeAreaProvider>
     );
   }
