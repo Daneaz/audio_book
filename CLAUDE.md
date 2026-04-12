@@ -44,3 +44,16 @@ jest --testPathPattern=<file>  # 跑单个测试文件
 **主题**: 系统/浅色/深色三模式，实时响应系统变化
 
 **字体**: 应用启动时加载自定义中文字体（LXGWWenKai、NotoSansSC 等）
+
+## UI 调试工作流（ios-simulator-mcp）
+
+修改 UI 代码后，Claude 应自主验证效果，无需用户截图反馈：
+
+1. 修改代码，保存
+2. 等待 Metro 热更新完成（约 2-3 秒）
+3. 调用 `ios_simulator__screenshot` 截图确认 UI
+4. 如需验证交互，调用 `ios_simulator__tap` / `ios_simulator__swipe` / `ios_simulator__type`
+5. 再次截图确认结果
+
+**前提：** 开发前须先运行 `expo run:ios` 启动模拟器。  
+**注意：** Native 改动（修改 ios/ 目录）需重新 build，热更新不生效，但本项目禁止修改 ios/ 目录，此场景不会出现。
