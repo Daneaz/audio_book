@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps, AppState } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps, AppState, Modal, Animated as RNAnimated } from 'react-native';
 import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -402,6 +402,10 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [timerRemaining, setTimerRemaining] = useState<number | null>(null);
   const [isSpeechTimerPanelVisible, setIsSpeechTimerPanelVisible] = useState(false);
   const [isTypographyPanelVisible, setIsTypographyPanelVisible] = useState(false);
+  const [isTtsOverlayVisible, setIsTtsOverlayVisible] = useState(false);
+  const waveAnims = useRef(
+    Array.from({ length: 7 }, (_, i) => new RNAnimated.Value(0.3 + i * 0.1))
+  ).current;
   const [isSpeechTimerEnabled, setIsSpeechTimerEnabled] = useState(false);
   const [speechTimerMinutes, setSpeechTimerMinutes] = useState(15);
   const [speechTimerWidth, setSpeechTimerWidth] = useState(0);
@@ -993,14 +997,8 @@ export default function ReaderScreen({ route, navigation }: any) {
       if (isSpeaking) {
           stopSpeech();
       } else {
-          const defaultMinutes = settings.speechTimerDefaultMinutes;
           setIsTypographyPanelVisible(false);
-          setIsVoiceDropdownVisible(false);
-          setSpeechTimerMinutes(defaultMinutes ?? 0);
-          setIsSpeechTimerEnabled((defaultMinutes ?? 0) > 0);
-          setIsSpeechTimerPanelVisible(true);
-          const duration = (defaultMinutes ?? 0) > 0 ? defaultMinutes : null;
-          startSpeech(duration, false);
+          startSpeech(null);
       }
   };
 
@@ -1193,6 +1191,25 @@ export default function ReaderScreen({ route, navigation }: any) {
           stopSpeech();
       };
   }, []);
+
+  // Wave animation for TTS
+  useEffect(() => {
+    if (isSpeaking) {
+      const animations = waveAnims.map((anim, i) =>
+        RNAnimated.loop(
+          RNAnimated.sequence([
+            RNAnimated.delay(i * 80),
+            RNAnimated.timing(anim, { toValue: 1, duration: 300 + i * 40, useNativeDriver: true }),
+            RNAnimated.timing(anim, { toValue: 0.25, duration: 300 + i * 40, useNativeDriver: true }),
+          ])
+        )
+      );
+      RNAnimated.parallel(animations).start();
+      return () => animations.forEach(a => a.stop());
+    } else {
+      waveAnims.forEach(a => a.setValue(0.3));
+    }
+  }, [isSpeaking]);
 
   const toggleTheme = () => {
       const next = settings.theme === 'dark' ? 'light' : 'dark';
@@ -1776,9 +1793,83 @@ export default function ReaderScreen({ route, navigation }: any) {
         </View>
       )}
 
+      {/* Mini 播放条 - Menu 隐藏时绝对定位 */}
+      {isSpeaking && !isMenuVisible && (
+        <TouchableOpacity
+          onPress={() => setIsTtsOverlayVisible(true)}
+          style={[styles.miniPlayer, {
+            backgroundColor: readerColors.bottomBar,
+            borderTopColor: readerColors.border,
+            bottom: insets.bottom,
+          }]}
+          activeOpacity={0.85}
+        >
+          <View style={styles.miniWave}>
+            {waveAnims.map((anim, i) => (
+              <RNAnimated.View
+                key={i}
+                style={[styles.miniWaveBar, {
+                  backgroundColor: readerColors.accent,
+                  transform: [{ scaleY: anim }],
+                }]}
+              />
+            ))}
+          </View>
+          <View style={styles.miniInfo}>
+            <Text style={[styles.miniInfoLabel, { color: readerColors.accent }]} numberOfLines={1}>
+              {t('reader.read')}
+            </Text>
+            <View style={[styles.miniProgressTrack, { backgroundColor: readerColors.border }]}>
+              <View style={[styles.miniProgressFill, { backgroundColor: readerColors.accent, width: '38%' }]} />
+            </View>
+          </View>
+          <TouchableOpacity onPress={(e) => { e.stopPropagation(); toggleSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <View style={styles.miniPause}>
+              <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
+              <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={(e) => { e.stopPropagation(); stopSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <View style={[styles.miniStop, { backgroundColor: readerColors.iconBox }]} />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      )}
+
       {/* Footer Controls */}
       {isMenuVisible && (
           <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: readerColors.bottomBar, borderTopColor: readerColors.border }]}>
+              {/* Mini 播放条 - Menu 可见时显示在控制行上方 */}
+              {isSpeaking && (
+                <TouchableOpacity
+                  onPress={() => setIsTtsOverlayVisible(true)}
+                  style={[styles.miniPlayer, styles.miniPlayerInFooter, {
+                    backgroundColor: readerColors.surface,
+                    borderColor: readerColors.border,
+                  }]}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.miniWave}>
+                    {waveAnims.map((anim, i) => (
+                      <RNAnimated.View key={i} style={[styles.miniWaveBar, { backgroundColor: readerColors.accent, transform: [{ scaleY: anim }] }]} />
+                    ))}
+                  </View>
+                  <View style={styles.miniInfo}>
+                    <Text style={[styles.miniInfoLabel, { color: readerColors.accent }]} numberOfLines={1}>{t('reader.read')}</Text>
+                    <View style={[styles.miniProgressTrack, { backgroundColor: readerColors.border }]}>
+                      <View style={[styles.miniProgressFill, { backgroundColor: readerColors.accent, width: '38%' }]} />
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={(e) => { e.stopPropagation(); toggleSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <View style={styles.miniPause}>
+                      <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
+                      <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={(e) => { e.stopPropagation(); stopSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <View style={[styles.miniStop, { backgroundColor: readerColors.iconBox }]} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              )}
               {isSpeechTimerPanelVisible ? (
                 <View style={styles.timerPanel}>
                   <View style={styles.inlineTimerSliderWrap}>
@@ -2043,6 +2134,128 @@ export default function ReaderScreen({ route, navigation }: any) {
               )}
           </View>
       )}
+
+      {/* 全屏朗读 Modal */}
+      <Modal
+        visible={isTtsOverlayVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsTtsOverlayVisible(false)}
+        statusBarTranslucent
+      >
+        <View style={[styles.ttsOverlay, { backgroundColor: isDark ? 'rgba(8,6,4,0.96)' : 'rgba(248,244,236,0.97)' }]}>
+          {/* 返回按钮 */}
+          <TouchableOpacity
+            onPress={() => setIsTtsOverlayVisible(false)}
+            style={[styles.ttsBack, { backgroundColor: readerColors.iconBox, top: insets.top + 14 }]}
+          >
+            <Ionicons name="chevron-down" size={20} color={readerColors.accent} />
+          </TouchableOpacity>
+
+          {/* 大音波 */}
+          <View style={styles.ttsBigWave}>
+            {waveAnims.map((anim, i) => (
+              <RNAnimated.View
+                key={i}
+                style={[styles.ttsBigWaveBar, {
+                  backgroundColor: readerColors.accent,
+                  transform: [{ scaleY: anim }],
+                }]}
+              />
+            ))}
+          </View>
+
+          {/* 章节标题 */}
+          <Text style={[styles.ttsChapterTitle, { color: readerColors.accent }]} numberOfLines={1}>
+            {currentHeaderTitle || book?.title}
+          </Text>
+
+          {/* 当前句子 */}
+          <Text style={[styles.ttsSentence, { color: readerColors.textPrimary }]} numberOfLines={3}>
+            {(() => {
+              const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
+              return chData?.sentences[currentSentenceIndex]?.text ?? '';
+            })()}
+          </Text>
+
+          {/* 进度条 */}
+          <View style={[styles.ttsTrack, { backgroundColor: readerColors.border }]}>
+            <View style={[styles.ttsTrackFill, { backgroundColor: readerColors.accent, width: '45%' }]} />
+            <View style={[styles.ttsTrackDot, { backgroundColor: readerColors.accent, left: '43%' }]} />
+          </View>
+
+          {/* 三键控制 */}
+          <View style={styles.ttsControls}>
+            <TouchableOpacity
+              style={[styles.ttsSmBtn, { backgroundColor: readerColors.iconBox }]}
+              onPress={() => {
+                const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
+                if (chData && currentSentenceIndex > 0) {
+                  speakSentence(chData.chapter.id, currentSentenceIndex - 1);
+                }
+              }}
+            >
+              <Ionicons name="play-skip-back" size={18} color={readerColors.accent} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.ttsMainBtn, { backgroundColor: readerColors.accent }]}
+              onPress={toggleSpeech}
+            >
+              <Ionicons
+                name={isSpeaking ? 'pause' : 'play'}
+                size={26}
+                color={isDark ? '#0E0C0A' : '#FAF7F0'}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.ttsSmBtn, { backgroundColor: readerColors.iconBox }]}
+              onPress={() => {
+                const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
+                if (chData && currentSentenceIndex < chData.sentences.length - 1) {
+                  speakSentence(chData.chapter.id, currentSentenceIndex + 1);
+                }
+              }}
+            >
+              <Ionicons name="play-skip-forward" size={18} color={readerColors.accent} />
+            </TouchableOpacity>
+          </View>
+
+          {/* 功能芯片 */}
+          <View style={styles.ttsChips}>
+            <TouchableOpacity
+              style={[styles.ttsChip, { backgroundColor: readerColors.accentBg, borderWidth: 1, borderColor: readerColors.accentBorder }]}
+              onPress={() => updateSettings({ speechRate: settings.speechRate >= 2.0 ? 0.5 : Number((settings.speechRate + 0.25).toFixed(2)) })}
+            >
+              <Text style={[styles.ttsChipText, { color: readerColors.accent }]}>{settings.speechRate.toFixed(1)}x</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.ttsChip, { backgroundColor: readerColors.iconBox }]}
+              onPress={() => {}}
+            >
+              <Text style={[styles.ttsChipText, { color: readerColors.textSub }]} numberOfLines={1}>
+                {selectedVoiceLabel}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.ttsChip, { backgroundColor: readerColors.iconBox }]}
+              onPress={() => {
+                const options = [15, 30, 60, 0];
+                const next = options[(options.indexOf(speechTimerMinutes) + 1) % options.length];
+                setSpeechTimerMinutes(next);
+                setIsSpeechTimerEnabled(next > 0);
+              }}
+            >
+              <Text style={[styles.ttsChipText, { color: readerColors.textSub }]}>
+                {speechTimerMinutes > 0 ? `⏱ ${speechTimerMinutes}m` : t('reader.timerNone')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2491,5 +2704,172 @@ const styles = StyleSheet.create({
   typoDoneText: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  miniPlayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    zIndex: 20,
+  },
+  miniPlayerInFooter: {
+    position: 'relative',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    margin: 10,
+    marginBottom: 4,
+    height: 48,
+  },
+  miniWave: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    height: 20,
+  },
+  miniWaveBar: {
+    width: 2.5,
+    height: 16,
+    borderRadius: 2,
+  },
+  miniInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  miniInfoLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  miniProgressTrack: {
+    height: 2,
+    borderRadius: 1,
+  },
+  miniProgressFill: {
+    height: 2,
+    borderRadius: 1,
+  },
+  miniCtrl: {
+    padding: 2,
+  },
+  miniPause: {
+    flexDirection: 'row',
+    gap: 2,
+    alignItems: 'center',
+  },
+  miniPauseBar: {
+    width: 2.5,
+    height: 12,
+    borderRadius: 1,
+  },
+  miniStop: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+  },
+  ttsOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  ttsBack: {
+    position: 'absolute',
+    left: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ttsBigWave: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 60,
+    marginBottom: 24,
+  },
+  ttsBigWaveBar: {
+    width: 4,
+    height: 52,
+    borderRadius: 3,
+  },
+  ttsChapterTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  ttsSentence: {
+    fontSize: 16,
+    lineHeight: 26,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  ttsTrack: {
+    width: '100%',
+    height: 2,
+    borderRadius: 1,
+    marginBottom: 28,
+    position: 'relative',
+  },
+  ttsTrackFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    height: 2,
+    borderRadius: 1,
+  },
+  ttsTrackDot: {
+    position: 'absolute',
+    top: -5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  ttsControls: {
+    flexDirection: 'row',
+    gap: 20,
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  ttsSmBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ttsMainBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  ttsChips: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  ttsChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  ttsChipText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
