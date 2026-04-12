@@ -1279,7 +1279,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     accentBg:     isDark ? 'rgba(196,169,106,0.1)'  : 'rgba(139,94,32,0.08)',
     accentBorder: isDark ? 'rgba(196,169,106,0.3)'  : 'rgba(139,94,32,0.25)',
     textPrimary:  isDark ? '#E8E0D0' : '#2C1A0E',
-    textSub:      isDark ? '#6A5A44' : '#9A7A5A',
+    textSub:      isDark ? '#B0A080' : '#9A7A5A',
     bottomBar:    isDark ? '#0A0806' : '#F3ECE0',
     iconBox:      isDark ? '#2A2520' : '#E8DCC8',
     highlight:    isDark ? '#1E3A2A' : '#F0EDD4',
@@ -1837,7 +1837,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       {/* Footer Controls */}
       {isMenuVisible && (
-          <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: readerColors.bottomBar, borderTopColor: readerColors.border }]}>
+          <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: readerColors.bottomBar }]}>
               {/* Mini 播放条 - Menu 可见时显示在控制行上方 */}
               {isSpeaking && (
                 <TouchableOpacity
@@ -2095,7 +2095,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                   {/* 主题 */}
                   <TouchableOpacity onPress={toggleTheme} style={styles.ctrlBtn}>
                     <View style={[styles.ctrlIconBox, { backgroundColor: readerColors.iconBox }]}>
-                      <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={16} color={readerColors.textSub} />
+                      <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={20} color={readerColors.textSub} />
                     </View>
                     <Text style={[styles.ctrlLabel, { color: readerColors.textSub }]}>{t('reader.theme')}</Text>
                   </TouchableOpacity>
@@ -2107,7 +2107,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                     <View style={[styles.ctrlIconBox, { backgroundColor: readerColors.iconBox }]}>
                       <Ionicons
                         name={settings.autoFlip ? 'stop-circle-outline' : 'play-circle-outline'}
-                        size={16}
+                        size={20}
                         color={settings.autoFlip ? '#D64040' : readerColors.textSub}
                       />
                     </View>
@@ -2124,7 +2124,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                       { backgroundColor: isSpeaking ? readerColors.accentBg : readerColors.iconBox },
                       isSpeaking && { borderWidth: 1, borderColor: readerColors.accentBorder },
                     ]}>
-                      <Ionicons name={isSpeaking ? 'mic' : 'mic-outline'} size={16} color={isSpeaking ? readerColors.accent : readerColors.textSub} />
+                      <Ionicons name={isSpeaking ? 'mic' : 'mic-outline'} size={20} color={isSpeaking ? readerColors.accent : readerColors.textSub} />
                     </View>
                     <Text style={[styles.ctrlLabel, { color: isSpeaking ? readerColors.accent : readerColors.textSub }]}>
                       {isSpeaking ? t('reader.pause') : t('reader.read')}
@@ -2337,8 +2337,6 @@ const styles = StyleSheet.create({
   },
   footer: {
       paddingTop: 10,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: '#ccc',
       position: 'absolute',
       bottom: 0,
       left: 0,
@@ -2591,26 +2589,26 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   ctrlIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 1,
   },
   ctrlAaSmall: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
-    lineHeight: 14,
+    lineHeight: 16,
   },
   ctrlAaLarge: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '800',
-    lineHeight: 20,
+    lineHeight: 24,
   },
   ctrlLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   ctrlDivider: {
