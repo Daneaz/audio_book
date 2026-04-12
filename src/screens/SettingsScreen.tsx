@@ -138,170 +138,136 @@ export default function SettingsScreen() {
 
   const colorScheme = useColorScheme();
   const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
-  const bgColor = isDark ? '#121212' : '#f5f5f5';
-  const sectionBgColor = isDark ? '#1E1E1E' : '#fff';
-  const textColor = isDark ? '#e0e0e0' : '#333';
-  const subTextColor = isDark ? '#aaa' : '#666';
-  const borderColor = isDark ? '#333' : '#ddd';
 
-  if (loading) return <View style={[styles.container, { backgroundColor: bgColor }]}><Text style={{color: textColor}}>{t('common.loading')}</Text></View>;
+  const sc = useMemo(() => ({
+    bg:          isDark ? '#0E0C0A' : '#FAF7F0',
+    surface:     isDark ? '#1C1916' : '#F3ECE0',
+    border:      isDark ? '#2A2520' : '#E0D4C0',
+    accent:      isDark ? '#C4A96A' : '#A0621A',
+    accentBg:    isDark ? 'rgba(196,169,106,0.1)' : 'rgba(139,94,32,0.08)',
+    textPrimary: isDark ? '#E8E0D0' : '#2C1A0E',
+    textSub:     isDark ? '#6A5A44' : '#9A7A5A',
+    iconBox:     isDark ? '#2A2520' : '#E8DCC8',
+    switchOn:    isDark ? '#C4A96A' : '#2C1A0E',
+  }), [isDark]);
+
+  if (loading) return <View style={[styles.container, { backgroundColor: sc.bg }]}><Text style={{color: sc.textPrimary}}>{t('common.loading')}</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: bgColor }]}>
-      <View style={[styles.section, { backgroundColor: sectionBgColor }]}>
-        <Text style={styles.sectionTitle}>{t('settings.appearance')}</Text>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: sc.bg }}
+      contentContainerStyle={[styles.container, { backgroundColor: sc.bg }]}
+    >
+      {/* ===== 外观 ===== */}
+      <Text style={[styles.groupLabel, { color: sc.accent }]}>{t('settings.appearance')}</Text>
+      <View style={[styles.groupCard, { backgroundColor: sc.surface, borderColor: sc.border }]}>
 
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.language')}</Text>
-          <View style={styles.languageControls}>
-            <TouchableOpacity
-              onPress={() => updateSettings({ language: 'system' })}
-              style={[styles.languageButton, { borderColor }, settings.language === 'system' && styles.modeButtonActive]}
-            >
-              <Text style={[styles.languageButtonText, { color: textColor }, settings.language === 'system' && styles.modeButtonTextActive]}>
-                {t('settings.languageSystem')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => updateSettings({ language: 'zh' })}
-              style={[styles.languageButton, { borderColor }, settings.language === 'zh' && styles.modeButtonActive]}
-            >
-              <Text style={[styles.languageButtonText, { color: textColor }, settings.language === 'zh' && styles.modeButtonTextActive]}>
-                {t('settings.languageChinese')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => updateSettings({ language: 'en' })}
-              style={[styles.languageButton, { borderColor }, settings.language === 'en' && styles.modeButtonActive]}
-            >
-              <Text style={[styles.languageButtonText, { color: textColor }, settings.language === 'en' && styles.modeButtonTextActive]}>
-                {t('settings.languageEnglish')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.themeMode')}</Text>
-          <View style={styles.languageControls}>
-            <TouchableOpacity
-              onPress={() => updateSettings({ theme: 'system' })}
-              style={[styles.languageButton, { borderColor }, settings.theme === 'system' && styles.modeButtonActive]}
-            >
-              <Text style={[styles.languageButtonText, { color: textColor }, settings.theme === 'system' && styles.modeButtonTextActive]}>
-                {t('settings.themeSystem')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => updateSettings({ theme: 'dark' })}
-              style={[styles.languageButton, { borderColor }, settings.theme === 'dark' && styles.modeButtonActive]}
-            >
-              <Text style={[styles.languageButtonText, { color: textColor }, settings.theme === 'dark' && styles.modeButtonTextActive]}>
-                {t('settings.themeDark')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => updateSettings({ theme: 'light' })}
-              style={[styles.languageButton, { borderColor }, settings.theme === 'light' && styles.modeButtonActive]}
-            >
-              <Text style={[styles.languageButtonText, { color: textColor }, settings.theme === 'light' && styles.modeButtonTextActive]}>
-                {t('settings.themeLight')}
-              </Text>
-            </TouchableOpacity>
+        {/* 语言 */}
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.language')}</Text>
+          <View style={styles.segControl}>
+            {(['system', 'zh', 'en'] as const).map((lang, i, arr) => (
+              <TouchableOpacity
+                key={lang}
+                onPress={() => updateSettings({ language: lang })}
+                style={[
+                  styles.segBtn,
+                  { backgroundColor: settings.language === lang ? sc.accent : sc.iconBox },
+                  i === 0 && styles.segBtnFirst,
+                  i === arr.length - 1 && styles.segBtnLast,
+                ]}
+              >
+                <Text style={[styles.segBtnText, { color: settings.language === lang ? (isDark ? '#0E0C0A' : '#FAF7F0') : sc.textSub }]}>
+                  {lang === 'system' ? t('settings.languageSystem') : lang === 'zh' ? t('settings.languageChinese') : t('settings.languageEnglish')}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.fontSize')}: {settings.fontSize}</Text>
-          <View style={styles.controls}>
-            <TouchableOpacity onPress={() => updateSettings({ fontSize: Math.max(12, settings.fontSize - 2) })} style={[styles.button, { backgroundColor: isDark ? '#333' : '#eee' }]}>
-              <Text style={[styles.buttonText, { color: textColor }]}>-</Text>
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+
+        {/* 主题 */}
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.themeMode')}</Text>
+          <View style={styles.segControl}>
+            {(['system', 'dark', 'light'] as const).map((theme, i, arr) => (
+              <TouchableOpacity
+                key={theme}
+                onPress={() => updateSettings({ theme })}
+                style={[
+                  styles.segBtn,
+                  { backgroundColor: settings.theme === theme ? sc.accent : sc.iconBox },
+                  i === 0 && styles.segBtnFirst,
+                  i === arr.length - 1 && styles.segBtnLast,
+                ]}
+              >
+                <Text style={[styles.segBtnText, { color: settings.theme === theme ? (isDark ? '#0E0C0A' : '#FAF7F0') : sc.textSub }]}>
+                  {theme === 'system' ? t('settings.themeSystem') : theme === 'dark' ? t('settings.themeDark') : t('settings.themeLight')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+
+        {/* 字号 */}
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.fontSize')}</Text>
+          <View style={styles.stepper}>
+            <TouchableOpacity onPress={() => updateSettings({ fontSize: Math.max(12, settings.fontSize - 2) })} style={[styles.stepBtn, { backgroundColor: sc.iconBox }]}>
+              <Text style={[styles.stepBtnText, { color: sc.accent }]}>−</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => updateSettings({ fontSize: Math.min(30, settings.fontSize + 2) })} style={[styles.button, { backgroundColor: isDark ? '#333' : '#eee' }]}>
-              <Text style={[styles.buttonText, { color: textColor }]}>+</Text>
+            <Text style={[styles.stepVal, { color: sc.textPrimary }]}>{settings.fontSize}</Text>
+            <TouchableOpacity onPress={() => updateSettings({ fontSize: Math.min(30, settings.fontSize + 2) })} style={[styles.stepBtn, { backgroundColor: sc.iconBox }]}>
+              <Text style={[styles.stepBtnText, { color: sc.accent }]}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
-        <View style={[styles.previewCard, { backgroundColor: isDark ? '#171B23' : '#F8FAFC', borderColor }]}>
-          <Text
-            style={[
-              styles.sizePreview,
-              {
-                color: textColor,
-                fontSize: settings.fontSize,
-                lineHeight: settings.fontSize * settings.lineSpacing,
-                fontFamily: selectedFontFamily,
-              },
-            ]}
-          >
-            {t('reader.fontPreview')}
-          </Text>
-        </View>
 
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.lineSpacing')}: {settings.lineSpacing.toFixed(1)}</Text>
-          <View style={styles.controls}>
-            <TouchableOpacity
-              onPress={() => updateSettings({ lineSpacing: Math.max(1.2, Number((settings.lineSpacing - 0.1).toFixed(1))) })}
-              style={[styles.button, { backgroundColor: isDark ? '#333' : '#eee' }]}
-            >
-              <Text style={[styles.buttonText, { color: textColor }]}>-</Text>
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+
+        {/* 行距 */}
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.lineSpacing')}</Text>
+          <View style={styles.stepper}>
+            <TouchableOpacity onPress={() => updateSettings({ lineSpacing: Math.max(1.2, Number((settings.lineSpacing - 0.1).toFixed(1))) })} style={[styles.stepBtn, { backgroundColor: sc.iconBox }]}>
+              <Text style={[styles.stepBtnText, { color: sc.accent }]}>−</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => updateSettings({ lineSpacing: Math.min(2.2, Number((settings.lineSpacing + 0.1).toFixed(1))) })}
-              style={[styles.button, { backgroundColor: isDark ? '#333' : '#eee' }]}
-            >
-              <Text style={[styles.buttonText, { color: textColor }]}>+</Text>
+            <Text style={[styles.stepVal, { color: sc.textPrimary }]}>{settings.lineSpacing.toFixed(1)}</Text>
+            <TouchableOpacity onPress={() => updateSettings({ lineSpacing: Math.min(2.2, Number((settings.lineSpacing + 0.1).toFixed(1))) })} style={[styles.stepBtn, { backgroundColor: sc.iconBox }]}>
+              <Text style={[styles.stepBtnText, { color: sc.accent }]}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
-        <View style={[styles.previewCard, { backgroundColor: isDark ? '#171B23' : '#F8FAFC', borderColor }]}>
-          <Text
-            style={[
-              styles.spacingPreview,
-              {
-                color: textColor,
-                fontFamily: selectedFontFamily,
-                lineHeight: settings.fontSize * settings.lineSpacing,
-              },
-            ]}
-          >
-            {t('reader.lineSpacingPreview')}
-          </Text>
-        </View>
 
-        <TouchableOpacity onPress={() => setShowFonts((value) => !value)} style={styles.row} activeOpacity={0.7}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.fontFamily')}</Text>
-          <Text style={[styles.valueText, { color: subTextColor }]} numberOfLines={1}>
-            {selectedFontLabel}
-          </Text>
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+
+        {/* 字体 */}
+        <TouchableOpacity onPress={() => setShowFonts((v) => !v)} style={styles.settingsRow} activeOpacity={0.7}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.fontFamily')}</Text>
+          <Text style={[styles.rowValue, { color: sc.textSub }]} numberOfLines={1}>{selectedFontLabel}</Text>
         </TouchableOpacity>
 
         {showFonts && (
-          <View style={[styles.voiceList, { borderTopColor: borderColor }]}>
-            {settingsFontOptions.map((option) => {
+          <View style={[styles.expandedList, { borderTopColor: sc.border }]}>
+            {settingsFontOptions.map((option, idx, arr) => {
               const optionId = option.id as Exclude<typeof option.id, 'system'>;
               const selected = settings.fontPreset === optionId;
               return (
                 <TouchableOpacity
                   key={optionId}
                   onPress={() => updateSettings({ fontPreset: optionId })}
-                  style={[styles.voiceItem, selected && [styles.voiceItemSelected, { backgroundColor: isDark ? '#334' : '#eef6ff' }]]}
+                  style={[styles.listItem, { borderBottomColor: sc.border },
+                    selected && { backgroundColor: sc.accentBg },
+                    idx === arr.length - 1 && { borderBottomWidth: 0 },
+                  ]}
                 >
-                  <Text style={[styles.voiceName, { color: textColor }]}>{fontOptionMeta[optionId].label}</Text>
-                  <Text style={[styles.fontDescription, { color: subTextColor }]}>{fontOptionMeta[optionId].description}</Text>
-                  <Text
-                    style={[
-                      styles.fontPreview,
-                      {
-                        color: textColor,
-                        fontFamily: getFontFamilyForPreset(optionId),
-                      },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {t('reader.fontPreview')}
+                  <Text style={[styles.listItemLabel, { color: selected ? sc.accent : sc.textPrimary, fontFamily: getFontFamilyForPreset(optionId) }]}>
+                    {fontOptionMeta[optionId].label}
                   </Text>
+                  {selected && <Text style={[styles.listItemCheck, { color: sc.accent }]}>✓</Text>}
                 </TouchableOpacity>
               );
             })}
@@ -309,146 +275,121 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      <View style={[styles.section, { backgroundColor: sectionBgColor }]}>
-        <Text style={styles.sectionTitle}>{t('settings.readingMode')}</Text>
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.keepScreenAwake')}</Text>
-          <Switch
-            value={settings.keepScreenAwake}
-            onValueChange={(val) => updateSettings({ keepScreenAwake: val })}
-          />
-        </View>
-        <View style={styles.row}>
-            <Text style={[styles.label, { color: textColor }]}>{t('settings.flipMode')}</Text>
-            <View style={styles.optionControls}>
-              <TouchableOpacity 
-                onPress={() => updateSettings({ flipMode: 'scroll', flipInterval: 30 })} 
-                style={[styles.optionButton, { borderColor }, settings.flipMode === 'scroll' && styles.modeButtonActive]}
-              >
-                <Text style={[styles.optionButtonText, { color: textColor }, settings.flipMode === 'scroll' && styles.modeButtonTextActive]}>{t('settings.flipModeScroll')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => updateSettings({ flipMode: 'horizontal', flipInterval: 15 })} 
-                style={[styles.optionButton, { borderColor }, settings.flipMode === 'horizontal' && styles.modeButtonActive]}
-              >
-                <Text style={[styles.optionButtonText, { color: textColor }, settings.flipMode === 'horizontal' && styles.modeButtonTextActive]}>{t('settings.flipModeHorizontal')}</Text>
-              </TouchableOpacity>
-            </View>
-        </View>
-        <View style={styles.row}>
-            <Text style={[styles.label, { color: textColor }]}>
-              {settings.flipMode === 'scroll' ? t('settings.autoReadSpeed') : t('settings.autoFlipInterval')}
-            </Text>
-            <View style={styles.controls}>
-              <TouchableOpacity
-                onPress={() =>
-                  updateSettings({
-                    flipInterval: settings.flipMode === 'scroll'
-                      ? Math.max(10, settings.flipInterval - 5)
-                      : Math.max(5, settings.flipInterval - 5)
-                  })
-                }
-                style={[styles.button, { backgroundColor: isDark ? '#333' : '#eee' }]}
-              >
-                <Text style={[styles.buttonText, { color: textColor }]}>-</Text>
-              </TouchableOpacity>
-              <Text style={{ marginHorizontal: 10, color: textColor }}>
-                {settings.flipMode === 'scroll' ? `${settings.flipInterval}` : settings.flipInterval}
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  updateSettings({
-                    flipInterval: settings.flipMode === 'scroll'
-                      ? Math.min(80, settings.flipInterval + 5)
-                      : settings.flipInterval + 5
-                  })
-                }
-                style={[styles.button, { backgroundColor: isDark ? '#333' : '#eee' }]}
-              >
-                <Text style={[styles.buttonText, { color: textColor }]}>+</Text>
-              </TouchableOpacity>
-            </View>
-        </View>
-      </View>
+      {/* ===== 阅读 ===== */}
+      <Text style={[styles.groupLabel, { color: sc.accent }]}>{t('settings.readingMode')}</Text>
+      <View style={[styles.groupCard, { backgroundColor: sc.surface, borderColor: sc.border }]}>
 
-      <View style={[styles.section, { backgroundColor: sectionBgColor }]}>
-        <Text style={styles.sectionTitle}>{t('settings.voiceReading')}</Text>
+        {/* 翻页模式 */}
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.flipMode')}</Text>
+          <View style={styles.segControl}>
+            {(['scroll', 'horizontal'] as const).map((mode, i, arr) => (
+              <TouchableOpacity
+                key={mode}
+                onPress={() => updateSettings({ flipMode: mode, flipInterval: mode === 'scroll' ? 30 : 15 })}
+                style={[
+                  styles.segBtn,
+                  { backgroundColor: settings.flipMode === mode ? sc.accent : sc.iconBox },
+                  i === 0 && styles.segBtnFirst,
+                  i === arr.length - 1 && styles.segBtnLast,
+                ]}
+              >
+                <Text style={[styles.segBtnText, { color: settings.flipMode === mode ? (isDark ? '#0E0C0A' : '#FAF7F0') : sc.textSub }]}>
+                  {mode === 'scroll' ? t('settings.flipModeScroll') : t('settings.flipModeHorizontal')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.speechRate')}: {settings.speechRate.toFixed(1)}x</Text>
-          <View style={styles.controls}>
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+
+        {/* 自动翻页速度 */}
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>
+            {settings.flipMode === 'scroll' ? t('settings.autoReadSpeed') : t('settings.autoFlipInterval')}
+          </Text>
+          <View style={styles.stepper}>
             <TouchableOpacity
-              onPress={() => updateSettings({ speechRate: Math.max(0.5, Number((settings.speechRate - 0.1).toFixed(1))) })}
-              style={[styles.button, { backgroundColor: isDark ? '#333' : '#eee' }]}
+              onPress={() => updateSettings({ flipInterval: settings.flipMode === 'scroll' ? Math.max(10, settings.flipInterval - 5) : Math.max(5, settings.flipInterval - 5) })}
+              style={[styles.stepBtn, { backgroundColor: sc.iconBox }]}
             >
-              <Text style={[styles.buttonText, { color: textColor }]}>-</Text>
+              <Text style={[styles.stepBtnText, { color: sc.accent }]}>−</Text>
             </TouchableOpacity>
+            <Text style={[styles.stepVal, { color: sc.textPrimary }]}>{settings.flipInterval}</Text>
             <TouchableOpacity
-              onPress={() => updateSettings({ speechRate: Math.min(2.0, Number((settings.speechRate + 0.1).toFixed(1))) })}
-              style={[styles.button, { backgroundColor: isDark ? '#333' : '#eee' }]}
+              onPress={() => updateSettings({ flipInterval: settings.flipMode === 'scroll' ? Math.min(80, settings.flipInterval + 5) : settings.flipInterval + 5 })}
+              style={[styles.stepBtn, { backgroundColor: sc.iconBox }]}
             >
-              <Text style={[styles.buttonText, { color: textColor }]}>+</Text>
+              <Text style={[styles.stepBtnText, { color: sc.accent }]}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity
-          onPress={() => setShowVoices((v) => !v)}
-          style={styles.row}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.voice')}</Text>
-          <Text style={[styles.valueText, { color: subTextColor }]} numberOfLines={1}>
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+
+        {/* 常亮屏幕 */}
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.keepScreenAwake')}</Text>
+          <Switch
+            value={settings.keepScreenAwake}
+            onValueChange={(val) => updateSettings({ keepScreenAwake: val })}
+            trackColor={{ false: sc.iconBox, true: sc.switchOn }}
+            thumbColor={sc.bg}
+          />
+        </View>
+      </View>
+
+      {/* ===== 朗读 ===== */}
+      <Text style={[styles.groupLabel, { color: sc.accent }]}>{t('settings.voiceReading')}</Text>
+      <View style={[styles.groupCard, { backgroundColor: sc.surface, borderColor: sc.border }]}>
+
+        {/* 语速 */}
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.speechRate')}</Text>
+          <View style={styles.stepper}>
+            <TouchableOpacity onPress={() => updateSettings({ speechRate: Math.max(0.5, Number((settings.speechRate - 0.1).toFixed(1))) })} style={[styles.stepBtn, { backgroundColor: sc.iconBox }]}>
+              <Text style={[styles.stepBtnText, { color: sc.accent }]}>−</Text>
+            </TouchableOpacity>
+            <Text style={[styles.stepVal, { color: sc.textPrimary }]}>{settings.speechRate.toFixed(1)}x</Text>
+            <TouchableOpacity onPress={() => updateSettings({ speechRate: Math.min(2.0, Number((settings.speechRate + 0.1).toFixed(1))) })} style={[styles.stepBtn, { backgroundColor: sc.iconBox }]}>
+              <Text style={[styles.stepBtnText, { color: sc.accent }]}>+</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+
+        {/* 音色 */}
+        <TouchableOpacity onPress={() => setShowVoices((v) => !v)} style={styles.settingsRow} activeOpacity={0.7}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.voice')}</Text>
+          <Text style={[styles.rowValue, { color: sc.textSub }]} numberOfLines={1}>
             {voicesLoading ? t('common.loading') : selectedVoiceLabel}
           </Text>
         </TouchableOpacity>
-        <Text style={[styles.helperText, { color: subTextColor }]}>{t('settings.voicePreviewHint')}</Text>
 
         {showVoices && (
-          <View style={[styles.voiceList, { borderTopColor: borderColor }]}>
+          <View style={[styles.expandedList, { borderTopColor: sc.border }]}>
             {voicesLoading ? (
-              <View style={styles.voiceLoading}>
-                <ActivityIndicator color={textColor} />
-              </View>
+              <ActivityIndicator color={sc.accent} style={{ paddingVertical: 12 }} />
             ) : (
               <>
-                <TouchableOpacity
-                  onPress={() => previewVoice('default', language === 'zh' ? 'zh-CN' : 'en-US').then(() => updateSettings({ voiceType: 'default' }))}
-                  style={[styles.voiceItem, selectedVoice === 'default' && [styles.voiceItemSelected, { backgroundColor: isDark ? '#334' : '#eef6ff' }]]}
-                >
-                  <View style={styles.voiceRow}>
-                    <Text style={[styles.voiceName, { color: textColor, flex: 1 }]}>{t('common.default')}</Text>
-                    <TouchableOpacity
-                      onPress={() => previewVoice('default', language === 'zh' ? 'zh-CN' : 'en-US')}
-                      style={[styles.previewButton, { borderColor }]}
-                    >
-                      <Text style={[styles.previewButtonText, { color: textColor }]}>
-                        {previewingVoiceId === 'default' ? t('common.loading') : t('common.preview')}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-                {sortedVoices.slice(0, 60).map((v) => {
-                  const label = `${v.name || v.identifier}${v.language ? ` (${v.language})` : ''}`;
-                  const selected = selectedVoice === v.identifier;
+                {[{ identifier: 'default', name: t('common.default'), language: language === 'zh' ? 'zh-CN' : 'en-US' }, ...sortedVoices.slice(0, 60)].map((v, idx, arr) => {
+                  const label = v.identifier === 'default' ? t('common.default') : `${v.name || v.identifier}${v.language ? ` (${v.language})` : ''}`;
+                  const selected = selectedVoice === v.identifier || (v.identifier === 'default' && (!selectedVoice || selectedVoice === 'default'));
                   return (
                     <TouchableOpacity
                       key={v.identifier}
                       onPress={() => previewVoice(v.identifier, v.language).then(() => updateSettings({ voiceType: v.identifier }))}
-                      style={[styles.voiceItem, selected && [styles.voiceItemSelected, { backgroundColor: isDark ? '#334' : '#eef6ff' }]]}
+                      style={[styles.listItem, { borderBottomColor: sc.border },
+                        selected && { backgroundColor: sc.accentBg },
+                        idx === arr.length - 1 && { borderBottomWidth: 0 },
+                      ]}
                     >
-                      <View style={styles.voiceRow}>
-                        <Text style={[styles.voiceName, { color: textColor, flex: 1 }]} numberOfLines={1}>
-                          {label}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => previewVoice(v.identifier, v.language)}
-                          style={[styles.previewButton, { borderColor }]}
-                        >
-                          <Text style={[styles.previewButtonText, { color: textColor }]}>
-                            {previewingVoiceId === v.identifier ? t('common.loading') : t('common.preview')}
-                          </Text>
-                        </TouchableOpacity>
+                      <Text style={[styles.listItemLabel, { color: selected ? sc.accent : sc.textPrimary }]} numberOfLines={1}>{label}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        {previewingVoiceId === v.identifier && <ActivityIndicator size="small" color={sc.accent} />}
+                        {selected && <Text style={[styles.listItemCheck, { color: sc.accent }]}>✓</Text>}
                       </View>
                     </TouchableOpacity>
                   );
@@ -459,19 +400,22 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      <View style={[styles.section, { backgroundColor: sectionBgColor }]}>
-        <Text style={styles.sectionTitle}>{t('settings.about')}</Text>
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.appVersion')}</Text>
-          <Text style={[styles.valueText, { color: subTextColor }]}>{Constants.expoConfig?.version ?? '—'}</Text>
+      {/* ===== 关于 ===== */}
+      <Text style={[styles.groupLabel, { color: sc.accent }]}>{t('settings.about')}</Text>
+      <View style={[styles.groupCard, { backgroundColor: sc.surface, borderColor: sc.border }]}>
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.appVersion')}</Text>
+          <Text style={[styles.rowValue, { color: sc.textSub }]}>{Constants.expoConfig?.version ?? '—'}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.otaChannel')}</Text>
-          <Text style={[styles.valueText, { color: subTextColor }]}>{Updates.channel ?? '—'}</Text>
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.otaChannel')}</Text>
+          <Text style={[styles.rowValue, { color: sc.textSub }]}>{Updates.channel ?? '—'}</Text>
         </View>
-        <View style={[styles.row, { marginBottom: 0 }]}>
-          <Text style={[styles.label, { color: textColor }]}>{t('settings.otaVersion')}</Text>
-          <Text style={[styles.valueText, { color: subTextColor }]} numberOfLines={1}>
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+        <View style={styles.settingsRow}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.otaVersion')}</Text>
+          <Text style={[styles.rowValue, { color: sc.textSub }]} numberOfLines={1}>
             {Updates.updateId ? Updates.updateId.slice(0, 8) : t('settings.otaBuiltin')}
           </Text>
         </View>
@@ -483,177 +427,109 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
+    paddingBottom: 40,
   },
-  section: {
-    marginBottom: 30,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    elevation: 2,
+  groupLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginTop: 20,
+    marginLeft: 4,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#1E88E5',
+  groupCard: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 4,
+    overflow: 'hidden',
   },
-  row: {
+  settingsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 16,
-  },
-  valueText: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
-    textAlign: 'right',
-    marginLeft: 12,
-  },
-  previewCard: {
-    borderWidth: 1,
-    borderRadius: 12,
+    paddingVertical: 11,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginTop: -4,
-    marginBottom: 16,
+    minHeight: 48,
   },
-  sizePreview: {
-    fontWeight: '500',
-  },
-  spacingPreview: {
-    fontSize: 16,
-  },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  button: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#eee',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  modeControls: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-  },
-  optionControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    flexWrap: 'nowrap',
-    marginLeft: 12,
-  },
-  optionButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    marginLeft: 8,
-  },
-  optionButtonText: {
-    fontSize: 13,
-    color: '#333',
-  },
-  languageControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    flexWrap: 'nowrap',
-    marginLeft: 12,
-  },
-  languageButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    marginLeft: 8,
-  },
-  languageButtonText: {
-    fontSize: 13,
-    color: '#333',
-  },
-  modeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    marginBottom: 6,
-  },
-  modeButtonActive: {
-    backgroundColor: '#1E88E5',
-    borderColor: '#1E88E5',
-  },
-  modeButtonText: {
+  rowLabel: {
     fontSize: 14,
-    color: '#333',
+    fontWeight: '600',
+    flex: 1,
   },
-  modeButtonTextActive: {
-    color: '#fff',
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 14,
   },
-  voiceList: {
-    marginTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#ddd',
+  rowValue: {
+    fontSize: 13,
+    maxWidth: 140,
+    textAlign: 'right',
   },
-  voiceLoading: {
-    paddingVertical: 12,
+  segControl: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  segBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  helperText: {
+  segBtnFirst: {
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+  },
+  segBtnLast: {
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  segBtnText: {
     fontSize: 12,
-    marginTop: -8,
-    marginBottom: 12,
+    fontWeight: '600',
   },
-  voiceItem: {
-    paddingVertical: 10,
-  },
-  voiceRow: {
+  stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 8,
   },
-  voiceItemSelected: {
-    backgroundColor: '#eef6ff',
+  stepBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  voiceName: {
-    fontSize: 14,
-  },
-  previewBadge: {
-    fontSize: 12,
-  },
-  previewButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderWidth: 1,
-    borderRadius: 999,
-  },
-  previewButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  fontDescription: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  fontPreview: {
+  stepBtnText: {
     fontSize: 16,
-    marginTop: 8,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  stepVal: {
+    fontSize: 14,
+    fontWeight: '600',
+    minWidth: 36,
+    textAlign: 'center',
+  },
+  expandedList: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  listItemLabel: {
+    fontSize: 14,
+    flex: 1,
+  },
+  listItemCheck: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginLeft: 8,
   },
 });
