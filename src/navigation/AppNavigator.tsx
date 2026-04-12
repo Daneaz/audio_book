@@ -69,7 +69,7 @@ export default function AppNavigator() {
   // @ts-ignore
   return (
     <NavigationContainer theme={navTheme} initialState={initialState}>
-      <Stack.Navigator>
+      <Stack.Navigator screenOptions={{ headerTintColor: isDark ? '#C4A96A' : '#A0621A' }}>
         <Stack.Screen
           name="Bookshelf"
           component={BookshelfScreen}
