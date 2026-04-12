@@ -53,6 +53,12 @@ yarn-error.*
 # dependencies
 node_modules/
 
+# test screenshorts
+screenshots/
+
+# superpower
+.superpowers/
+
 # Expo
 .expo/
 dist/

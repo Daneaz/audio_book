@@ -68,10 +68,12 @@ sudo ln -sf /opt/homebrew/bin/idb_companion /usr/local/bin/idb_companion
 ```
 
 **截图路径**  
-截图保存到项目根目录，不要用 `~/Downloads`：
+截图保存到 `screenshots/<feature>/` 二级目录，不要用 `~/Downloads` 或项目根目录：
 ```
-output_path: /Users/eugenewu/code/audio_book/screenshot_1.png
+output_path: /Users/eugenewu/code/audio_book/screenshots/<feature>/1.png
 ```
+例如：`screenshots/bookshelf-menu/1.png`、`screenshots/reader-tts/1.png`。  
+feature 名用小写连字符，与当前开发的功能对应。
 
 **坐标系**  
 坐标使用逻辑点（points），不是像素。iPhone 16 Pro Max 为 440×956 pt。  
