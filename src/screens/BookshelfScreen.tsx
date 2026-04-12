@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, Image, ActivityIndicator, useColorScheme } from 'react-native';
+import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, Image, ActivityIndicator, useColorScheme, Animated, Pressable } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,6 +36,9 @@ export default function BookshelfScreen({ navigation }: any) {
   const [activeBook, setActiveBook] = useState<Book | null>(null);
   const [inputText, setInputText] = useState('');
   const [modalSaving, setModalSaving] = useState(false);
+  const [menuBook, setMenuBook] = useState<Book | null>(null);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const { settings } = useSettings();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
@@ -50,15 +53,25 @@ export default function BookshelfScreen({ navigation }: any) {
 
   const colors = useMemo(
     () => ({
-      bg: isDark ? '#121212' : '#f5f5f5',
-      shelf: isDark ? '#1E1E1E' : '#ffffff',
-      shelfEdge: isDark ? '#000000' : '#d7d7d7',
-      text: isDark ? '#e0e0e0' : '#333333',
-      subText: isDark ? '#aaaaaa' : '#666666',
-      fab: '#1E88E5',
-      emptyCard: isDark ? '#1E1E1E' : '#ffffff',
-      emptyBorder: isDark ? '#2d2d2d' : '#e3e3e3',
-      deleteBg: isDark ? 'rgba(18, 18, 18, 0.82)' : 'rgba(255, 255, 255, 0.94)',
+      bg:           isDark ? '#0E0C0A' : '#FAF7F0',
+      surface:      isDark ? '#1C1916' : '#F3ECE0',
+      border:       isDark ? '#2A2520' : '#E0D4C0',
+      accent:       isDark ? '#C4A96A' : '#A0621A',
+      accentBg:     isDark ? 'rgba(196,169,106,0.1)'  : 'rgba(139,94,32,0.08)',
+      accentBorder: isDark ? 'rgba(196,169,106,0.3)'  : 'rgba(139,94,32,0.25)',
+      textPrimary:  isDark ? '#E8E0D0' : '#2C1A0E',
+      textSub:      isDark ? '#6A5A44' : '#9A7A5A',
+      iconBox:      isDark ? '#2A2520' : '#E8DCC8',
+      deleteBox:    isDark ? '#2E1F1F' : '#FAE8E8',
+      dotMenu:      isDark ? 'rgba(14,12,10,0.7)' : 'rgba(250,247,240,0.85)',
+      fab:          isDark ? '#C4A96A' : '#2C1A0E',
+      // legacy aliases
+      text:         isDark ? '#E8E0D0' : '#2C1A0E',
+      subText:      isDark ? '#6A5A44' : '#9A7A5A',
+      shelf:        isDark ? '#1C1916' : '#F3ECE0',
+      emptyCard:    isDark ? '#1C1916' : '#F3ECE0',
+      emptyBorder:  isDark ? '#2A2520' : '#E0D4C0',
+      deleteBg:     isDark ? 'rgba(14,12,10,0.7)' : 'rgba(250,247,240,0.85)',
     }),
     [isDark]
   );
@@ -102,13 +115,23 @@ export default function BookshelfScreen({ navigation }: any) {
   };
 
   const showMenu = (book: Book) => {
-    Alert.alert(book.title, undefined, [
-      { text: t('bookshelf.rename'), onPress: () => openModal('rename', book) },
-      { text: t('bookshelf.renameAuthor'), onPress: () => openModal('rename-author', book) },
-      { text: t('bookshelf.setCover'), onPress: () => openModal('cover', book) },
-      { text: t('common.delete'), style: 'destructive', onPress: () => confirmDelete(book) },
-      { text: t('common.cancel'), style: 'cancel' },
-    ]);
+    setMenuBook(book);
+    slideAnim.setValue(0);
+    fadeAnim.setValue(0);
+    Animated.parallel([
+      Animated.spring(slideAnim, { toValue: 1, tension: 65, friction: 11, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const closeMenu = (cb?: () => void) => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
+    ]).start(() => {
+      setMenuBook(null);
+      cb?.();
+    });
   };
 
   const openModal = (mode: 'rename' | 'rename-author' | 'cover', book: Book) => {
@@ -206,7 +229,7 @@ export default function BookshelfScreen({ navigation }: any) {
 
   const renderHeader = () => (
     <View style={styles.headerBlock}>
-      <Text style={[styles.subtitle, { color: colors.subText }]}>
+      <Text style={[styles.subtitle, { color: colors.textSub }]}>
         {t('bookshelf.subtitle')}
       </Text>
     </View>
@@ -252,18 +275,18 @@ export default function BookshelfScreen({ navigation }: any) {
               </View>
             )}
           </View>
-          <Text style={[styles.metaTitle, { color: colors.text }]} numberOfLines={2}>
+          <Text style={[styles.metaTitle, { color: colors.textPrimary }]} numberOfLines={2}>
             {item.title}
           </Text>
-          <Text style={[styles.metaSubtitle, { color: colors.subText }]} numberOfLines={1}>
+          <Text style={[styles.metaSubtitle, { color: colors.textSub }]} numberOfLines={1}>
             {item.totalChapters > 0 ? t('bookshelf.chapterCount', { count: item.totalChapters }) : t('bookshelf.pendingParse')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => showMenu(item)}
-          style={[styles.deleteButton, { backgroundColor: colors.deleteBg }]}
+          style={[styles.deleteButton, { backgroundColor: colors.dotMenu }]}
         >
-          <MaterialIcons name="more-horiz" size={18} color={isDark ? '#D6DCE6' : '#6F6254'} />
+          <MaterialIcons name="more-horiz" size={18} color={colors.accent} />
         </TouchableOpacity>
       </View>
     );
@@ -280,8 +303,8 @@ export default function BookshelfScreen({ navigation }: any) {
               <View style={[styles.emptyBookTall, { backgroundColor: '#4F7BFF' }]} />
               <View style={[styles.emptyBook, { backgroundColor: '#4DAA72' }]} />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('bookshelf.emptyTitle')}</Text>
-            <Text style={[styles.emptySubTitle, { color: colors.subText }]}>{t('bookshelf.emptySubtitle')}</Text>
+            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>{t('bookshelf.emptyTitle')}</Text>
+            <Text style={[styles.emptySubTitle, { color: colors.textSub }]}>{t('bookshelf.emptySubtitle')}</Text>
             <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.fab }]} onPress={() => navigation.navigate('Upload')}>
               <Text style={styles.emptyButtonText}>{t('bookshelf.uploadButton')}</Text>
             </TouchableOpacity>
@@ -297,13 +320,13 @@ export default function BookshelfScreen({ navigation }: any) {
           ListHeaderComponent={
             <View>
               <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('bookshelf.sectionTitle')}</Text>
+                <Text style={[styles.sectionTitle, { color: colors.accent }]}>{t('bookshelf.sectionTitle')}</Text>
               </View>
             </View>
           }
           ItemSeparatorComponent={() => <View style={styles.rowSpacer} />}
           columnWrapperStyle={styles.columnWrapper}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.subText} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSub} />}
         />
       )}
 
@@ -313,18 +336,74 @@ export default function BookshelfScreen({ navigation }: any) {
         </TouchableOpacity>
       ) : null}
 
+      <Modal visible={menuBook !== null} transparent animationType="none" onRequestClose={() => closeMenu()}>
+        <Animated.View style={[styles.menuOverlay, { opacity: fadeAnim }]}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => closeMenu()} />
+          <Animated.View
+            style={[
+              styles.menuSheet,
+              { backgroundColor: isDark ? '#1C1A18' : '#FDFCF9', paddingBottom: insets.bottom + 8 },
+              { transform: [{ translateY: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [400, 0] }) }] },
+            ]}
+          >
+            <View style={[styles.menuHandle, { backgroundColor: isDark ? '#3A3632' : '#DDD9D0' }]} />
+            <View style={styles.menuHeader}>
+              <View style={[styles.menuBookBadge, { backgroundColor: isDark ? '#2A2724' : '#F0EDE6' }]}>
+                <MaterialIcons name="menu-book" size={14} color={isDark ? '#C4A96A' : '#8B6A2A'} />
+              </View>
+              <Text style={[styles.menuBookTitle, { color: isDark ? '#C4A96A' : '#6B4F1C' }]} numberOfLines={1}>
+                {menuBook?.title}
+              </Text>
+            </View>
+            <View style={[styles.menuGroup, { backgroundColor: isDark ? '#242220' : '#F7F5F0', borderColor: isDark ? '#332F2B' : '#E8E3D8' }]}>
+              {([
+                { icon: 'drive-file-rename-outline', label: t('bookshelf.rename'), onPress: () => closeMenu(() => openModal('rename', menuBook!)) },
+                { icon: 'person-outline', label: t('bookshelf.renameAuthor'), onPress: () => closeMenu(() => openModal('rename-author', menuBook!)) },
+                { icon: 'image', label: t('bookshelf.setCover'), onPress: () => closeMenu(() => openModal('cover', menuBook!)) },
+              ] as const).map((item, idx, arr) => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={[styles.menuRow, idx < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: isDark ? '#332F2B' : '#E8E3D8' }]}
+                  onPress={item.onPress}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.menuIconBox, { backgroundColor: isDark ? '#2E2B27' : '#EDE9DF' }]}>
+                    <MaterialIcons name={item.icon} size={18} color={isDark ? '#B8A880' : '#7A5C28'} />
+                  </View>
+                  <Text style={[styles.menuRowLabel, { color: isDark ? '#E8E0D0' : '#3A2E1E' }]}>{item.label}</Text>
+                  <MaterialIcons name="chevron-right" size={18} color={isDark ? '#4A4540' : '#C4BDB0'} />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={[styles.menuGroup, { backgroundColor: isDark ? '#242220' : '#F7F5F0', borderColor: isDark ? '#332F2B' : '#E8E3D8', marginTop: 10 }]}>
+              <TouchableOpacity
+                style={styles.menuRow}
+                onPress={() => closeMenu(() => confirmDelete(menuBook!))}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.menuIconBox, { backgroundColor: isDark ? '#2E1F1F' : '#FAE8E8' }]}>
+                  <MaterialIcons name="delete-outline" size={18} color="#D64040" />
+                </View>
+                <Text style={[styles.menuRowLabel, { color: '#D64040' }]}>{t('common.delete')}</Text>
+                <MaterialIcons name="chevron-right" size={18} color={isDark ? '#4A4540' : '#C4BDB0'} />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </Animated.View>
+      </Modal>
+
       <Modal visible={modalMode !== null} transparent animationType="fade" onRequestClose={closeModal}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.shelf }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
               {modalMode === 'rename' ? t('bookshelf.renameTitle') : modalMode === 'rename-author' ? t('bookshelf.renameAuthorTitle') : t('bookshelf.coverTitle')}
             </Text>
             {(modalMode === 'rename' || modalMode === 'rename-author') ? (
               <>
                 <TextInput
-                  style={[styles.modalInput, { color: colors.text, borderColor: colors.emptyBorder }]}
+                  style={[styles.modalInput, { color: colors.textPrimary, borderColor: colors.border }]}
                   placeholder={modalMode === 'rename' ? t('bookshelf.renamePrompt') : t('bookshelf.renameAuthorPrompt')}
-                  placeholderTextColor={colors.subText}
+                  placeholderTextColor={colors.textSub}
                   value={inputText}
                   onChangeText={setInputText}
                   autoFocus
@@ -335,13 +414,13 @@ export default function BookshelfScreen({ navigation }: any) {
                 />
                 <View style={styles.modalActions}>
                   <TouchableOpacity onPress={closeModal} style={styles.modalBtn}>
-                    <Text style={[styles.modalBtnText, { color: colors.subText }]}>{t('common.cancel')}</Text>
+                    <Text style={[styles.modalBtnText, { color: colors.textSub }]}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                   {modalSaving ? (
-                    <ActivityIndicator size="small" color={colors.fab} style={styles.modalBtn} />
+                    <ActivityIndicator size="small" color={colors.accent} style={styles.modalBtn} />
                   ) : (
                     <TouchableOpacity onPress={handleModalConfirm} style={styles.modalBtn} disabled={!inputText.trim()}>
-                      <Text style={[styles.modalBtnText, { color: !inputText.trim() ? colors.subText : colors.fab, fontWeight: '700' }]}>{t('common.ok')}</Text>
+                      <Text style={[styles.modalBtnText, { color: !inputText.trim() ? colors.textSub : colors.accent, fontWeight: '700' }]}>{t('common.ok')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -349,28 +428,28 @@ export default function BookshelfScreen({ navigation }: any) {
             ) : (
               <>
                 {modalSaving ? (
-                  <ActivityIndicator size="small" color={colors.fab} style={{ marginVertical: 20 }} />
+                  <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 20 }} />
                 ) : (
                   <View style={styles.coverActionCol}>
                     <TouchableOpacity
-                      style={[styles.coverActionBtn, { backgroundColor: isDark ? '#2a2a2a' : '#f0f4f8' }]}
+                      style={[styles.coverActionBtn, { backgroundColor: colors.iconBox }]}
                       onPress={handlePickLocalCover}
                     >
-                      <MaterialIcons name="photo-library" size={22} color={colors.fab} />
-                      <Text style={[styles.coverActionText, { color: colors.text }]}>{t('bookshelf.coverPickLocal')}</Text>
+                      <MaterialIcons name="photo-library" size={22} color={colors.accent} />
+                      <Text style={[styles.coverActionText, { color: colors.textPrimary }]}>{t('bookshelf.coverPickLocal')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.coverActionBtn, { backgroundColor: isDark ? '#2a2a2a' : '#f0f4f8' }]}
+                      style={[styles.coverActionBtn, { backgroundColor: colors.iconBox }]}
                       onPress={handlePasteClipboardCover}
                     >
-                      <MaterialIcons name="content-paste" size={22} color={colors.fab} />
-                      <Text style={[styles.coverActionText, { color: colors.text }]}>{t('bookshelf.coverPasteClipboard')}</Text>
+                      <MaterialIcons name="content-paste" size={22} color={colors.accent} />
+                      <Text style={[styles.coverActionText, { color: colors.textPrimary }]}>{t('bookshelf.coverPasteClipboard')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
                 <View style={styles.modalActions}>
                   <TouchableOpacity onPress={closeModal} style={styles.modalBtn}>
-                    <Text style={[styles.modalBtnText, { color: colors.subText }]}>{t('common.cancel')}</Text>
+                    <Text style={[styles.modalBtnText, { color: colors.textSub }]}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -416,8 +495,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: 13,
     fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   sectionHint: {
     fontSize: 13,
@@ -638,5 +719,72 @@ const styles = StyleSheet.create({
   coverActionText: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.52)',
+    justifyContent: 'flex-end',
+  },
+  menuSheet: {
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  menuHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 4,
+    marginBottom: 14,
+  },
+  menuBookBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuBookTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    flex: 1,
+  },
+  menuGroup: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  menuIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuRowLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
   },
 });
