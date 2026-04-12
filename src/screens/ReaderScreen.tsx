@@ -1253,8 +1253,23 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   const colorScheme = useColorScheme();
   const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
-  const bgColor = isDark ? '#121212' : '#ffffff';
-  const textColor = isDark ? '#e0e0e0' : '#333333';
+
+  const readerColors = useMemo(() => ({
+    bg:           isDark ? '#0E0C0A' : '#FAF7F0',
+    surface:      isDark ? '#1C1916' : '#F3ECE0',
+    border:       isDark ? '#2A2520' : '#E0D4C0',
+    accent:       isDark ? '#C4A96A' : '#A0621A',
+    accentBg:     isDark ? 'rgba(196,169,106,0.1)'  : 'rgba(139,94,32,0.08)',
+    accentBorder: isDark ? 'rgba(196,169,106,0.3)'  : 'rgba(139,94,32,0.25)',
+    textPrimary:  isDark ? '#E8E0D0' : '#2C1A0E',
+    textSub:      isDark ? '#6A5A44' : '#9A7A5A',
+    bottomBar:    isDark ? '#0A0806' : '#F3ECE0',
+    iconBox:      isDark ? '#2A2520' : '#E8DCC8',
+    highlight:    isDark ? '#1E3A2A' : '#F0EDD4',
+  }), [isDark]);
+
+  const bgColor   = readerColors.bg;
+  const textColor = readerColors.textPrimary;
   const window = Dimensions.get('window');
   const centerTapTop = window.height * 0.25;
   const centerTapBottom = window.height * 0.75;
@@ -1692,7 +1707,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       
       {/* Header */}
       {isMenuVisible && (
-          <View style={[styles.header, { paddingTop: insets.top, backgroundColor: isDark ? '#1E1E1E' : '#f8f8f8' }]}>
+          <View style={[styles.header, { paddingTop: insets.top, backgroundColor: readerColors.surface, borderBottomColor: readerColors.border }]}>
               <TouchableOpacity onPress={handleBack} style={styles.iconButton}>
                   <Ionicons name="arrow-back" size={24} color={textColor} />
               </TouchableOpacity>
@@ -1763,7 +1778,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       {/* Footer Controls */}
       {isMenuVisible && (
-          <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: isDark ? '#1E1E1E' : '#f8f8f8' }]}>
+          <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: readerColors.bottomBar, borderTopColor: readerColors.border }]}>
               {isSpeechTimerPanelVisible ? (
                 <View style={styles.timerPanel}>
                   <View style={styles.inlineTimerSliderWrap}>
@@ -1984,25 +1999,60 @@ export default function ReaderScreen({ route, navigation }: any) {
                 </View>
               ) : (
                 <View style={styles.controlsRow}>
-                    <TouchableOpacity onPress={toggleTypographyPanel} style={styles.controlButton}>
-                        <Ionicons name="text-outline" size={24} color={textColor} />
-                        <Text style={{ fontSize: 12, color: textColor }}>{t('settings.fontSize')}</Text>
-                    </TouchableOpacity>
+                  {/* 字体 */}
+                  <TouchableOpacity onPress={toggleTypographyPanel} style={styles.ctrlBtn}>
+                    <View style={[styles.ctrlIconBox,
+                      { backgroundColor: isTypographyPanelVisible ? readerColors.accentBg : readerColors.iconBox },
+                      isTypographyPanelVisible && { borderWidth: 1, borderColor: readerColors.accentBorder },
+                    ]}>
+                      <Text style={[styles.ctrlAaSmall, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>A</Text>
+                      <Text style={[styles.ctrlAaLarge, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>A</Text>
+                    </View>
+                    <Text style={[styles.ctrlLabel, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>
+                      {t('settings.fontSize')}
+                    </Text>
+                  </TouchableOpacity>
 
-                    <TouchableOpacity onPress={toggleTheme} style={styles.controlButton}>
-                        <Ionicons name={isDark ? "sunny" : "moon"} size={24} color={textColor} />
-                        <Text style={{ fontSize: 12, color: textColor }}>{t('reader.theme')}</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity onPress={() => updateSettings({ autoFlip: !settings.autoFlip })} style={styles.controlButton}>
-                        <Ionicons name={settings.autoFlip ? "stop-circle-outline" : "play-circle-outline"} size={24} color={settings.autoFlip ? 'red' : textColor} />
-                        <Text style={{ fontSize: 12, color: textColor }}>{settings.autoFlip ? t('reader.autoFlipStop') : t('reader.autoFlipStart')}</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity onPress={toggleSpeech} style={styles.controlButton}>
-                      <Ionicons name={isSpeaking ? "headset" : "headset-outline"} size={28} color={isSpeaking ? 'red' : textColor} />
-                        <Text style={{ fontSize: 12, color: isSpeaking ? 'red' : textColor }}>{isSpeaking ? t('reader.pause') : t('reader.read')}</Text>
-                    </TouchableOpacity>
+                  <View style={[styles.ctrlDivider, { backgroundColor: readerColors.border }]} />
+
+                  {/* 主题 */}
+                  <TouchableOpacity onPress={toggleTheme} style={styles.ctrlBtn}>
+                    <View style={[styles.ctrlIconBox, { backgroundColor: readerColors.iconBox }]}>
+                      <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={16} color={readerColors.textSub} />
+                    </View>
+                    <Text style={[styles.ctrlLabel, { color: readerColors.textSub }]}>{t('reader.theme')}</Text>
+                  </TouchableOpacity>
+
+                  <View style={[styles.ctrlDivider, { backgroundColor: readerColors.border }]} />
+
+                  {/* 自动翻页 */}
+                  <TouchableOpacity onPress={() => updateSettings({ autoFlip: !settings.autoFlip })} style={styles.ctrlBtn}>
+                    <View style={[styles.ctrlIconBox, { backgroundColor: readerColors.iconBox }]}>
+                      <Ionicons
+                        name={settings.autoFlip ? 'stop-circle-outline' : 'play-circle-outline'}
+                        size={16}
+                        color={settings.autoFlip ? '#D64040' : readerColors.textSub}
+                      />
+                    </View>
+                    <Text style={[styles.ctrlLabel, { color: settings.autoFlip ? '#D64040' : readerColors.textSub }]}>
+                      {settings.autoFlip ? t('reader.autoFlipStop') : t('reader.autoFlipStart')}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={[styles.ctrlDivider, { backgroundColor: readerColors.border }]} />
+
+                  {/* 朗读 */}
+                  <TouchableOpacity onPress={toggleSpeech} style={styles.ctrlBtn}>
+                    <View style={[styles.ctrlIconBox,
+                      { backgroundColor: isSpeaking ? readerColors.accentBg : readerColors.iconBox },
+                      isSpeaking && { borderWidth: 1, borderColor: readerColors.accentBorder },
+                    ]}>
+                      <Ionicons name={isSpeaking ? 'mic' : 'mic-outline'} size={16} color={isSpeaking ? readerColors.accent : readerColors.textSub} />
+                    </View>
+                    <Text style={[styles.ctrlLabel, { color: isSpeaking ? readerColors.accent : readerColors.textSub }]}>
+                      {isSpeaking ? t('reader.pause') : t('reader.read')}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               )}
           </View>
@@ -2331,13 +2381,41 @@ const styles = StyleSheet.create({
       fontWeight: '600',
   },
   controlsRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
   },
-  controlButton: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 10,
+  ctrlBtn: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 5,
+  },
+  ctrlIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 1,
+  },
+  ctrlAaSmall: {
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 14,
+  },
+  ctrlAaLarge: {
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  ctrlLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  ctrlDivider: {
+    width: 1,
+    height: 28,
   },
 });
