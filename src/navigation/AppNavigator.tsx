@@ -62,9 +62,13 @@ export default function AppNavigator() {
     );
   }
 
+  const navTheme = isDark
+    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: '#0E0C0A', card: '#0E0C0A', text: '#E8E0D0', border: '#2A2520' } }
+    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#FAF7F0', card: '#FAF7F0', text: '#2C1A0E', border: '#E0D4C0' } };
+
   // @ts-ignore
   return (
-    <NavigationContainer theme={isDark ? DarkTheme : DefaultTheme} initialState={initialState}>
+    <NavigationContainer theme={navTheme} initialState={initialState}>
       <Stack.Navigator>
         <Stack.Screen
           name="Bookshelf"
@@ -73,7 +77,7 @@ export default function AppNavigator() {
             title: t('nav.bookshelf'),
             headerRight: () => (
               <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={{ paddingHorizontal: 14 }}>
-                <Ionicons name="settings-outline" size={22} color={isDark ? '#fff' : '#000'} />
+                <Ionicons name="settings-outline" size={22} color={isDark ? '#C4A96A' : '#A0621A'} />
               </TouchableOpacity>
             ),
           })}
