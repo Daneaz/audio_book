@@ -1915,87 +1915,73 @@ export default function ReaderScreen({ route, navigation }: any) {
                   </View>
                 </View>
               ) : isTypographyPanelVisible ? (
-                <View style={styles.timerPanel}>
-                  <View style={styles.typographyPanelSection}>
-                    <View style={styles.typographyTwoColumnRow}>
-                      <View style={styles.typographyColumn}>
-                        <View style={styles.typographyIconRow}>
-                          <TouchableOpacity
-                            onPress={decreaseFontSize}
-                            style={styles.typographyIconButton}
-                          >
-                            <Ionicons name="text" size={16} color={textColor} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={increaseFontSize}
-                            style={styles.typographyIconButton}
-                          >
-                            <Ionicons name="text" size={22} color={textColor} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
+                <View style={[styles.typoPanel, { backgroundColor: readerColors.bottomBar }]}>
+                  {/* Handle */}
+                  <View style={[styles.typoHandle, { backgroundColor: readerColors.border }]} />
 
-                      <View style={[styles.typographyColumnDivider, { backgroundColor: isDark ? '#303030' : '#e2e2e2' }]} />
-
-                      <View style={styles.typographyColumn}>
-                        <View style={styles.typographyIconRow}>
-                          <TouchableOpacity
-                            onPress={decreaseLineSpacing}
-                            style={styles.typographyIconButton}
-                          >
-                            <View style={styles.spacingIconCompact}>
-                              <View style={[styles.spacingIconLine, { backgroundColor: textColor }]} />
-                              <View style={[styles.spacingIconLine, { backgroundColor: textColor }]} />
-                              <View style={[styles.spacingIconLine, { backgroundColor: textColor }]} />
-                            </View>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={increaseLineSpacing}
-                            style={styles.typographyIconButton}
-                          >
-                            <View style={styles.spacingIconExpanded}>
-                              <View style={[styles.spacingIconLine, { backgroundColor: textColor }]} />
-                              <View style={[styles.spacingIconLine, { backgroundColor: textColor }]} />
-                              <View style={[styles.spacingIconLine, { backgroundColor: textColor }]} />
-                            </View>
-                          </TouchableOpacity>
-                        </View>
+                  {/* 字号 + 行距 并排 */}
+                  <View style={styles.typoTopRow}>
+                    <View style={[styles.typoCol, { backgroundColor: readerColors.surface }]}>
+                      <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>字号</Text>
+                      <View style={styles.typoStepperRow}>
+                        <TouchableOpacity onPress={decreaseFontSize} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
+                          <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>−</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.typoStepVal, { color: readerColors.textPrimary }]}>{settings.fontSize}</Text>
+                        <TouchableOpacity onPress={increaseFontSize} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
+                          <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>+</Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
 
-                    <View style={styles.typographyFontsInlineRow}>
-                      <Text style={[styles.typographyLabel, { color: textColor }]}>
-                        {t('settings.fontSize')}
-                      </Text>
-                      {typographyFontOptions.map((option) => {
-                        const selected = settings.fontPreset === option.id;
-                        return (
-                          <TouchableOpacity
-                            key={option.id}
-                            onPress={() => updateSettings({ fontPreset: option.id })}
-                            style={[
-                              styles.typographyFontChip,
-                              { borderColor: isDark ? '#3a3a3a' : '#d8d8d8', backgroundColor: isDark ? '#232323' : '#ffffff' },
-                              selected && styles.speechVoiceChipActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.typographyFontChipText,
-                                {
-                                  color: selected ? '#ffffff' : textColor,
-                                  fontFamily: getFontFamilyForPreset(option.id),
-                                },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {fontOptionMeta[option.id].label}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
+                    <View style={[styles.typoCol, { backgroundColor: readerColors.surface }]}>
+                      <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>行距</Text>
+                      <View style={styles.typoStepperRow}>
+                        <TouchableOpacity onPress={decreaseLineSpacing} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
+                          <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>−</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.typoStepVal, { color: readerColors.textPrimary }]}>{settings.lineSpacing.toFixed(1)}</Text>
+                        <TouchableOpacity onPress={increaseLineSpacing} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
+                          <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>+</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
+
+                  {/* 字体芯片 */}
+                  <Text style={[styles.typoChipsLabel, { color: readerColors.textSub }]}>字体</Text>
+                  <View style={styles.typoChipsRow}>
+                    {typographyFontOptions.map((option) => {
+                      const selected = settings.fontPreset === option.id;
+                      return (
+                        <TouchableOpacity
+                          key={option.id}
+                          onPress={() => updateSettings({ fontPreset: option.id })}
+                          style={[
+                            styles.typoChip,
+                            { backgroundColor: selected ? readerColors.accentBg : readerColors.surface },
+                            selected && { borderWidth: 1, borderColor: readerColors.accentBorder },
+                          ]}
+                        >
+                          <Text style={[styles.typoChipPreview, {
+                            color: selected ? readerColors.accent : readerColors.textPrimary,
+                            fontFamily: getFontFamilyForPreset(option.id),
+                          }]}>汉</Text>
+                          <Text style={[styles.typoChipName, { color: selected ? readerColors.accent : readerColors.textSub }]}>
+                            {fontOptionMeta[option.id].label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* 完成 */}
+                  <TouchableOpacity
+                    onPress={() => setIsTypographyPanelVisible(false)}
+                    style={[styles.typoDone, { backgroundColor: readerColors.surface }]}
+                  >
+                    <Text style={[styles.typoDoneText, { color: readerColors.accent }]}>{t('common.ok')}</Text>
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <View style={styles.controlsRow}>
@@ -2417,5 +2403,93 @@ const styles = StyleSheet.create({
   ctrlDivider: {
     width: 1,
     height: 28,
+  },
+  typoPanel: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 14,
+  },
+  typoHandle: {
+    width: 28,
+    height: 3,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  typoTopRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  typoCol: {
+    flex: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  typoColLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  typoStepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  typoStepBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typoStepBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  typoStepVal: {
+    fontSize: 16,
+    fontWeight: '800',
+    minWidth: 28,
+    textAlign: 'center',
+  },
+  typoChipsLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  typoChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  typoChip: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+    alignItems: 'center',
+    gap: 4,
+  },
+  typoChipPreview: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  typoChipName: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  typoDone: {
+    borderRadius: 10,
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  typoDoneText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
