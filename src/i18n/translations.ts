@@ -45,6 +45,9 @@ export type TranslationKey =
   | 'bookshelf.rename'
   | 'bookshelf.renameTitle'
   | 'bookshelf.renamePrompt'
+  | 'bookshelf.renameAuthor'
+  | 'bookshelf.renameAuthorTitle'
+  | 'bookshelf.renameAuthorPrompt'
   | 'bookshelf.setCover'
   | 'bookshelf.coverTitle'
   | 'bookshelf.coverPickLocal'
@@ -161,6 +164,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.rename': '重命名',
     'bookshelf.renameTitle': '重命名书籍',
     'bookshelf.renamePrompt': '输入新书名',
+    'bookshelf.renameAuthor': '重命名作者',
+    'bookshelf.renameAuthorTitle': '重命名作者',
+    'bookshelf.renameAuthorPrompt': '输入作者名',
     'bookshelf.setCover': '设置封面',
     'bookshelf.coverTitle': '设置封面',
     'bookshelf.coverPickLocal': '从相册选择',
@@ -274,6 +280,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.rename': 'Rename',
     'bookshelf.renameTitle': 'Rename Book',
     'bookshelf.renamePrompt': 'Enter new title',
+    'bookshelf.renameAuthor': 'Rename Author',
+    'bookshelf.renameAuthorTitle': 'Rename Author',
+    'bookshelf.renameAuthorPrompt': 'Enter author name',
     'bookshelf.setCover': 'Set Cover',
     'bookshelf.coverTitle': 'Set Cover',
     'bookshelf.coverPickLocal': 'Choose from Photos',

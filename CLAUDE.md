@@ -57,3 +57,42 @@ jest --testPathPattern=<file>  # 跑单个测试文件
 
 **前提：** 开发前须先运行 `expo run:ios` 启动模拟器。  
 **注意：** Native 改动（修改 ios/ 目录）需重新 build，热更新不生效，但本项目禁止修改 ios/ 目录，此场景不会出现。
+
+### 操作手册
+
+**环境准备**  
+idb_companion 未安装时 tap/swipe 会报 FileNotFoundError，需先安装：
+```bash
+brew tap facebook/fb && brew install idb-companion
+sudo ln -sf /opt/homebrew/bin/idb_companion /usr/local/bin/idb_companion
+```
+
+**截图路径**  
+截图保存到项目根目录，不要用 `~/Downloads`：
+```
+output_path: /Users/eugenewu/code/audio_book/screenshot_1.png
+```
+
+**坐标系**  
+坐标使用逻辑点（points），不是像素。iPhone 16 Pro Max 为 440×956 pt。  
+点击前先用 `ui_describe_all` 获取精确坐标，不要凭截图估算。  
+元素中心点 = AXFrame 的 `x + width/2`, `y + height/2`。
+
+**标准交互流程**
+1. `get_booted_sim_id` — 获取 udid
+2. `screenshot` — 确认当前画面
+3. `ui_describe_all` — 获取元素精确坐标
+4. `ui_tap` — 精确点击
+5. `screenshot` — 验证结果
+
+**文本输入清除**  
+`ui_type` 只会追加，清除已有内容用 idb 退格键（keycode 42）：
+```bash
+idb ui key-sequence --udid <udid> $(python3 -c "print(' '.join(['42']*N))")
+```
+N 为要删除的字符数，可多发几个确保清空。
+
+**常见场景**
+- 唤出 App 内菜单：点击屏幕中间区域（ReaderScreen 点中间切换菜单显示）
+- 返回上一页：从左边缘右划（x_start=10），或点导航栏返回按钮
+- Alert 按钮位置：用 `ui_describe_all` 找，不要用截图估坐标

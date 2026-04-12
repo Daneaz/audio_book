@@ -32,7 +32,7 @@ function getCoverLabel(title: string) {
 export default function BookshelfScreen({ navigation }: any) {
   const [books, setBooks] = useState<Book[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [modalMode, setModalMode] = useState<'rename' | 'cover' | null>(null);
+  const [modalMode, setModalMode] = useState<'rename' | 'rename-author' | 'cover' | null>(null);
   const [activeBook, setActiveBook] = useState<Book | null>(null);
   const [inputText, setInputText] = useState('');
   const [modalSaving, setModalSaving] = useState(false);
@@ -104,15 +104,16 @@ export default function BookshelfScreen({ navigation }: any) {
   const showMenu = (book: Book) => {
     Alert.alert(book.title, undefined, [
       { text: t('bookshelf.rename'), onPress: () => openModal('rename', book) },
+      { text: t('bookshelf.renameAuthor'), onPress: () => openModal('rename-author', book) },
       { text: t('bookshelf.setCover'), onPress: () => openModal('cover', book) },
       { text: t('common.delete'), style: 'destructive', onPress: () => confirmDelete(book) },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
-  const openModal = (mode: 'rename' | 'cover', book: Book) => {
+  const openModal = (mode: 'rename' | 'rename-author' | 'cover', book: Book) => {
     setActiveBook(book);
-    setInputText(mode === 'rename' ? book.title : '');
+    setInputText(mode === 'rename' ? book.title : mode === 'rename-author' ? (book.author || '') : '');
     setModalMode(mode);
   };
 
@@ -124,10 +125,13 @@ export default function BookshelfScreen({ navigation }: any) {
   };
 
   const handleModalConfirm = async () => {
-    if (!activeBook || !inputText.trim() || modalMode !== 'rename') return;
+    if (!activeBook || !inputText.trim() || (modalMode !== 'rename' && modalMode !== 'rename-author')) return;
     setModalSaving(true);
     try {
-      await BookService.updateBook({ ...activeBook, title: inputText.trim() });
+      const updated = modalMode === 'rename'
+        ? { ...activeBook, title: inputText.trim() }
+        : { ...activeBook, author: inputText.trim() };
+      await BookService.updateBook(updated);
       await loadBooks();
       closeModal();
     } catch {
@@ -313,13 +317,13 @@ export default function BookshelfScreen({ navigation }: any) {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.shelf }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {modalMode === 'rename' ? t('bookshelf.renameTitle') : t('bookshelf.coverTitle')}
+              {modalMode === 'rename' ? t('bookshelf.renameTitle') : modalMode === 'rename-author' ? t('bookshelf.renameAuthorTitle') : t('bookshelf.coverTitle')}
             </Text>
-            {modalMode === 'rename' ? (
+            {(modalMode === 'rename' || modalMode === 'rename-author') ? (
               <>
                 <TextInput
                   style={[styles.modalInput, { color: colors.text, borderColor: colors.emptyBorder }]}
-                  placeholder={t('bookshelf.renamePrompt')}
+                  placeholder={modalMode === 'rename' ? t('bookshelf.renamePrompt') : t('bookshelf.renameAuthorPrompt')}
                   placeholderTextColor={colors.subText}
                   value={inputText}
                   onChangeText={setInputText}
