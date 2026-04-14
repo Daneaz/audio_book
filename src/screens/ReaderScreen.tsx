@@ -1151,6 +1151,9 @@ export default function ReaderScreen({ route, navigation }: any) {
     });
 
     return () => {
+      MusicControl.off('play');
+      MusicControl.off('pause');
+      MusicControl.off('stop');
       MusicControl.resetNowPlaying();
     };
   }, []);
