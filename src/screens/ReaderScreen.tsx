@@ -4,6 +4,7 @@ import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, u
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import BookService from '../services/BookService';
 import ChapterService from '../services/ChapterService';
@@ -1009,6 +1010,11 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const startSpeech = (duration: number | null = timerDuration, hidePanel: boolean = true) => {
+      Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        allowsRecordingIOS: false,
+      }).catch(() => {});
       setIsSpeaking(true);
       isSpeakingRef.current = true;
       if (hidePanel) {
@@ -1144,7 +1150,6 @@ export default function ReaderScreen({ route, navigation }: any) {
           language: 'zh-CN',
           rate: settingsRef.current.speechRate,
           voice: settingsRef.current.voiceType === 'default' ? undefined : settingsRef.current.voiceType,
-          useApplicationAudioSession: false,
           onDone: () => {
              setTimeout(() => {
                  if (isSpeakingRef.current) { 
