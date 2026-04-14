@@ -4,7 +4,6 @@ import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, u
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
 import MusicControl from 'react-native-music-control';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import BookService from '../services/BookService';
@@ -1013,11 +1012,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const startSpeech = (duration: number | null = timerDuration, hidePanel: boolean = true) => {
-      Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        allowsRecordingIOS: false,
-      }).catch(() => {});
       setIsSpeaking(true);
       isSpeakingRef.current = true;
       if (hidePanel) {
@@ -1104,23 +1098,25 @@ export default function ReaderScreen({ route, navigation }: any) {
         speakSentence(startChapterId, startSentenceIndex);
       }
 
-      MusicControl.enableControl('play', true);
-      MusicControl.enableControl('pause', true);
-      MusicControl.enableControl('stop', true);
-      MusicControl.enableControl('nextTrack', false);
-      MusicControl.enableControl('previousTrack', false);
+      if (Platform.OS === 'ios') {
+        MusicControl.enableControl('play', true);
+        MusicControl.enableControl('pause', true);
+        MusicControl.enableControl('stop', true);
+        MusicControl.enableControl('nextTrack', false);
+        MusicControl.enableControl('previousTrack', false);
 
-      const startingChapter = chaptersData.find(c => c.chapter.id === startChapterId);
-      MusicControl.setNowPlaying({
-        title: book?.title ?? '',
-        artist: startingChapter?.chapter.title ?? '',
-      });
-      MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
+        const startingChapter = chaptersData.find(c => c.chapter.id === startChapterId);
+        MusicControl.setNowPlaying({
+          title: book?.title ?? '',
+          artist: startingChapter?.chapter.title ?? '',
+        });
+        MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
+      }
   };
 
   const stopSpeech = () => {
       Speech.stop();
-      MusicControl.resetNowPlaying();
+      if (Platform.OS === 'ios') MusicControl.resetNowPlaying();
       setIsSpeaking(false);
       isSpeakingRef.current = false;
       setIsSpeechTimerPanelVisible(false);
@@ -1138,6 +1134,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   });
 
   useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+
     MusicControl.handleAudioInterruptions(true);
 
     MusicControl.on('play', () => {
@@ -1531,7 +1529,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, [navigation]);
 
   useEffect(() => {
-    if (!isSpeaking || !currentSpeakingChapterId) return;
+    if (!isSpeaking || !currentSpeakingChapterId || Platform.OS !== 'ios') return;
     const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
     MusicControl.setNowPlaying({
       title: book?.title ?? '',
