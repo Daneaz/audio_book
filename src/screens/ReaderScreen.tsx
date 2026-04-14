@@ -1136,6 +1136,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   });
 
   useEffect(() => {
+    MusicControl.enableBackgroundMode(true);
     MusicControl.handleAudioInterruptions(true);
 
     MusicControl.on('play', () => {
