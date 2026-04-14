@@ -1098,25 +1098,23 @@ export default function ReaderScreen({ route, navigation }: any) {
         speakSentence(startChapterId, startSentenceIndex);
       }
 
-      if (Platform.OS === 'ios') {
-        MusicControl.enableControl('play', true);
-        MusicControl.enableControl('pause', true);
-        MusicControl.enableControl('stop', true);
-        MusicControl.enableControl('nextTrack', false);
-        MusicControl.enableControl('previousTrack', false);
+      MusicControl.enableControl('play', true);
+      MusicControl.enableControl('pause', true);
+      MusicControl.enableControl('stop', true);
+      MusicControl.enableControl('nextTrack', false);
+      MusicControl.enableControl('previousTrack', false);
 
-        const startingChapter = chaptersData.find(c => c.chapter.id === startChapterId);
-        MusicControl.setNowPlaying({
-          title: book?.title ?? '',
-          artist: startingChapter?.chapter.title ?? '',
-        });
-        MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
-      }
+      const startingChapter = chaptersData.find(c => c.chapter.id === startChapterId);
+      MusicControl.setNowPlaying({
+        title: book?.title ?? '',
+        artist: startingChapter?.chapter.title ?? '',
+      });
+      MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
   };
 
   const stopSpeech = () => {
       Speech.stop();
-      if (Platform.OS === 'ios') MusicControl.resetNowPlaying();
+      MusicControl.resetNowPlaying();
       setIsSpeaking(false);
       isSpeakingRef.current = false;
       setIsSpeechTimerPanelVisible(false);
@@ -1134,8 +1132,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   });
 
   useEffect(() => {
-    if (Platform.OS !== 'ios') return;
-
     MusicControl.handleAudioInterruptions(true);
 
     MusicControl.on('play', () => {
@@ -1529,7 +1525,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, [navigation]);
 
   useEffect(() => {
-    if (!isSpeaking || !currentSpeakingChapterId || Platform.OS !== 'ios') return;
+    if (!isSpeaking || !currentSpeakingChapterId) return;
     const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
     MusicControl.setNowPlaying({
       title: book?.title ?? '',
