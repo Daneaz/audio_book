@@ -427,6 +427,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   
   const flatListRef = useAnimatedRef<Animated.FlatList<ChapterData | PageData>>();
   const chapterLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
+  const prevSpeakingChapterIdRef = useRef<string | null>(null);
   const autoFlipTimer = useRef<NodeJS.Timeout | null>(null);
   const scrollToIndexRetryTimerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -582,6 +583,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     } else {
       const chLayout = chapterLayoutsRef.current[currentSpeakingChapterId];
       if (!chLayout) {
+        prevSpeakingChapterIdRef.current = currentSpeakingChapterId;
         const chapterIndex = chaptersData.findIndex((c) => c.chapter.id === currentSpeakingChapterId);
         if (chapterIndex !== -1) {
           flatListRef.current?.scrollToIndex({ index: chapterIndex, animated: true, viewPosition: 0 });
@@ -598,8 +600,12 @@ export default function ReaderScreen({ route, navigation }: any) {
       const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
       const screenHeight = window.height;
 
-      // Follow when it goes near the bottom (e.g. 80%)
-      if (estimatedY > currentOffset + screenHeight * 0.55) {
+      const isChapterTransition =
+        prevSpeakingChapterIdRef.current !== null &&
+        prevSpeakingChapterIdRef.current !== currentSpeakingChapterId;
+      prevSpeakingChapterIdRef.current = currentSpeakingChapterId;
+
+      if (isChapterTransition || estimatedY > currentOffset + screenHeight * 0.55) {
         const targetOffset = Math.max(0, estimatedY);
         if (isAutoScrolling.value) {
           autoScrollOffset.value = targetOffset;
