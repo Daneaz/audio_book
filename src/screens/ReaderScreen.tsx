@@ -1173,15 +1173,15 @@ export default function ReaderScreen({ route, navigation }: any) {
         return;
       }
       
-      setCurrentSpeakingChapterId(cId);
-      setCurrentSentenceIndex(sIndex);
-      
       const sentence = prepareSentenceForTts(chData.sentences[sIndex].text, 'offline');
 
       if (!sentence) {
         speakSentence(cId, sIndex + 1);
         return;
       }
+
+      setCurrentSpeakingChapterId(cId);
+      setCurrentSentenceIndex(sIndex);
 
       Speech.speak(sentence, {
           language: 'zh-CN',
