@@ -1114,6 +1114,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         artist: startingChapter?.chapter.title ?? '',
       });
       MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
+      MusicControl.handleAudioInterruptions(true);
   };
 
   const stopSpeech = () => {
@@ -1137,7 +1138,6 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   useEffect(() => {
     MusicControl.enableBackgroundMode(true);
-    MusicControl.handleAudioInterruptions(true);
 
     MusicControl.on('play', () => {
       if (!isSpeakingRef.current) startSpeechRef.current();
