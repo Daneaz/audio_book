@@ -39,6 +39,8 @@ interface HighlightFragment {
 
 const PAGE_BREAK_REGEX = /[\n。！？；!?;]/;
 const PAGE_BREAK_SEARCH_RANGE = 120;
+const VERTICAL_CONTENT_PADDING_TOP = 40; // contentContainerStyle.paddingVertical
+const CHAPTER_MARGIN_BOTTOM = 40; // styles.chapterContainer.marginBottom
 const TAP_MOVE_THRESHOLD = 10;
 const AUTO_SCROLL_MIN_SPEED = 10;
 const AUTO_SCROLL_MAX_SPEED = 80;
@@ -595,8 +597,14 @@ export default function ReaderScreen({ route, navigation }: any) {
       const sentence = chData.sentences[currentSentenceIndex];
       if (!sentence) return;
 
+      const chapterIndex = chaptersData.findIndex((c) => c.chapter.id === currentSpeakingChapterId);
+      let absoluteChapterY = VERTICAL_CONTENT_PADDING_TOP;
+      for (let i = 0; i < chapterIndex; i++) {
+        const prevLayout = chapterLayoutsRef.current[chaptersData[i].chapter.id];
+        if (prevLayout) absoluteChapterY += prevLayout.height + CHAPTER_MARGIN_BOTTOM;
+      }
       const ratio = sentence.start / Math.max(1, chData.content.length);
-      const estimatedY = chLayout.y + ratio * chLayout.height;
+      const estimatedY = absoluteChapterY + ratio * chLayout.height;
       const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
       const screenHeight = window.height;
 
