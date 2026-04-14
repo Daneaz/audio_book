@@ -236,7 +236,7 @@ const ReaderChapterItem = React.memo(({
           {fragments.map((fragment, index) => (
             <Text
               key={`${item.chapter.id}_fragment_${index}`}
-              style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#1E3A2A' : '#E8F7EA', color: textColor }] : undefined}
+              style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#3A2E12' : '#F7E8C4', color: textColor }] : undefined}
             >
               {fragment.text}
             </Text>
@@ -336,7 +336,7 @@ const ReaderPageItem = React.memo(({
         {fragments.map((fragment, index) => (
           <Text
             key={`${item.id}_fragment_${index}`}
-            style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#1E3A2A' : '#E8F7EA', color: textColor }] : undefined}
+            style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#3A2E12' : '#F7E8C4', color: textColor }] : undefined}
           >
             {fragment.text}
           </Text>
@@ -1282,7 +1282,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     textSub:      isDark ? '#B0A080' : '#9A7A5A',
     bottomBar:    isDark ? '#0A0806' : '#F3ECE0',
     iconBox:      isDark ? '#2A2520' : '#E8DCC8',
-    highlight:    isDark ? '#1E3A2A' : '#F0EDD4',
+    highlight:    isDark ? '#3A2E12' : '#F7E8C4',
   }), [isDark]);
 
   const bgColor   = readerColors.bg;
