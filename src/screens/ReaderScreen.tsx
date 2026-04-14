@@ -1509,7 +1509,8 @@ export default function ReaderScreen({ route, navigation }: any) {
       title: book?.title ?? '',
       artist: chData?.chapter.title ?? '',
     });
-  }, [currentSpeakingChapterId, isSpeaking]);
+    MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
+  }, [currentSpeakingChapterId, isSpeaking, book]);
 
   const handleChapterLayout = useCallback((chapterId: string, y: number, height: number) => {
     chapterLayoutsRef.current[chapterId] = { y, height };
