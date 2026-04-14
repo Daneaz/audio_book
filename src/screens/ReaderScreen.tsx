@@ -4,7 +4,7 @@ import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, u
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import MusicControl from 'react-native-music-control';
+import MusicControl from '../utils/musicControl';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import BookService from '../services/BookService';
 import ChapterService from '../services/ChapterService';
