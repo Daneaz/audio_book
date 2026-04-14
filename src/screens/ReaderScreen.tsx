@@ -1012,7 +1012,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const startSpeech = (duration: number | null = timerDuration, hidePanel: boolean = true) => {
       Audio.setAudioModeAsync({
         playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
+        staysActiveInBackground: true,
         allowsRecordingIOS: false,
       }).catch(() => {});
       setIsSpeaking(true);
