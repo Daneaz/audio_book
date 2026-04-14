@@ -395,6 +395,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   // Speech state
   const [isSpeaking, setIsSpeaking] = useState(false);
   const isSpeakingRef = useRef(false);
+  const startSpeechRef = useRef<() => void>(() => {});
+  const stopSpeechRef = useRef<() => void>(() => {});
   const [currentSpeakingChapterId, setCurrentSpeakingChapterId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [selectedSentence, setSelectedSentence] = useState<{ chapterId: string; sentenceIndex: number } | null>(null);
@@ -1129,6 +1131,29 @@ export default function ReaderScreen({ route, navigation }: any) {
           speechTimerRef.current = null;
       }
   };
+
+  useEffect(() => {
+    startSpeechRef.current = startSpeech;
+    stopSpeechRef.current = stopSpeech;
+  });
+
+  useEffect(() => {
+    MusicControl.handleAudioInterruptions(true);
+
+    MusicControl.on('play', () => {
+      if (!isSpeakingRef.current) startSpeechRef.current();
+    });
+    MusicControl.on('pause', () => {
+      if (isSpeakingRef.current) stopSpeechRef.current();
+    });
+    MusicControl.on('stop', () => {
+      stopSpeechRef.current();
+    });
+
+    return () => {
+      MusicControl.resetNowPlaying();
+    };
+  }, []);
 
   const speakSentence = (cId: string, sIndex: number) => {
       const chData = chaptersData.find(c => c.chapter.id === cId);
