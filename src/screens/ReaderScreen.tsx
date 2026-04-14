@@ -151,8 +151,10 @@ function getHighlightedFragments(
   }
 
   const before = content.slice(0, sentence.start);
-  const current = content.slice(sentence.start, sentence.end);
-  const after = content.slice(sentence.end);
+  const raw = content.slice(sentence.start, sentence.end);
+  const trimmed = raw.replace(/[\s\n\r]+$/, '');
+  const current = trimmed;
+  const after = raw.slice(trimmed.length) + content.slice(sentence.end);
 
   return [
     { text: before, highlighted: false },
@@ -175,8 +177,10 @@ function getPageHighlightedFragments(
   }
 
   const before = pageContent.slice(0, index);
-  const current = pageContent.slice(index, index + sentenceText.length);
-  const after = pageContent.slice(index + sentenceText.length);
+  const raw = pageContent.slice(index, index + sentenceText.length);
+  const trimmed = raw.replace(/[\s\n\r]+$/, '');
+  const current = trimmed;
+  const after = raw.slice(trimmed.length) + pageContent.slice(index + sentenceText.length);
 
   return [
     { text: before, highlighted: false },
