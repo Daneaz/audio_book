@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
+import MusicControl from 'react-native-music-control';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import BookService from '../services/BookService';
 import ChapterService from '../services/ChapterService';
@@ -1100,10 +1101,24 @@ export default function ReaderScreen({ route, navigation }: any) {
       if (startChapterId) {
         speakSentence(startChapterId, startSentenceIndex);
       }
+
+      MusicControl.enableControl('play', true);
+      MusicControl.enableControl('pause', true);
+      MusicControl.enableControl('stop', true);
+      MusicControl.enableControl('nextTrack', false);
+      MusicControl.enableControl('previousTrack', false);
+
+      const startingChapter = chaptersData.find(c => c.chapter.id === startChapterId);
+      MusicControl.setNowPlaying({
+        title: book?.title ?? '',
+        artist: startingChapter?.chapter.title ?? '',
+      });
+      MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
   };
 
   const stopSpeech = () => {
       Speech.stop();
+      MusicControl.resetNowPlaying();
       setIsSpeaking(false);
       isSpeakingRef.current = false;
       setIsSpeechTimerPanelVisible(false);
@@ -1486,6 +1501,15 @@ export default function ReaderScreen({ route, navigation }: any) {
       subscription.remove();
     };
   }, [navigation]);
+
+  useEffect(() => {
+    if (!isSpeaking || !currentSpeakingChapterId) return;
+    const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
+    MusicControl.setNowPlaying({
+      title: book?.title ?? '',
+      artist: chData?.chapter.title ?? '',
+    });
+  }, [currentSpeakingChapterId, isSpeaking]);
 
   const handleChapterLayout = useCallback((chapterId: string, y: number, height: number) => {
     chapterLayoutsRef.current[chapterId] = { y, height };
