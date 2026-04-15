@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps, AppState, Modal, Animated as RNAnimated } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps, AppState, Modal, Animated as RNAnimated, Linking, Alert } from 'react-native';
 import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from '../utils/constants';
 import { Book, Chapter, ReadingProgress } from '../types';
 import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, splitIntoSubClauses } from '../utils/textUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
+import { VoiceEntry, mergeWithInstalledVoices } from '../utils/voiceUtils';
 import useSettings from '../hooks/useSettings';
 import useI18n from '../i18n';
 import { TranslationKey } from '../i18n/translations';
@@ -419,7 +420,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [speechTimerMinutes, setSpeechTimerMinutes] = useState(15);
   const [speechTimerWidth, setSpeechTimerWidth] = useState(0);
   const [voicesLoading, setVoicesLoading] = useState(false);
-  const [voices, setVoices] = useState<Array<{ identifier: string; name?: string; language?: string }>>([]);
+  const [voices, setVoices] = useState<VoiceEntry[]>([]);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
   const [isVoiceDropdownVisible, setIsVoiceDropdownVisible] = useState(false);
   const speechTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -489,40 +490,64 @@ export default function ReaderScreen({ route, navigation }: any) {
   const saveCurrentProgressRef = useRef<() => void>(() => {});
 
 
-  useEffect(() => {
-    let cancelled = false;
+  const voicesCancelledRef = useRef(false);
+  const loadVoices = useCallback(async () => {
+    setVoicesLoading(true);
+    try {
+      const available = await Speech.getAvailableVoicesAsync();
+      if (voicesCancelledRef.current) return;
 
-    const loadVoices = async () => {
-      setVoicesLoading(true);
-      try {
-        const available = await Speech.getAvailableVoicesAsync();
-        if (cancelled) return;
+      const raw = (available || []).map((v: any) => ({
+        identifier: String(v.identifier),
+        name: typeof v.name === 'string' ? v.name : undefined,
+        language: typeof v.language === 'string' ? v.language : undefined,
+        quality: typeof v.quality === 'string' ? v.quality : undefined,
+      }));
 
-        const normalized = (available || [])
-          .map((v: any) => ({
-            identifier: String(v.identifier),
-            name: typeof v.name === 'string' ? v.name : undefined,
-            language: typeof v.language === 'string' ? v.language : undefined,
-          }))
-          .filter((v) => {
+      if (Platform.OS === 'ios') {
+        const zhInstalled = raw.filter(v => {
+          const lang = (v.language || '').toLowerCase();
+          return lang.startsWith('zh') || lang.startsWith('yue');
+        });
+        setVoices(mergeWithInstalledVoices(zhInstalled));
+      } else {
+        const normalized = raw
+          .filter(v => {
             if (!v.identifier) return false;
-            const language = (v.language || '').toLowerCase();
-            if (!(language.startsWith('zh') || language.startsWith('en') || language.startsWith('yue'))) return false;
+            const lang = (v.language || '').toLowerCase();
+            if (!(lang.startsWith('zh') || lang.startsWith('en') || lang.startsWith('yue'))) return false;
             if (v.name && EXCLUDED_VOICE_NAMES.has(v.name)) return false;
             return true;
-          });
-
+          })
+          .map(v => ({
+            identifier: v.identifier,
+            name: v.name || v.identifier,
+            language: v.language || '',
+            quality: (v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced',
+            installed: true,
+          }));
         setVoices(normalized);
-      } finally {
-        if (!cancelled) setVoicesLoading(false);
       }
-    };
-
-    loadVoices();
-    return () => {
-      cancelled = true;
-    };
+    } finally {
+      if (!voicesCancelledRef.current) setVoicesLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    voicesCancelledRef.current = false;
+    loadVoices();
+    return () => { voicesCancelledRef.current = true; };
+  }, [loadVoices]);
+
+  const openVoiceSettings = useCallback(async () => {
+    const url = 'App-Prefs:root=ACCESSIBILITY&path=SPEECH/VOICES';
+    const ok = await Linking.canOpenURL(url);
+    if (ok) {
+      Linking.openURL(url);
+    } else {
+      Alert.alert(t('settings.voiceHintIos'));
+    }
+  }, [t]);
 
   // Handle speech settings changes
   // When speech settings change, we don't stop the current reading.
@@ -1390,20 +1415,15 @@ export default function ReaderScreen({ route, navigation }: any) {
   const speechTimerRatio = speechTimerMinutes / 120;
   const speechTimerThumbOffset = speechTimerRatio * speechTimerWidth;
   const sortedVoices = useMemo(() => {
-      const zh: typeof voices = [];
-      const other: typeof voices = [];
+      const zh: VoiceEntry[] = [];
+      const other: VoiceEntry[] = [];
       for (const v of voices) {
-        if ((v.language || '').toLowerCase().startsWith('zh')) {
-          if (Platform.OS === 'ios') {
-            const id = (v.identifier || '').toLowerCase();
-            if (id.includes('eloquence')) continue;
-          }
-          zh.push(v);
-        } else other.push(v);
+        if ((v.language || '').toLowerCase().startsWith('zh')) zh.push(v);
+        else other.push(v);
       }
-      const sortByLabel = (a: (typeof voices)[number], b: (typeof voices)[number]) => {
-        const la = `${a.name || ''} ${a.language || ''} ${a.identifier}`.toLowerCase();
-        const lb = `${b.name || ''} ${b.language || ''} ${b.identifier}`.toLowerCase();
+      const sortByLabel = (a: VoiceEntry, b: VoiceEntry) => {
+        const la = `${a.quality === 'Default' ? '0' : '1'} ${a.name} ${a.language} ${a.identifier}`.toLowerCase();
+        const lb = `${b.quality === 'Default' ? '0' : '1'} ${b.name} ${b.language} ${b.identifier}`.toLowerCase();
         return la.localeCompare(lb);
       };
       zh.sort(sortByLabel);
@@ -1414,7 +1434,8 @@ export default function ReaderScreen({ route, navigation }: any) {
       if (!settings.voiceType || settings.voiceType === 'default') return t('common.default');
       const matchedVoice = voices.find((voice) => voice.identifier === settings.voiceType);
       if (!matchedVoice) return settings.voiceType;
-      return getVoiceDisplayLabel(matchedVoice, settings.voiceType, t, language);
+      const base = getVoiceDisplayLabel(matchedVoice, settings.voiceType, t, language);
+      return matchedVoice.quality === 'Enhanced' ? `${base} · ${t('voice.qualityEnhanced')}` : base;
   }, [language, settings.voiceType, t, voices]);
   const fontOptionMeta = useMemo(
     () => ({
@@ -1560,6 +1581,9 @@ export default function ReaderScreen({ route, navigation }: any) {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'inactive' || nextAppState === 'background') {
         saveCurrentProgressRef.current();
+      }
+      if (nextAppState === 'active') {
+        loadVoices();
       }
     });
 
@@ -2068,10 +2092,12 @@ export default function ReaderScreen({ route, navigation }: any) {
                           {sortedVoices.slice(0, 40).map((voice) => {
                             const selected = settings.voiceType === voice.identifier;
                             const label = getVoiceDisplayLabel(voice, voice.identifier, t, language);
+                            const isInstalled = voice.installed !== false;
                             return (
                               <TouchableOpacity
                                 key={voice.identifier}
                                 onPress={() => {
+                                  if (!isInstalled) { openVoiceSettings(); return; }
                                   updateSettings({ voiceType: voice.identifier });
                                   setIsVoiceDropdownVisible(false);
                                   previewVoice(voice.identifier, voice.language);
@@ -2079,31 +2105,32 @@ export default function ReaderScreen({ route, navigation }: any) {
                                 style={[
                                   styles.voiceDropdownOption,
                                   selected && [styles.speechVoiceChipActive, styles.voiceDropdownOptionActive],
+                                  !isInstalled && { opacity: 0.5 },
                                 ]}
                               >
-                                <Text
-                                  style={[
-                                    styles.voiceDropdownOptionText,
-                                    { color: selected ? '#ffffff' : textColor },
-                                  ]}
-                                  numberOfLines={1}
-                                >
-                                  {previewingVoiceId === voice.identifier ? t('common.loading') : label}
-                                </Text>
+                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                  <Text
+                                    style={[
+                                      styles.voiceDropdownOptionText,
+                                      { color: selected ? '#ffffff' : textColor, flexShrink: 1 },
+                                    ]}
+                                    numberOfLines={1}
+                                  >
+                                    {previewingVoiceId === voice.identifier ? t('common.loading') : label}
+                                  </Text>
+                                  {voice.quality === 'Enhanced' && (
+                                    <Text style={{ fontSize: 10, color: selected ? '#ffffff' : '#1E88E5', marginLeft: 4 }}>
+                                      {t('voice.qualityEnhanced')}
+                                    </Text>
+                                  )}
+                                </View>
+                                {!isInstalled && (
+                                  <Ionicons name="cloud-download-outline" size={16} color={isDark ? '#9e9e9e' : '#666666'} style={{ marginLeft: 4 }} />
+                                )}
                               </TouchableOpacity>
                             );
                           })}
                         </ScrollView>
-                        {Platform.OS === 'ios' && (
-                          <Text style={{ fontSize: 10, color: isDark ? '#777' : '#999', paddingHorizontal: 10, paddingVertical: 6, lineHeight: 14 }}>
-                            {t('settings.voiceHintIos')}
-                          </Text>
-                        )}
-                        {Platform.OS === 'android' && (
-                          <Text style={{ fontSize: 10, color: isDark ? '#777' : '#999', paddingHorizontal: 10, paddingVertical: 6, lineHeight: 14 }}>
-                            {t('settings.voiceHintAndroid')}
-                          </Text>
-                        )}
                       </View>
                     )}
                   </View>

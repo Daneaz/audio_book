@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, Platform } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, Platform, Linking, Alert, AppState } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import useSettings from '../hooks/useSettings';
 import * as Speech from 'expo-speech';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
+import { VoiceEntry, mergeWithInstalledVoices } from '../utils/voiceUtils';
 import useI18n from '../i18n';
 
 const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
@@ -16,55 +18,80 @@ const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
   'Tessa',
 ]);
 
-const ALLOWED_CHINESE_VOICE_NAMES = new Set([
-  'Tingting',
-  'Meijia',
-]);
-
 export default function SettingsScreen() {
   const { settings, updateSettings, loading } = useSettings();
   const { t, language } = useI18n();
   const [voicesLoading, setVoicesLoading] = useState(false);
-  const [voices, setVoices] = useState<Array<{ identifier: string; name?: string; language?: string }>>([]);
+  const [voices, setVoices] = useState<VoiceEntry[]>([]);
   const [showVoices, setShowVoices] = useState(false);
   const [showFonts, setShowFonts] = useState(false);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
+  const cancelledRef = useRef(false);
+
+  const loadVoices = useCallback(async () => {
+    setVoicesLoading(true);
+    try {
+      const available = await Speech.getAvailableVoicesAsync();
+      if (cancelledRef.current) return;
+
+      const raw = (available || []).map((v: any) => ({
+        identifier: String(v.identifier),
+        name: typeof v.name === 'string' ? v.name : undefined,
+        language: typeof v.language === 'string' ? v.language : undefined,
+        quality: typeof v.quality === 'string' ? v.quality : undefined,
+      }));
+
+      if (Platform.OS === 'ios') {
+        const zhInstalled = raw.filter(v => {
+          const lang = (v.language || '').toLowerCase();
+          return lang.startsWith('zh') || lang.startsWith('yue');
+        });
+        setVoices(mergeWithInstalledVoices(zhInstalled));
+      } else {
+        const normalized = raw
+          .filter(v => {
+            if (!v.identifier) return false;
+            const lang = (v.language || '').toLowerCase();
+            if (lang.startsWith('zh') || lang.startsWith('yue')) return true;
+            if (lang.startsWith('en')) return v.name ? ALLOWED_ENGLISH_VOICE_NAMES.has(v.name) : false;
+            return false;
+          })
+          .map(v => ({
+            identifier: v.identifier,
+            name: v.name || v.identifier,
+            language: v.language || '',
+            quality: (v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced',
+            installed: true,
+          }));
+        setVoices(normalized);
+      }
+    } finally {
+      if (!cancelledRef.current) setVoicesLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const loadVoices = async () => {
-      setVoicesLoading(true);
-      try {
-        const available = await Speech.getAvailableVoicesAsync();
-        if (cancelled) return;
-
-        const normalized = (available || [])
-          .map((v: any) => ({
-            identifier: String(v.identifier),
-            name: typeof v.name === 'string' ? v.name : undefined,
-            language: typeof v.language === 'string' ? v.language : undefined,
-          }))
-          .filter((v) => {
-            if (!v.identifier) return false;
-            const language = (v.language || '').toLowerCase();
-            if (language.startsWith('zh')) return v.name ? ALLOWED_CHINESE_VOICE_NAMES.has(v.name) : false;
-            if (language.startsWith('en')) return v.name ? ALLOWED_ENGLISH_VOICE_NAMES.has(v.name) : false;
-            return false;
-          });
-
-        setVoices(normalized);
-      } finally {
-        if (!cancelled) setVoicesLoading(false);
-      }
-    };
-
+    cancelledRef.current = false;
     loadVoices();
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') loadVoices();
+    });
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
       Speech.stop();
+      sub.remove();
     };
-  }, []);
+  }, [loadVoices]);
+
+  const openVoiceSettings = useCallback(async () => {
+    const url = 'App-Prefs:root=ACCESSIBILITY&path=SPEECH/VOICES';
+    const ok = await Linking.canOpenURL(url);
+    if (ok) {
+      Linking.openURL(url);
+    } else {
+      Alert.alert(t('settings.voiceHintIos'));
+    }
+  }, [t]);
 
   const previewVoice = async (voiceId: string, voiceLanguage?: string) => {
     const normalizedLanguage = (voiceLanguage || '').toLowerCase();
@@ -86,15 +113,15 @@ export default function SettingsScreen() {
   };
 
   const sortedVoices = useMemo(() => {
-    const zh: typeof voices = [];
-    const other: typeof voices = [];
+    const zh: VoiceEntry[] = [];
+    const other: VoiceEntry[] = [];
     for (const v of voices) {
       if ((v.language || '').toLowerCase().startsWith('zh')) zh.push(v);
       else other.push(v);
     }
-    const sortByLabel = (a: (typeof voices)[number], b: (typeof voices)[number]) => {
-      const la = `${a.name || ''} ${a.language || ''} ${a.identifier}`.toLowerCase();
-      const lb = `${b.name || ''} ${b.language || ''} ${b.identifier}`.toLowerCase();
+    const sortByLabel = (a: VoiceEntry, b: VoiceEntry) => {
+      const la = `${a.quality === 'Default' ? '0' : '1'} ${a.name} ${a.language} ${a.identifier}`.toLowerCase();
+      const lb = `${b.quality === 'Default' ? '0' : '1'} ${b.name} ${b.language} ${b.identifier}`.toLowerCase();
       return la.localeCompare(lb);
     };
     zh.sort(sortByLabel);
@@ -123,7 +150,8 @@ export default function SettingsScreen() {
     if (!selectedVoice || selectedVoice === 'default') return t('common.default');
     const v = voices.find((x) => x.identifier === selectedVoice);
     if (!v) return selectedVoice;
-    return `${v.name || v.identifier}${v.language ? ` (${v.language})` : ''}`;
+    const qualityLabel = v.quality === 'Enhanced' ? ` · ${t('voice.qualityEnhanced')}` : '';
+    return `${v.name}${qualityLabel}`;
   }, [selectedVoice, t, voices]);
   const fontOptionMeta = useMemo(
     () => ({
@@ -374,36 +402,41 @@ export default function SettingsScreen() {
               <ActivityIndicator color={sc.accent} style={{ paddingVertical: 12 }} />
             ) : (
               <>
-                {[{ identifier: 'default', name: t('common.default'), language: language === 'zh' ? 'zh-CN' : 'en-US' }, ...sortedVoices.slice(0, 60)].map((v, idx, arr) => {
-                  const label = v.identifier === 'default' ? t('common.default') : `${v.name || v.identifier}${v.language ? ` (${v.language})` : ''}`;
-                  const selected = selectedVoice === v.identifier || (v.identifier === 'default' && (!selectedVoice || selectedVoice === 'default'));
+                {[{ identifier: 'default', name: t('common.default'), language: language === 'zh' ? 'zh-CN' : 'en-US', quality: 'Default' as const, installed: true }, ...sortedVoices.slice(0, 60)].map((v, idx, arr) => {
+                  const isDefault = v.identifier === 'default';
+                  const selected = selectedVoice === v.identifier || (isDefault && (!selectedVoice || selectedVoice === 'default'));
+                  const notInstalled = !isDefault && !v.installed;
                   return (
                     <TouchableOpacity
                       key={v.identifier}
-                      onPress={() => previewVoice(v.identifier, v.language).then(() => updateSettings({ voiceType: v.identifier }))}
+                      onPress={() => {
+                        if (notInstalled) { openVoiceSettings(); return; }
+                        previewVoice(v.identifier, v.language).then(() => updateSettings({ voiceType: v.identifier }));
+                      }}
                       style={[styles.listItem, { borderBottomColor: sc.border },
                         selected && { backgroundColor: sc.accentBg },
+                        notInstalled && { opacity: 0.5 },
                         idx === arr.length - 1 && { borderBottomWidth: 0 },
                       ]}
                     >
-                      <Text style={[styles.listItemLabel, { color: selected ? sc.accent : sc.textPrimary }]} numberOfLines={1}>{label}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                        <Text style={[styles.listItemLabel, { color: selected ? sc.accent : sc.textPrimary }]} numberOfLines={1}>{v.name}</Text>
+                        {!isDefault && v.quality === 'Enhanced' && (
+                          <View style={{ backgroundColor: sc.accentBg, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                            <Text style={{ fontSize: 10, color: sc.accent }}>{t('voice.qualityEnhanced')}</Text>
+                          </View>
+                        )}
+                      </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         {previewingVoiceId === v.identifier && <ActivityIndicator size="small" color={sc.accent} />}
-                        {selected && <Text style={[styles.listItemCheck, { color: sc.accent }]}>✓</Text>}
+                        {notInstalled
+                          ? <Ionicons name="cloud-download-outline" size={18} color={sc.textSub} />
+                          : selected && <Text style={[styles.listItemCheck, { color: sc.accent }]}>✓</Text>
+                        }
                       </View>
                     </TouchableOpacity>
                   );
                 })}
-                {Platform.OS === 'ios' && (
-                  <Text style={{ fontSize: 11, color: sc.textSub, paddingHorizontal: 12, paddingVertical: 8, lineHeight: 16 }}>
-                    {t('settings.voiceHintIos')}
-                  </Text>
-                )}
-                {Platform.OS === 'android' && (
-                  <Text style={{ fontSize: 11, color: sc.textSub, paddingHorizontal: 12, paddingVertical: 8, lineHeight: 16 }}>
-                    {t('settings.voiceHintAndroid')}
-                  </Text>
-                )}
               </>
             )}
           </View>

@@ -110,6 +110,8 @@ export type TranslationKey =
   | 'voice.cantonese'
   | 'voice.chinese'
   | 'voice.english'
+  | 'voice.qualityDefault'
+  | 'voice.qualityEnhanced'
   | 'settings.about'
   | 'settings.appVersion'
   | 'settings.otaVersion'
@@ -231,6 +233,8 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'voice.cantonese': '粤语',
     'voice.chinese': '中文',
     'voice.english': '英文',
+    'voice.qualityDefault': '标准',
+    'voice.qualityEnhanced': '增强',
     'settings.about': '关于',
     'settings.appVersion': '版本',
     'settings.otaVersion': 'OTA 更新',
@@ -349,6 +353,8 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'voice.cantonese': 'Cantonese',
     'voice.chinese': 'Chinese',
     'voice.english': 'English',
+    'voice.qualityDefault': 'Standard',
+    'voice.qualityEnhanced': 'Enhanced',
     'settings.about': 'About',
     'settings.appVersion': 'Version',
     'settings.otaVersion': 'OTA Update',
