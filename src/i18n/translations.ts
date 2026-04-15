@@ -33,6 +33,8 @@ export type TranslationKey =
   | 'settings.voicePreviewHint'
   | 'settings.voicePreviewZh'
   | 'settings.voicePreviewEn'
+  | 'settings.voiceHintIos'
+  | 'settings.voiceHintAndroid'
   | 'bookshelf.subtitle'
   | 'bookshelf.sectionTitle'
   | 'bookshelf.emptyTitle'
@@ -152,6 +154,8 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.voicePreviewHint': '选择后会自动试听',
     'settings.voicePreviewZh': '这是一段中文语音试听。',
     'settings.voicePreviewEn': 'This is a short English voice preview.',
+    'settings.voiceHintIos': '如需更自然的音色，可前往 iOS 设置 → 辅助功能 → 朗读内容 → 声音，下载「增强」版本',
+    'settings.voiceHintAndroid': '建议在系统设置 → 语言和输入法 → 文字转语音中，将引擎切换为「Google 文字转语音」',
     'bookshelf.subtitle': '导入一本书，开始把它摆上书架。',
     'bookshelf.sectionTitle': '书架',
     'bookshelf.emptyTitle': '还没有书',
@@ -268,6 +272,8 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.voicePreviewHint': 'Selecting a voice will play a preview',
     'settings.voicePreviewZh': 'This is a short Chinese voice preview.',
     'settings.voicePreviewEn': 'This is a short English voice preview.',
+    'settings.voiceHintIos': 'For a more natural voice, go to iOS Settings → Accessibility → Spoken Content → Voices and download an "Enhanced" voice',
+    'settings.voiceHintAndroid': 'For better Chinese quality, go to System Settings → Language & Input → Text-to-Speech and switch to "Google Text-to-Speech"',
     'bookshelf.subtitle': 'Import a book and place it on your shelf.',
     'bookshelf.sectionTitle': 'Shelf',
     'bookshelf.emptyTitle': 'No books yet',
