@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, Platform } from 'react-native';
 import useSettings from '../hooks/useSettings';
 import * as Speech from 'expo-speech';
 import * as Updates from 'expo-updates';
@@ -395,6 +395,16 @@ export default function SettingsScreen() {
                   );
                 })}
               </>
+            )}
+            {Platform.OS === 'ios' && (
+              <Text style={{ fontSize: 11, color: sc.textSub, paddingHorizontal: 12, paddingVertical: 8, lineHeight: 16 }}>
+                {t('settings.voiceHintIos')}
+              </Text>
+            )}
+            {Platform.OS === 'android' && (
+              <Text style={{ fontSize: 11, color: sc.textSub, paddingHorizontal: 12, paddingVertical: 8, lineHeight: 16 }}>
+                {t('settings.voiceHintAndroid')}
+              </Text>
             )}
           </View>
         )}
