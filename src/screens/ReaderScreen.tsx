@@ -2095,6 +2095,16 @@ export default function ReaderScreen({ route, navigation }: any) {
                             );
                           })}
                         </ScrollView>
+                        {Platform.OS === 'ios' && (
+                          <Text style={{ fontSize: 10, color: isDark ? '#777' : '#999', paddingHorizontal: 10, paddingVertical: 6, lineHeight: 14 }}>
+                            {t('settings.voiceHintIos')}
+                          </Text>
+                        )}
+                        {Platform.OS === 'android' && (
+                          <Text style={{ fontSize: 10, color: isDark ? '#777' : '#999', paddingHorizontal: 10, paddingVertical: 6, lineHeight: 14 }}>
+                            {t('settings.voiceHintAndroid')}
+                          </Text>
+                        )}
                       </View>
                     )}
                   </View>
