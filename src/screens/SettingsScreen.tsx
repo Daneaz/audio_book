@@ -60,7 +60,7 @@ export default function SettingsScreen() {
             identifier: v.identifier,
             name: v.name || v.identifier,
             language: v.language || '',
-            quality: (v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced',
+            quality: (v.quality === 'Premium' ? 'Premium' : v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced' | 'Premium',
             installed: true,
           }));
         setVoices(normalized);
@@ -150,7 +150,7 @@ export default function SettingsScreen() {
     if (!selectedVoice || selectedVoice === 'default') return t('common.default');
     const v = voices.find((x) => x.identifier === selectedVoice);
     if (!v) return selectedVoice;
-    const qualityLabel = v.quality === 'Enhanced' ? ` · ${t('voice.qualityEnhanced')}` : '';
+    const qualityLabel = v.quality !== 'Default' ? ` · ${t('voice.qualityEnhanced')}` : '';
     return `${v.name}${qualityLabel}`;
   }, [selectedVoice, t, voices]);
   const fontOptionMeta = useMemo(
@@ -421,7 +421,7 @@ export default function SettingsScreen() {
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
                         <Text style={[styles.listItemLabel, { color: selected ? sc.accent : sc.textPrimary }]} numberOfLines={1}>{v.name}</Text>
-                        {!isDefault && v.quality === 'Enhanced' && (
+                        {!isDefault && v.quality !== 'Default' && (
                           <View style={{ backgroundColor: sc.accentBg, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
                             <Text style={{ fontSize: 10, color: sc.accent }}>{t('voice.qualityEnhanced')}</Text>
                           </View>

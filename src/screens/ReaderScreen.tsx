@@ -523,7 +523,7 @@ export default function ReaderScreen({ route, navigation }: any) {
             identifier: v.identifier,
             name: v.name || v.identifier,
             language: v.language || '',
-            quality: (v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced',
+            quality: (v.quality === 'Premium' ? 'Premium' : v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced' | 'Premium',
             installed: true,
           }));
         setVoices(normalized);
@@ -1435,7 +1435,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       const matchedVoice = voices.find((voice) => voice.identifier === settings.voiceType);
       if (!matchedVoice) return settings.voiceType;
       const base = getVoiceDisplayLabel(matchedVoice, settings.voiceType, t, language);
-      return matchedVoice.quality === 'Enhanced' ? `${base} · ${t('voice.qualityEnhanced')}` : base;
+      return matchedVoice.quality !== 'Default' ? `${base} · ${t('voice.qualityEnhanced')}` : base;
   }, [language, settings.voiceType, t, voices]);
   const fontOptionMeta = useMemo(
     () => ({
@@ -2118,7 +2118,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                                   >
                                     {previewingVoiceId === voice.identifier ? t('common.loading') : label}
                                   </Text>
-                                  {voice.quality === 'Enhanced' && (
+                                  {voice.quality !== 'Default' && (
                                     <Text style={{ fontSize: 10, color: selected ? '#ffffff' : '#1E88E5', marginLeft: 4 }}>
                                       {t('voice.qualityEnhanced')}
                                     </Text>

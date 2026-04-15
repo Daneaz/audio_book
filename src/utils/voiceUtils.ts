@@ -2,15 +2,15 @@ export interface VoiceEntry {
   identifier: string;
   name: string;
   language: string;
-  quality: 'Default' | 'Enhanced';
+  quality: 'Default' | 'Enhanced' | 'Premium';
   installed: boolean;
 }
 
 const KNOWN_IOS_ZH_VOICES: Omit<VoiceEntry, 'installed'>[] = [
   { identifier: 'com.apple.ttsbundle.Tingting-compact', name: 'Tingting', language: 'zh-CN', quality: 'Default' },
-  { identifier: 'com.apple.ttsbundle.Tingting-premium', name: 'Tingting', language: 'zh-CN', quality: 'Enhanced' },
+  { identifier: 'com.apple.ttsbundle.Tingting-premium', name: 'Tingting', language: 'zh-CN', quality: 'Premium' },
   { identifier: 'com.apple.ttsbundle.Meijia-compact',   name: 'Meijia',   language: 'zh-TW', quality: 'Default' },
-  { identifier: 'com.apple.ttsbundle.Meijia-premium',   name: 'Meijia',   language: 'zh-TW', quality: 'Enhanced' },
+  { identifier: 'com.apple.ttsbundle.Meijia-premium',   name: 'Meijia',   language: 'zh-TW', quality: 'Premium' },
 ];
 
 export function mergeWithInstalledVoices(
@@ -31,7 +31,7 @@ export function mergeWithInstalledVoices(
       identifier: v.identifier,
       name: v.name || v.identifier,
       language: v.language || 'zh-CN',
-      quality: v.quality === 'Enhanced' ? 'Enhanced' : 'Default',
+      quality: v.quality === 'Premium' ? 'Premium' : v.quality === 'Enhanced' ? 'Enhanced' : 'Default',
       installed: true,
     });
   }
