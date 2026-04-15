@@ -1111,10 +1111,6 @@ export default function ReaderScreen({ route, navigation }: any) {
       
       // Prevent auto-scroll jump when speech starts
       lastUserScrollRef.current = Date.now();
-      
-      if (startChapterId) {
-        speakSentence(startChapterId, startSentenceIndex);
-      }
 
       MusicControl.enableControl('play', true);
       MusicControl.enableControl('pause', true);
@@ -1129,6 +1125,10 @@ export default function ReaderScreen({ route, navigation }: any) {
       });
       MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
       if (Platform.OS === 'ios') MusicControl.handleAudioInterruptions(true);
+
+      if (startChapterId) {
+        speakSentence(startChapterId, startSentenceIndex);
+      }
   };
 
   const stopSpeech = () => {
