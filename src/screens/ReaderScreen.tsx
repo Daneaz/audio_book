@@ -11,7 +11,7 @@ import ChapterService from '../services/ChapterService';
 import StorageService from '../services/StorageService';
 import { STORAGE_KEYS } from '../utils/constants';
 import { Book, Chapter, ReadingProgress } from '../types';
-import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing } from '../utils/textUtils';
+import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, splitIntoSubClauses } from '../utils/textUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import useSettings from '../hooks/useSettings';
 import useI18n from '../i18n';
@@ -1186,55 +1186,65 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, []);
 
   const speakSentence = (cId: string, sIndex: number) => {
-      const chData = chaptersData.find(c => c.chapter.id === cId);
-      if (!chData) {
+    const chData = chaptersData.find(c => c.chapter.id === cId);
+    if (!chData) {
+      stopSpeech();
+      return;
+    }
+
+    if (sIndex >= chData.sentences.length) {
+      const chIdx = chaptersData.findIndex(c => c.chapter.id === cId);
+      const nextCh = chaptersData[chIdx + 1];
+      if (nextCh) {
+        speakSentence(nextCh.chapter.id, 0);
+      } else {
         stopSpeech();
+      }
+      return;
+    }
+
+    const sentence = prepareSentenceForTts(chData.sentences[sIndex].text, 'offline');
+
+    if (!sentence) {
+      speakSentence(cId, sIndex + 1);
+      return;
+    }
+
+    setCurrentSpeakingChapterId(cId);
+    setCurrentSentenceIndex(sIndex);
+
+    const subclauses = splitIntoSubClauses(sentence);
+
+    const playSubClause = (idx: number) => {
+      if (!isSpeakingRef.current) return;
+      if (idx >= subclauses.length) {
+        setTimeout(() => {
+          if (isSpeakingRef.current) speakSentence(cId, sIndex + 1);
+        }, 50);
         return;
       }
-
-      if (sIndex >= chData.sentences.length) {
-        // Move to next chapter
-        const chIdx = chaptersData.findIndex(c => c.chapter.id === cId);
-        const nextCh = chaptersData[chIdx + 1];
-        if (nextCh) {
-          speakSentence(nextCh.chapter.id, 0);
-        } else {
-          // Try to load next chapter?
-          // For now just stop.
-          stopSpeech();
-        }
-        return;
-      }
-
-      const sentence = prepareSentenceForTts(chData.sentences[sIndex].text, 'offline');
-
-      if (!sentence) {
-        speakSentence(cId, sIndex + 1);
-        return;
-      }
-
-      setCurrentSpeakingChapterId(cId);
-      setCurrentSentenceIndex(sIndex);
-
-      Speech.speak(sentence, {
-          language: 'zh-CN',
-          rate: settingsRef.current.speechRate,
-          voice: settingsRef.current.voiceType === 'default' ? undefined : settingsRef.current.voiceType,
-          onDone: () => {
-             setTimeout(() => {
-                 if (isSpeakingRef.current) {
-                     speakSentence(cId, sIndex + 1);
-                 }
-             }, 50);
-          },
-          onStopped: () => {
-             // Handled by stopSpeech
-          },
-          onError: (e) => {
-              console.error("Speech error", e);
-              stopSpeech();
+      Speech.speak(subclauses[idx], {
+        language: 'zh-CN',
+        rate: settingsRef.current.speechRate,
+        voice: settingsRef.current.voiceType === 'default' ? undefined : settingsRef.current.voiceType,
+        onDone: () => {
+          if (idx < subclauses.length - 1) {
+            setTimeout(() => playSubClause(idx + 1), 150);
+          } else {
+            setTimeout(() => {
+              if (isSpeakingRef.current) speakSentence(cId, sIndex + 1);
+            }, 50);
           }
+        },
+        onStopped: () => {},
+        onError: (e) => {
+          console.error('Speech error', e);
+          stopSpeech();
+        },
       });
+    };
+
+    playSubClause(0);
   };
 
   // Effects for timer
