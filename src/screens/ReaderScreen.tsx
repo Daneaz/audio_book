@@ -372,10 +372,10 @@ const ReaderPageItem = React.memo(({
 export default function ReaderScreen({ route, navigation }: any) {
   const { bookId, chapterId } = route.params;
   const insets = useSafeAreaInsets();
-  
+
   const [book, setBook] = useState<Book | null>(null);
   const [allChapters, setAllChapters] = useState<Chapter[]>([]);
-  
+
   // Data for FlatList
   const [chaptersData, setChaptersData] = useState<ChapterData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -392,11 +392,11 @@ export default function ReaderScreen({ route, navigation }: any) {
     isBackLoading: boolean;
   }>({ prevId: null, currentId: '', nextId: null, isPreloading: false, isBackLoading: false });
   const chapterProgressRef = useRef(0);
-  
+
   // Navigation & UI state
   const [currentHeaderTitle, setCurrentHeaderTitle] = useState('');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  
+
   // Speech state
   const [isSpeaking, setIsSpeaking] = useState(false);
   const isSpeakingRef = useRef(false);
@@ -405,7 +405,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [currentSpeakingChapterId, setCurrentSpeakingChapterId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [selectedSentence, setSelectedSentence] = useState<{ chapterId: string; sentenceIndex: number } | null>(null);
-  
+
   // Timer
   const [timerDuration, setTimerDuration] = useState<number | null>(null);
   const [timerRemaining, setTimerRemaining] = useState<number | null>(null);
@@ -423,10 +423,10 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
   const [isVoiceDropdownVisible, setIsVoiceDropdownVisible] = useState(false);
   const speechTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const { settings, updateSettings } = useSettings();
   const { t, language } = useI18n();
-  
+
   const flatListRef = useAnimatedRef<Animated.FlatList<ChapterData | PageData>>();
   const chapterLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
   const prevSpeakingChapterIdRef = useRef<string | null>(null);
@@ -767,7 +767,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           scrollToItemIndex: 0,
         };
       }
-      
+
       setLoading(false);
     } catch (e) {
       console.error(e);
@@ -776,21 +776,21 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const loadChaptersBatch = async (
-    all: Chapter[], 
-    startIndex: number, 
-    count: number, 
+    all: Chapter[],
+    startIndex: number,
+    count: number,
     currentBook: Book,
     reset: boolean = false
   ) => {
     if (startIndex >= all.length) return;
-    
+
     const newData: ChapterData[] = [];
     const endIndex = Math.min(startIndex + count, all.length);
-    
+
     for (let i = startIndex; i < endIndex; i++) {
       const ch = all[i];
       if (loadedChapterIdsRef.current.has(ch.id) && !reset) continue;
-      
+
       loadedChapterIdsRef.current.add(ch.id);
       try {
         const content = await ChapterService.getChapterContent(currentBook.filePath, ch.startPosition, ch.endPosition);
@@ -805,7 +805,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         console.error(`Error loading chapter ${ch.id}`, e);
       }
     }
-    
+
     if (reset) {
       loadedChapterIdsRef.current.clear();
       newData.forEach(d => loadedChapterIdsRef.current.add(d.chapter.id));
@@ -1045,11 +1045,11 @@ export default function ReaderScreen({ route, navigation }: any) {
       // Determine start point
       let startChapterId = chaptersData[0]?.chapter.id;
       let startSentenceIndex = 0;
-      
+
       // 1. Check selection
       const now = Date.now();
       const lastSel = lastSelectionRef.current;
-      
+
       if (lastSel && (now - lastSel.timestamp < 10000)) { // Valid within 10s
         const targetChapter = chaptersData.find(c => c.chapter.id === lastSel.chapterId);
         if (targetChapter) {
@@ -1093,13 +1093,13 @@ export default function ReaderScreen({ route, navigation }: any) {
                  startChapterId = cd.chapter.id;
                  const ratio = Math.max(0, Math.min(1, (topY - cl.y) / cl.height));
                  const estimatedCharOffset = Math.floor(ratio * cd.content.length);
-                 
+
                  // Find the start of the paragraph that contains this offset
                  let pStart = estimatedCharOffset;
                  while (pStart > 0 && cd.content[pStart - 1] !== '\n') {
                    pStart--;
                  }
-                 
+
                  const sIdx = cd.sentences.findIndex(s => s.start >= pStart);
                  startSentenceIndex = sIdx !== -1 ? sIdx : 0;
                  break;
@@ -1108,22 +1108,30 @@ export default function ReaderScreen({ route, navigation }: any) {
            }
         }
       }
-      
+
       // Prevent auto-scroll jump when speech starts
       lastUserScrollRef.current = Date.now();
 
+      // @ts-ignore
       MusicControl.enableControl('play', true);
+      // @ts-ignore
       MusicControl.enableControl('pause', true);
+      // @ts-ignore
       MusicControl.enableControl('stop', true);
+      // @ts-ignore
       MusicControl.enableControl('nextTrack', false);
+      // @ts-ignore
       MusicControl.enableControl('previousTrack', false);
 
       const startingChapter = chaptersData.find(c => c.chapter.id === startChapterId);
+      // @ts-ignore
       MusicControl.setNowPlaying({
         title: book?.title ?? '',
         artist: startingChapter?.chapter.title ?? '',
       });
+      // @ts-ignore
       MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
+      // @ts-ignore
       if (Platform.OS === 'ios') MusicControl.handleAudioInterruptions(true);
 
       if (startChapterId) {
@@ -1151,21 +1159,27 @@ export default function ReaderScreen({ route, navigation }: any) {
   });
 
   useEffect(() => {
+    // @ts-ignore
     MusicControl.enableBackgroundMode(true);
-
+    // @ts-ignore
     MusicControl.on('play', () => {
       if (!isSpeakingRef.current) startSpeechRef.current();
     });
+    // @ts-ignore
     MusicControl.on('pause', () => {
       if (isSpeakingRef.current) stopSpeechRef.current();
     });
+    // @ts-ignore
     MusicControl.on('stop', () => {
       stopSpeechRef.current();
     });
 
     return () => {
+      // @ts-ignore
       MusicControl.off('play');
+      // @ts-ignore
       MusicControl.off('pause');
+      // @ts-ignore
       MusicControl.off('stop');
       MusicControl.resetNowPlaying();
     };
@@ -1177,7 +1191,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         stopSpeech();
         return;
       }
-      
+
       if (sIndex >= chData.sentences.length) {
         // Move to next chapter
         const chIdx = chaptersData.findIndex(c => c.chapter.id === cId);
@@ -1191,7 +1205,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         }
         return;
       }
-      
+
       const sentence = prepareSentenceForTts(chData.sentences[sIndex].text, 'offline');
 
       if (!sentence) {
@@ -1208,7 +1222,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           voice: settingsRef.current.voiceType === 'default' ? undefined : settingsRef.current.voiceType,
           onDone: () => {
              setTimeout(() => {
-                 if (isSpeakingRef.current) { 
+                 if (isSpeakingRef.current) {
                      speakSentence(cId, sIndex + 1);
                  }
              }, 50);
@@ -1339,6 +1353,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     accent:       isDark ? '#C4A96A' : '#A0621A',
     accentBg:     isDark ? 'rgba(196,169,106,0.1)'  : 'rgba(139,94,32,0.08)',
     accentBorder: isDark ? 'rgba(196,169,106,0.3)'  : 'rgba(139,94,32,0.25)',
+    red:          '#D64040',
     textPrimary:  isDark ? '#E8E0D0' : '#2C1A0E',
     textSub:      isDark ? '#B0A080' : '#9A7A5A',
     bottomBar:    isDark ? '#0A0806' : '#F3ECE0',
@@ -1546,10 +1561,12 @@ export default function ReaderScreen({ route, navigation }: any) {
   useEffect(() => {
     if (!isSpeaking || !currentSpeakingChapterId) return;
     const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
+    // @ts-ignore
     MusicControl.setNowPlaying({
       title: book?.title ?? '',
       artist: chData?.chapter.title ?? '',
     });
+    // @ts-ignore
     MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
   }, [currentSpeakingChapterId, isSpeaking, book, chaptersData]);
 
@@ -1792,7 +1809,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} hidden={!isMenuVisible} />
-      
+
       {/* Header */}
       {isMenuVisible && (
           <View style={[styles.header, { paddingTop: insets.top, backgroundColor: readerColors.surface, borderBottomColor: readerColors.border }]}>
@@ -2179,10 +2196,10 @@ export default function ReaderScreen({ route, navigation }: any) {
                       <Ionicons
                         name={settings.autoFlip ? 'stop-circle-outline' : 'play-circle-outline'}
                         size={20}
-                        color={settings.autoFlip ? '#D64040' : readerColors.textSub}
+                        color={settings.autoFlip ? readerColors.red : readerColors.textSub}
                       />
                     </View>
-                    <Text style={[styles.ctrlLabel, { color: settings.autoFlip ? '#D64040' : readerColors.textSub }]}>
+                    <Text style={[styles.ctrlLabel, { color: settings.autoFlip ? readerColors.red : readerColors.textSub }]}>
                       {settings.autoFlip ? t('reader.autoFlipStop') : t('reader.autoFlipStart')}
                     </Text>
                   </TouchableOpacity>
@@ -2195,9 +2212,9 @@ export default function ReaderScreen({ route, navigation }: any) {
                       { backgroundColor: isSpeaking ? readerColors.accentBg : readerColors.iconBox },
                       isSpeaking && { borderWidth: 1, borderColor: readerColors.accentBorder },
                     ]}>
-                      <Ionicons name={isSpeaking ? 'mic' : 'mic-outline'} size={20} color={isSpeaking ? readerColors.accent : readerColors.textSub} />
+                      <Ionicons name={isSpeaking ? 'mic' : 'mic-outline'} size={20} color={isSpeaking ? readerColors.red : readerColors.textSub} />
                     </View>
-                    <Text style={[styles.ctrlLabel, { color: isSpeaking ? readerColors.accent : readerColors.textSub }]}>
+                    <Text style={[styles.ctrlLabel, { color: isSpeaking ? readerColors.red : readerColors.textSub }]}>
                       {isSpeaking ? t('reader.pause') : t('reader.read')}
                     </Text>
                   </TouchableOpacity>
