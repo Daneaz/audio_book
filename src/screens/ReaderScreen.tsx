@@ -1435,7 +1435,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       const matchedVoice = voices.find((voice) => voice.identifier === settings.voiceType);
       if (!matchedVoice) return settings.voiceType;
       const base = getVoiceDisplayLabel(matchedVoice, settings.voiceType, t, language);
-      return matchedVoice.quality !== 'Default' ? `${base} · ${t('voice.qualityEnhanced')}` : base;
+      return matchedVoice.quality === 'Premium' ? `${base} · ${t('voice.qualityPremium')}` : matchedVoice.quality === 'Enhanced' ? `${base} · ${t('voice.qualityEnhanced')}` : base;
   }, [language, settings.voiceType, t, voices]);
   const fontOptionMeta = useMemo(
     () => ({
@@ -2120,7 +2120,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                                   </Text>
                                   {voice.quality !== 'Default' && (
                                     <Text style={{ fontSize: 10, color: selected ? '#ffffff' : '#1E88E5', marginLeft: 4 }}>
-                                      {t('voice.qualityEnhanced')}
+                                      {voice.quality === 'Premium' ? t('voice.qualityPremium') : t('voice.qualityEnhanced')}
                                     </Text>
                                   )}
                                 </View>
