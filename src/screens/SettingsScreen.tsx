@@ -394,17 +394,17 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                   );
                 })}
+                {Platform.OS === 'ios' && (
+                  <Text style={{ fontSize: 11, color: sc.textSub, paddingHorizontal: 12, paddingVertical: 8, lineHeight: 16 }}>
+                    {t('settings.voiceHintIos')}
+                  </Text>
+                )}
+                {Platform.OS === 'android' && (
+                  <Text style={{ fontSize: 11, color: sc.textSub, paddingHorizontal: 12, paddingVertical: 8, lineHeight: 16 }}>
+                    {t('settings.voiceHintAndroid')}
+                  </Text>
+                )}
               </>
-            )}
-            {Platform.OS === 'ios' && (
-              <Text style={{ fontSize: 11, color: sc.textSub, paddingHorizontal: 12, paddingVertical: 8, lineHeight: 16 }}>
-                {t('settings.voiceHintIos')}
-              </Text>
-            )}
-            {Platform.OS === 'android' && (
-              <Text style={{ fontSize: 11, color: sc.textSub, paddingHorizontal: 12, paddingVertical: 8, lineHeight: 16 }}>
-                {t('settings.voiceHintAndroid')}
-              </Text>
             )}
           </View>
         )}
