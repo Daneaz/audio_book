@@ -32,6 +32,7 @@ export function mergeWithInstalledVoices(
 
     for (const v of installed) {
         if (knownIds.has(v.identifier)) continue;
+        if ((v.identifier || '').toLowerCase().includes('eloquence')) continue;
         if ((v.identifier || '').toLowerCase().includes('synthesis')) continue;
         result.push({
             identifier: v.identifier,
