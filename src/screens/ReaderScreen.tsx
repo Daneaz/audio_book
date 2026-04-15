@@ -1128,7 +1128,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         artist: startingChapter?.chapter.title ?? '',
       });
       MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
-      MusicControl.handleAudioInterruptions(true);
+      if (Platform.OS === 'ios') MusicControl.handleAudioInterruptions(true);
   };
 
   const stopSpeech = () => {
