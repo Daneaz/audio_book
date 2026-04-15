@@ -507,7 +507,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       if (Platform.OS === 'ios') {
         const zhInstalled = raw.filter(v => {
           const lang = (v.language || '').toLowerCase();
-          return lang.startsWith('zh') || lang.startsWith('yue');
+          return lang.startsWith('zh') || lang.startsWith('en');
         });
         setVoices(mergeWithInstalledVoices(zhInstalled));
       } else {
@@ -515,7 +515,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           .filter(v => {
             if (!v.identifier) return false;
             const lang = (v.language || '').toLowerCase();
-            if (!(lang.startsWith('zh') || lang.startsWith('en') || lang.startsWith('yue'))) return false;
+            if (!(lang.startsWith('zh') || lang.startsWith('en'))) return false;
             if (v.name && EXCLUDED_VOICE_NAMES.has(v.name)) return false;
             return true;
           })
