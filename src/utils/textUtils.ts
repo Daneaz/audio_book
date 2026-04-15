@@ -106,6 +106,37 @@ export function prepareSentenceForTts(sentence: string, mode: 'offline' | 'onlin
   return sanitizeSentenceForSpeech(sentence);
 }
 
+export function splitIntoSubClauses(sentence: string, minChineseChars: number = 2): string[] {
+  if (!sentence) return [];
+
+  const rawParts = sentence.split(/(，|、)/);
+  const segments: string[] = [];
+  let current = '';
+
+  for (const part of rawParts) {
+    if (part === '，' || part === '、') {
+      current += part;
+    } else {
+      if (current) segments.push(current);
+      current = part;
+    }
+  }
+  if (current) segments.push(current);
+
+  const countChinese = (s: string) => (s.match(/[\u4e00-\u9fff]/g) || []).length;
+
+  const result: string[] = [];
+  for (const seg of segments) {
+    if (countChinese(seg) < minChineseChars && result.length > 0) {
+      result[result.length - 1] += seg;
+    } else if (seg.trim().length > 0) {
+      result.push(seg);
+    }
+  }
+
+  return result.length > 0 ? result : [sentence];
+}
+
 export function normalizeDisplayParagraphSpacing(content: string): string {
   return content.replace(/\r\n/g, '\n');
 }
