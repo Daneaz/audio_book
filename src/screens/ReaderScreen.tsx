@@ -1392,12 +1392,11 @@ export default function ReaderScreen({ route, navigation }: any) {
   const sortedVoices = useMemo(() => {
       const zh: typeof voices = [];
       const other: typeof voices = [];
-      const iosZhAllowlist = ['tingting', 'meijia'];
       for (const v of voices) {
         if ((v.language || '').toLowerCase().startsWith('zh')) {
           if (Platform.OS === 'ios') {
             const id = (v.identifier || '').toLowerCase();
-            if (!iosZhAllowlist.some((n) => id.includes(n))) continue;
+            if (id.includes('eloquence')) continue;
           }
           zh.push(v);
         } else other.push(v);
