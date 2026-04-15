@@ -1206,7 +1206,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     const sentence = prepareSentenceForTts(chData.sentences[sIndex].text, 'offline');
 
     if (!sentence) {
-      speakSentence(cId, sIndex + 1);
+      if (isSpeakingRef.current) speakSentence(cId, sIndex + 1);
       return;
     }
 
@@ -1229,7 +1229,9 @@ export default function ReaderScreen({ route, navigation }: any) {
         voice: settingsRef.current.voiceType === 'default' ? undefined : settingsRef.current.voiceType,
         onDone: () => {
           if (idx < subclauses.length - 1) {
-            setTimeout(() => playSubClause(idx + 1), 150);
+            setTimeout(() => {
+              if (isSpeakingRef.current) playSubClause(idx + 1);
+            }, 150);
           } else {
             setTimeout(() => {
               if (isSpeakingRef.current) speakSentence(cId, sIndex + 1);
