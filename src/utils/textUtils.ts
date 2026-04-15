@@ -106,7 +106,7 @@ export function prepareSentenceForTts(sentence: string, mode: 'offline' | 'onlin
   return sanitizeSentenceForSpeech(sentence);
 }
 
-export function splitIntoSubClauses(sentence: string, minChineseChars: number = 2): string[] {
+export function splitIntoSubClauses(sentence: string, minChineseChars: number = 4): string[] {
   if (!sentence) return [];
 
   const rawParts = sentence.split(/(，|、)/);

@@ -44,14 +44,20 @@ describe('splitIntoSubClauses', () => {
   });
 
   it('按顿号分割', () => {
-    const result = splitIntoSubClauses('苹果、香蕉、橙子都很好吃。');
-    expect(result).toEqual(['苹果、', '香蕉、', '橙子都很好吃。']);
+    const result = splitIntoSubClauses('苹果、香蕉、橙子真的都很好吃。');
+    expect(result).toEqual(['苹果、香蕉、', '橙子真的都很好吃。']);
   });
 
   it('过短子句合并到前一个', () => {
     // “啊，” 只有1个汉字，应合并到前面
     const result = splitIntoSubClauses('她惊叫了一声，啊，然后跑开了。');
     expect(result).toEqual(['她惊叫了一声，啊，', '然后跑开了。']);
+  });
+
+  it('汉字数少于4的子句合并到前一个', () => {
+    // “好的，” = 2 汉字 < 4, 应合并到前一个；”明天一起见面” = 6 汉字 >= 4, 不合并
+    const result = splitIntoSubClauses('他答应说，好的，明天一起见面。');
+    expect(result).toEqual(['他答应说，好的，', '明天一起见面。']);
   });
 
   it('空字符串返回空数组', () => {
