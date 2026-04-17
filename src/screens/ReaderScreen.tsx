@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps, AppState, Modal, Animated as RNAnimated, Linking, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps, AppState, Modal, Animated as RNAnimated } from 'react-native';
 import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import { Book, Chapter, ReadingProgress } from '../types';
 import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, splitIntoSubClauses } from '../utils/textUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import { VoiceEntry, mergeWithInstalledVoices } from '../utils/voiceUtils';
+import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useSettings from '../hooks/useSettings';
 import useI18n from '../i18n';
 import { TranslationKey } from '../i18n/translations';
@@ -403,6 +404,9 @@ export default function ReaderScreen({ route, navigation }: any) {
   const isSpeakingRef = useRef(false);
   const startSpeechRef = useRef<() => void>(() => {});
   const stopSpeechRef = useRef<() => void>(() => {});
+  const pauseSpeechRef = useRef<() => void>(() => {});
+  const resumeSpeechRef = useRef<() => void>(() => {});
+  const pausedPositionRef = useRef<{ chapterId: string; sentenceIndex: number } | null>(null);
   const [currentSpeakingChapterId, setCurrentSpeakingChapterId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [selectedSentence, setSelectedSentence] = useState<{ chapterId: string; sentenceIndex: number } | null>(null);
@@ -539,14 +543,8 @@ export default function ReaderScreen({ route, navigation }: any) {
     return () => { voicesCancelledRef.current = true; };
   }, [loadVoices]);
 
-  const openVoiceSettings = useCallback(async () => {
-    const url = 'App-Prefs:root=ACCESSIBILITY&path=SPEECH/VOICES';
-    const ok = await Linking.canOpenURL(url);
-    if (ok) {
-      Linking.openURL(url);
-    } else {
-      Alert.alert(t('settings.voiceHintIos'));
-    }
+  const openVoiceSettings = useCallback(() => {
+    promptThenOpenSystemSettings(t('settings.voiceHintIos'), t('common.cancel'), t('common.ok'));
   }, [t]);
 
   // Handle speech settings changes
@@ -1041,10 +1039,10 @@ export default function ReaderScreen({ route, navigation }: any) {
   // Speech Logic
   const toggleSpeech = () => {
       if (isSpeaking) {
-          stopSpeech();
+          pauseSpeechRef.current();
       } else {
           setIsTypographyPanelVisible(false);
-          startSpeech(null);
+          resumeSpeechRef.current();
       }
   };
 
@@ -1166,6 +1164,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   const stopSpeech = () => {
       Speech.stop();
+      pausedPositionRef.current = null;
       MusicControl.resetNowPlaying();
       setIsSpeaking(false);
       isSpeakingRef.current = false;
@@ -1178,9 +1177,36 @@ export default function ReaderScreen({ route, navigation }: any) {
       }
   };
 
+  const pauseSpeech = () => {
+      Speech.stop();
+      if (currentSpeakingChapterId !== null) {
+          pausedPositionRef.current = { chapterId: currentSpeakingChapterId, sentenceIndex: currentSentenceIndex };
+      }
+      setIsSpeaking(false);
+      isSpeakingRef.current = false;
+      // @ts-ignore
+      MusicControl.updatePlayback({ state: MusicControl.STATE_PAUSED });
+  };
+
+  const resumeSpeech = () => {
+      const savedPos = pausedPositionRef.current;
+      pausedPositionRef.current = null;
+      if (savedPos) {
+          setIsSpeaking(true);
+          isSpeakingRef.current = true;
+          // @ts-ignore
+          MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
+          speakSentence(savedPos.chapterId, savedPos.sentenceIndex);
+      } else {
+          startSpeechRef.current();
+      }
+  };
+
   useEffect(() => {
     startSpeechRef.current = startSpeech;
     stopSpeechRef.current = stopSpeech;
+    pauseSpeechRef.current = pauseSpeech;
+    resumeSpeechRef.current = resumeSpeech;
   });
 
   useEffect(() => {
@@ -1188,11 +1214,11 @@ export default function ReaderScreen({ route, navigation }: any) {
     MusicControl.enableBackgroundMode(true);
     // @ts-ignore
     MusicControl.on('play', () => {
-      if (!isSpeakingRef.current) startSpeechRef.current();
+      if (!isSpeakingRef.current) resumeSpeechRef.current();
     });
     // @ts-ignore
     MusicControl.on('pause', () => {
-      if (isSpeakingRef.current) stopSpeechRef.current();
+      if (isSpeakingRef.current) pauseSpeechRef.current();
     });
     // @ts-ignore
     MusicControl.on('stop', () => {

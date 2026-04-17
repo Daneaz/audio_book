@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, Platform, Linking, Alert, AppState } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, Platform, AppState } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useSettings from '../hooks/useSettings';
 import * as Speech from 'expo-speech';
@@ -7,6 +7,7 @@ import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import { VoiceEntry, mergeWithInstalledVoices } from '../utils/voiceUtils';
+import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useI18n from '../i18n';
 
 const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
@@ -83,14 +84,8 @@ export default function SettingsScreen() {
     };
   }, [loadVoices]);
 
-  const openVoiceSettings = useCallback(async () => {
-    const url = 'App-Prefs:root=ACCESSIBILITY&path=SPEECH';
-    const ok = await Linking.canOpenURL(url);
-    if (ok) {
-      Linking.openURL(url);
-    } else {
-      Alert.alert(t('settings.voiceHintIos'));
-    }
+  const openVoiceSettings = useCallback(() => {
+    promptThenOpenSystemSettings(t('settings.voiceHintIos'), t('common.cancel'), t('common.ok'));
   }, [t]);
 
   const previewVoice = async (voiceId: string, voiceLanguage?: string) => {

@@ -7,6 +7,25 @@ import StorageService from '../src/services/StorageService';
 
 import 'react-native-gesture-handler/jestSetup';
 
+jest.mock('react-native-music-control', () => ({
+  __esModule: true,
+  default: {
+    STATE_PLAYING: 0,
+    STATE_PAUSED: 1,
+    STATE_ERROR: 2,
+    STATE_STOPPED: 3,
+    STATE_BUFFERING: 4,
+    enableBackgroundMode: jest.fn(),
+    handleAudioInterruptions: jest.fn(),
+    enableControl: jest.fn(),
+    setNowPlaying: jest.fn(),
+    updatePlayback: jest.fn(),
+    resetNowPlaying: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn(),
+  },
+}));
+
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react');
   const View = require('react-native').View;
