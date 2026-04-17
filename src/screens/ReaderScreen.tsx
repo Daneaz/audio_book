@@ -1179,11 +1179,21 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   const pauseSpeech = () => {
       Speech.stop();
-      if (currentSpeakingChapterId !== null) {
-          pausedPositionRef.current = { chapterId: currentSpeakingChapterId, sentenceIndex: currentSentenceIndex };
+      const pausedChapterId = currentSpeakingChapterId;
+      const pausedSentenceIndex = currentSentenceIndex;
+      if (pausedChapterId !== null) {
+          pausedPositionRef.current = { chapterId: pausedChapterId, sentenceIndex: pausedSentenceIndex };
       }
       setIsSpeaking(false);
       isSpeakingRef.current = false;
+      if (Platform.OS === 'ios') MusicControl.enableBackgroundMode(true);
+
+      const chData = chaptersData.find(c => c.chapter.id === pausedChapterId);
+      // @ts-ignore
+      MusicControl.setNowPlaying({
+          title: book?.title ?? '',
+          artist: chData?.chapter.title ?? '',
+      });
       // @ts-ignore
       MusicControl.updatePlayback({ state: MusicControl.STATE_PAUSED });
   };
@@ -1194,6 +1204,12 @@ export default function ReaderScreen({ route, navigation }: any) {
       if (savedPos) {
           setIsSpeaking(true);
           isSpeakingRef.current = true;
+          const chData = chaptersData.find(c => c.chapter.id === savedPos.chapterId);
+          // @ts-ignore
+          MusicControl.setNowPlaying({
+              title: book?.title ?? '',
+              artist: chData?.chapter.title ?? '',
+          });
           // @ts-ignore
           MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
           speakSentence(savedPos.chapterId, savedPos.sentenceIndex);
