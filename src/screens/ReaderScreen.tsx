@@ -421,16 +421,22 @@ export default function ReaderScreen({ route, navigation }: any) {
     Array.from({ length: 7 }, (_, i) => new RNAnimated.Value(0.3 + i * 0.1))
   ).current;
   const [isSpeechTimerEnabled, setIsSpeechTimerEnabled] = useState(false);
-  const [speechTimerMinutes, setSpeechTimerMinutes] = useState(15);
+  const [speechTimerMinutes, setSpeechTimerMinutes] = useState(0);
   const [speechTimerWidth, setSpeechTimerWidth] = useState(0);
   const [voicesLoading, setVoicesLoading] = useState(false);
   const [voices, setVoices] = useState<VoiceEntry[]>([]);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
   const [isVoiceDropdownVisible, setIsVoiceDropdownVisible] = useState(false);
+  const [isTtsVoicePickerVisible, setIsTtsVoicePickerVisible] = useState(false);
   const speechTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const speakSessionRef = useRef(0);
 
   const { settings, updateSettings } = useSettings();
   const { t, language } = useI18n();
+
+  const [debouncedFontSize, setDebouncedFontSize] = useState(settings.fontSize);
+  const [debouncedLineSpacing, setDebouncedLineSpacing] = useState(settings.lineSpacing);
+  const fontDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const flatListRef = useAnimatedRef<Animated.FlatList<ChapterData | PageData>>();
   const chapterLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
@@ -546,6 +552,17 @@ export default function ReaderScreen({ route, navigation }: any) {
   const openVoiceSettings = useCallback(() => {
     promptThenOpenSystemSettings(t('settings.voiceHintIos'), t('common.cancel'), t('common.ok'));
   }, [t]);
+
+  useEffect(() => {
+    clearTimeout(fontDebounceRef.current);
+    fontDebounceRef.current = setTimeout(() => {
+      React.startTransition(() => {
+        setDebouncedFontSize(settings.fontSize);
+        setDebouncedLineSpacing(settings.lineSpacing);
+      });
+    }, 300);
+    return () => clearTimeout(fontDebounceRef.current);
+  }, [settings.fontSize, settings.lineSpacing]);
 
   // Handle speech settings changes
   // When speech settings change, we don't stop the current reading.
@@ -1253,6 +1270,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, []);
 
   const speakSentence = (cId: string, sIndex: number) => {
+    const session = speakSessionRef.current;
     const chData = chaptersData.find(c => c.chapter.id === cId);
     if (!chData) {
       stopSpeech();
@@ -1273,7 +1291,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     const sentence = prepareSentenceForTts(chData.sentences[sIndex].text, 'offline');
 
     if (!sentence) {
-      if (isSpeakingRef.current) speakSentence(cId, sIndex + 1);
+      if (isSpeakingRef.current && speakSessionRef.current === session) speakSentence(cId, sIndex + 1);
       return;
     }
 
@@ -1283,10 +1301,10 @@ export default function ReaderScreen({ route, navigation }: any) {
     const subclauses = splitIntoSubClauses(sentence);
 
     const playSubClause = (idx: number) => {
-      if (!isSpeakingRef.current) return;
+      if (!isSpeakingRef.current || speakSessionRef.current !== session) return;
       if (idx >= subclauses.length) {
         setTimeout(() => {
-          if (isSpeakingRef.current) speakSentence(cId, sIndex + 1);
+          if (isSpeakingRef.current && speakSessionRef.current === session) speakSentence(cId, sIndex + 1);
         }, 50);
         return;
       }
@@ -1297,11 +1315,11 @@ export default function ReaderScreen({ route, navigation }: any) {
         onDone: () => {
           if (idx < subclauses.length - 1) {
             setTimeout(() => {
-              if (isSpeakingRef.current) playSubClause(idx + 1);
+              if (isSpeakingRef.current && speakSessionRef.current === session) playSubClause(idx + 1);
             }, 150);
           } else {
             setTimeout(() => {
-              if (isSpeakingRef.current) speakSentence(cId, sIndex + 1);
+              if (isSpeakingRef.current && speakSessionRef.current === session) speakSentence(cId, sIndex + 1);
             }, 50);
           }
         },
@@ -1445,14 +1463,14 @@ export default function ReaderScreen({ route, navigation }: any) {
   const window = Dimensions.get('window');
   const centerTapTop = window.height * 0.25;
   const centerTapBottom = window.height * 0.75;
-  const lineHeight = settings.fontSize * settings.lineSpacing;
+  const lineHeight = debouncedFontSize * debouncedLineSpacing;
   const horizontalLineHeight = lineHeight;
   const fontFamily = getFontFamilyForPreset(settings.fontPreset);
   const horizontalContentWidth = Math.max(window.width - 40, 1);
   const horizontalTopPadding = insets.top + 12;
   const horizontalBottomPadding = insets.bottom + 18;
   const horizontalContentHeight = Math.max(window.height - horizontalTopPadding - horizontalBottomPadding, horizontalLineHeight);
-  const charsPerLine = Math.max(Math.floor(horizontalContentWidth / (settings.fontSize * 1.05)), 1);
+  const charsPerLine = Math.max(Math.floor(horizontalContentWidth / (debouncedFontSize * 1.05)), 1);
   const linesPerPage = Math.max(Math.floor(horizontalContentHeight / horizontalLineHeight), 1);
   const speechTimerRatio = speechTimerMinutes / 120;
   const speechTimerThumbOffset = speechTimerRatio * speechTimerWidth;
@@ -1687,7 +1705,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           topPadding={horizontalTopPadding}
           bottomPadding={horizontalBottomPadding}
           textColor={textColor}
-          fontSize={settings.fontSize}
+          fontSize={debouncedFontSize}
           lineHeight={horizontalLineHeight}
           fontFamily={fontFamily}
           contentHeight={horizontalContentHeight}
@@ -1706,7 +1724,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         windowWidth={window.width}
         topInset={insets.top}
         textColor={textColor}
-        fontSize={settings.fontSize}
+        fontSize={debouncedFontSize}
         lineHeight={lineHeight}
         fontFamily={fontFamily}
         isDark={isDark}
@@ -1732,7 +1750,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     isMenuVisible,
     isSpeaking,
     lineHeight,
-    settings.fontSize,
+    debouncedFontSize,
     textColor,
     window.width,
   ]);
@@ -1984,18 +2002,12 @@ export default function ReaderScreen({ route, navigation }: any) {
             <Text style={[styles.miniInfoLabel, { color: readerColors.accent }]} numberOfLines={1}>
               {t('reader.read')}
             </Text>
-            <View style={[styles.miniProgressTrack, { backgroundColor: readerColors.border }]}>
-              <View style={[styles.miniProgressFill, { backgroundColor: readerColors.accent, width: '38%' }]} />
-            </View>
           </View>
           <TouchableOpacity onPress={(e) => { e.stopPropagation(); toggleSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <View style={styles.miniPause}>
               <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
               <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={(e) => { e.stopPropagation(); stopSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <View style={[styles.miniStop, { backgroundColor: readerColors.iconBox }]} />
           </TouchableOpacity>
         </TouchableOpacity>
       )}
@@ -2020,18 +2032,12 @@ export default function ReaderScreen({ route, navigation }: any) {
                   </View>
                   <View style={styles.miniInfo}>
                     <Text style={[styles.miniInfoLabel, { color: readerColors.accent }]} numberOfLines={1}>{t('reader.read')}</Text>
-                    <View style={[styles.miniProgressTrack, { backgroundColor: readerColors.border }]}>
-                      <View style={[styles.miniProgressFill, { backgroundColor: readerColors.accent, width: '38%' }]} />
-                    </View>
                   </View>
                   <TouchableOpacity onPress={(e) => { e.stopPropagation(); toggleSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <View style={styles.miniPause}>
                       <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
                       <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
                     </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={(e) => { e.stopPropagation(); stopSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <View style={[styles.miniStop, { backgroundColor: readerColors.iconBox }]} />
                   </TouchableOpacity>
                 </TouchableOpacity>
               )}
@@ -2244,13 +2250,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                     })}
                   </View>
 
-                  {/* 完成 */}
-                  <TouchableOpacity
-                    onPress={() => setIsTypographyPanelVisible(false)}
-                    style={[styles.typoDone, { backgroundColor: readerColors.surface }]}
-                  >
-                    <Text style={[styles.typoDoneText, { color: readerColors.accent }]}>{t('common.ok')}</Text>
-                  </TouchableOpacity>
+
                 </View>
               ) : (
                 <View style={styles.controlsRow}>
@@ -2356,12 +2356,6 @@ export default function ReaderScreen({ route, navigation }: any) {
             })()}
           </Text>
 
-          {/* 进度条 */}
-          <View style={[styles.ttsTrack, { backgroundColor: readerColors.border }]}>
-            <View style={[styles.ttsTrackFill, { backgroundColor: readerColors.accent, width: '45%' }]} />
-            <View style={[styles.ttsTrackDot, { backgroundColor: readerColors.accent, left: '43%' }]} />
-          </View>
-
           {/* 三键控制 */}
           <View style={styles.ttsControls}>
             <TouchableOpacity
@@ -2369,6 +2363,8 @@ export default function ReaderScreen({ route, navigation }: any) {
               onPress={() => {
                 const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
                 if (chData && currentSentenceIndex > 0) {
+                  speakSessionRef.current++;
+                  Speech.stop();
                   speakSentence(chData.chapter.id, currentSentenceIndex - 1);
                 }
               }}
@@ -2392,6 +2388,8 @@ export default function ReaderScreen({ route, navigation }: any) {
               onPress={() => {
                 const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
                 if (chData && currentSentenceIndex < chData.sentences.length - 1) {
+                  speakSessionRef.current++;
+                  Speech.stop();
                   speakSentence(chData.chapter.id, currentSentenceIndex + 1);
                 }
               }}
@@ -2410,10 +2408,10 @@ export default function ReaderScreen({ route, navigation }: any) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.ttsChip, { backgroundColor: readerColors.iconBox }]}
-              onPress={() => {}}
+              style={[styles.ttsChip, { backgroundColor: isTtsVoicePickerVisible ? readerColors.accentBg : readerColors.iconBox, borderWidth: isTtsVoicePickerVisible ? 1 : 0, borderColor: readerColors.accentBorder }]}
+              onPress={() => setIsTtsVoicePickerVisible(v => !v)}
             >
-              <Text style={[styles.ttsChipText, { color: readerColors.textSub }]} numberOfLines={1}>
+              <Text style={[styles.ttsChipText, { color: isTtsVoicePickerVisible ? readerColors.accent : readerColors.textSub }]} numberOfLines={1}>
                 {selectedVoiceLabel}
               </Text>
             </TouchableOpacity>
@@ -2432,6 +2430,75 @@ export default function ReaderScreen({ route, navigation }: any) {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* 全屏音色选择面板 */}
+          {isTtsVoicePickerVisible && (
+            <View style={[styles.ttsVoicePicker, { backgroundColor: readerColors.surface, borderColor: readerColors.border }]}>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {(() => {
+                  const isDefaultSelected = settings.voiceType === 'default';
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        updateSettings({ voiceType: 'default' });
+                        setIsTtsVoicePickerVisible(false);
+                        previewVoice('default', 'zh-CN');
+                      }}
+                      style={[
+                        styles.ttsVoiceOption,
+                        isDefaultSelected && { backgroundColor: readerColors.accentBg },
+                      ]}
+                    >
+                      {isDefaultSelected && <View style={[styles.ttsVoiceOptionBar, { backgroundColor: readerColors.accent }]} />}
+                      <Text style={[styles.ttsVoiceOptionText, { color: isDefaultSelected ? readerColors.accent : readerColors.textPrimary }]}>
+                        {previewingVoiceId === 'default' ? t('common.loading') : t('common.default')}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })()}
+                {sortedVoices.slice(0, 40).map((voice, index) => {
+                  const selected = settings.voiceType === voice.identifier;
+                  const label = getVoiceDisplayLabel(voice, voice.identifier, t, language);
+                  const isInstalled = voice.installed !== false;
+                  return (
+                    <TouchableOpacity
+                      key={voice.identifier}
+                      onPress={() => {
+                        if (!isInstalled) { openVoiceSettings(); return; }
+                        updateSettings({ voiceType: voice.identifier });
+                        setIsTtsVoicePickerVisible(false);
+                        previewVoice(voice.identifier, voice.language);
+                      }}
+                      style={[
+                        styles.ttsVoiceOption,
+                        selected && { backgroundColor: readerColors.accentBg },
+                        !isInstalled && { opacity: 0.45 },
+                        { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: readerColors.border },
+                      ]}
+                    >
+                      {selected && <View style={[styles.ttsVoiceOptionBar, { backgroundColor: readerColors.accent }]} />}
+                      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                        <Text
+                          style={[styles.ttsVoiceOptionText, { color: selected ? readerColors.accent : readerColors.textPrimary, flexShrink: 1 }]}
+                          numberOfLines={1}
+                        >
+                          {previewingVoiceId === voice.identifier ? t('common.loading') : label}
+                        </Text>
+                        {voice.quality !== 'Default' && (
+                          <Text style={[styles.ttsVoiceQualityBadge, { color: selected ? readerColors.accent : readerColors.textSub, borderColor: selected ? readerColors.accentBorder : readerColors.border }]}>
+                            {voice.quality === 'Premium' ? t('voice.qualityPremium') : t('voice.qualityEnhanced')}
+                          </Text>
+                        )}
+                      </View>
+                      {!isInstalled && (
+                        <Ionicons name="cloud-download-outline" size={14} color={readerColors.textSub} style={{ marginLeft: 4 }} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
         </View>
       </Modal>
     </View>
@@ -2951,6 +3018,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
+  },
+  ttsVoicePicker: {
+    width: '100%',
+    maxHeight: 260,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 14,
+    overflow: 'hidden',
+  },
+  ttsVoiceOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    position: 'relative',
+  },
+  ttsVoiceOptionBar: {
+    width: 3,
+    height: 16,
+    borderRadius: 2,
+    marginRight: 10,
+  },
+  ttsVoiceOptionText: {
+    fontSize: 13,
+    letterSpacing: 0.1,
+  },
+  ttsVoiceQualityBadge: {
+    fontSize: 10,
+    marginLeft: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   ttsBack: {
     position: 'absolute',
