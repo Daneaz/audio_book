@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from '../utils/constants';
 import { Book, Chapter, ReadingProgress } from '../types';
 import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, splitIntoSubClauses } from '../utils/textUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
+import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex } from '../utils/readingProgress';
 import { VoiceEntry, mergeWithInstalledVoices } from '../utils/voiceUtils';
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useSettings from '../hooks/useSettings';
@@ -1029,10 +1030,10 @@ export default function ReaderScreen({ route, navigation }: any) {
     if (isHoriz) {
       const visibleItem = viewableItemsRef.current[0]?.item as (PageData | ChapterData) | undefined;
       if (visibleItem && 'pageNumber' in visibleItem) {
-        const idx = horizontalPages.findIndex((p) => p.id === (visibleItem as PageData).id);
-        savedPage = Math.max(0, idx);
+        savedPage = getChapterRelativePageIndex(horizontalPages, visibleItem.id);
       } else {
-        savedPage = Math.max(0, Math.min(horizontalPages.length - 1, Math.round(scrollPos.value / Math.max(window.width, 1))));
+        const pageIndex = Math.round(scrollPos.value / Math.max(window.width, 1));
+        savedPage = getChapterRelativePageIndexFromGlobalIndex(horizontalPages, pageIndex, cId);
       }
     }
     const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
