@@ -627,7 +627,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         prevSpeakingChapterIdRef.current = currentSpeakingChapterId;
         const chapterIndex = chaptersData.findIndex((c) => c.chapter.id === currentSpeakingChapterId);
         if (chapterIndex !== -1) {
-          flatListRef.current?.scrollToIndex({ index: chapterIndex, animated: true, viewPosition: 0 });
+          flatListRef.current?.scrollToIndex({ index: chapterIndex, animated: true, viewPosition: 0.5 });
         }
         return;
       }
@@ -644,24 +644,18 @@ export default function ReaderScreen({ route, navigation }: any) {
       }
       const ratio = sentence.start / Math.max(1, chData.content.length);
       const estimatedY = absoluteChapterY + ratio * chLayout.height;
-      const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
       const screenHeight = window.height;
 
-      const isChapterTransition =
-        prevSpeakingChapterIdRef.current !== null &&
-        prevSpeakingChapterIdRef.current !== currentSpeakingChapterId;
       prevSpeakingChapterIdRef.current = currentSpeakingChapterId;
 
-      if (isChapterTransition || estimatedY > currentOffset + screenHeight * 0.55) {
-        const targetOffset = Math.max(0, estimatedY);
-        if (isAutoScrolling.value) {
-          autoScrollOffset.value = targetOffset;
-        }
-        flatListRef.current?.scrollToOffset({
-          offset: targetOffset,
-          animated: true,
-        });
+      const targetOffset = Math.max(0, estimatedY - screenHeight * 0.4);
+      if (isAutoScrolling.value) {
+        autoScrollOffset.value = targetOffset;
       }
+      flatListRef.current?.scrollToOffset({
+        offset: targetOffset,
+        animated: true,
+      });
     }
   }, [currentSentenceIndex, currentSpeakingChapterId, isSpeaking]);
 
@@ -1147,8 +1141,27 @@ export default function ReaderScreen({ route, navigation }: any) {
       }
     }
 
-    // Prevent auto-scroll jump when speech starts
-    lastUserScrollRef.current = Date.now();
+    // Scroll to center the starting sentence
+    if (settings.flipMode !== 'horizontal' && startChapterId) {
+      const chLayout = chapterLayoutsRef.current[startChapterId];
+      if (chLayout) {
+        const chData = chaptersData.find(c => c.chapter.id === startChapterId);
+        const sentence = chData?.sentences[startSentenceIndex];
+        if (chData && sentence) {
+          const chapterIndex = chaptersData.findIndex(c => c.chapter.id === startChapterId);
+          let absoluteChapterY = VERTICAL_CONTENT_PADDING_TOP;
+          for (let i = 0; i < chapterIndex; i++) {
+            const prevLayout = chapterLayoutsRef.current[chaptersData[i].chapter.id];
+            if (prevLayout) absoluteChapterY += prevLayout.height + CHAPTER_MARGIN_BOTTOM;
+          }
+          const ratio = sentence.start / Math.max(1, chData.content.length);
+          const estimatedY = absoluteChapterY + ratio * chLayout.height;
+          const targetOffset = Math.max(0, estimatedY - Dimensions.get('window').height * 0.4);
+          flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
+        }
+      }
+    }
+    lastUserScrollRef.current = 0;
 
     // @ts-ignore
     MusicControl.enableControl('play', true);
