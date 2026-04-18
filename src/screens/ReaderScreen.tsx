@@ -1082,64 +1082,56 @@ export default function ReaderScreen({ route, navigation }: any) {
     const now = Date.now();
     const lastSel = lastSelectionRef.current;
 
-    if (lastSel && (now - lastSel.timestamp < 10000)) { // Valid within 10s
-      const targetChapter = chaptersData.find(c => c.chapter.id === lastSel.chapterId);
-      if (targetChapter) {
-        startChapterId = lastSel.chapterId;
-        // Find sentence containing start index
-        const sIdx = targetChapter.sentences.findIndex(s => lastSel.start >= s.start && lastSel.start < s.end);
-        if (sIdx !== -1) startSentenceIndex = sIdx;
-      }
-    } else {
-      // 2. From current page start
-      if (viewableItemsRef.current.length > 0) {
-        const firstVisible = viewableItemsRef.current[0].item as PageData | ChapterData;
-        startChapterId = firstVisible.chapter.id;
-        if ('charStart' in firstVisible) {
-          // Horizontal page mode: find first sentence on this page
-          const chData = chaptersData.find(c => c.chapter.id === startChapterId);
-          if (chData) {
-            const pageStartNorm = firstVisible.charStart;
-            const rawContent = chData.content;
-            let rawOffset = 0;
-            let normOffset = 0;
-            while (rawOffset < rawContent.length && normOffset < pageStartNorm) {
-              if (rawContent[rawOffset] === '\r' && rawContent[rawOffset + 1] === '\n') {
-                rawOffset += 2;
-              } else {
-                rawOffset++;
-              }
-              normOffset++;
+    // 2. From current page start
+    if (viewableItemsRef.current.length > 0) {
+      const firstVisible = viewableItemsRef.current[0].item as PageData | ChapterData;
+      startChapterId = firstVisible.chapter.id;
+      if ('charStart' in firstVisible) {
+        // Horizontal page mode: find first sentence on this page
+        const chData = chaptersData.find(c => c.chapter.id === startChapterId);
+        if (chData) {
+          const pageStartNorm = firstVisible.charStart;
+          const rawContent = chData.content;
+          let rawOffset = 0;
+          let normOffset = 0;
+          while (rawOffset < rawContent.length && normOffset < pageStartNorm) {
+            if (rawContent[rawOffset] === '\r' && rawContent[rawOffset + 1] === '\n') {
+              rawOffset += 2;
+            } else {
+              rawOffset++;
             }
-            const sIdx = chData.sentences.findIndex(s => s.end > rawOffset);
-            startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+            normOffset++;
           }
-        } else {
-          // Scroll mode: find first sentence at screen top
-          const topY = scrollPos.value;
-          for (const cd of chaptersData) {
-            const cl = chapterLayoutsRef.current[cd.chapter.id];
-            if (!cl) continue;
-            // We only want the chapter that is currently visible at the top of the screen
-            if (topY >= cl.y && topY < cl.y + cl.height) {
-              startChapterId = cd.chapter.id;
-              const ratio = Math.max(0, Math.min(1, (topY - cl.y) / cl.height));
-              const estimatedCharOffset = Math.floor(ratio * cd.content.length);
+          const sIdx = chData.sentences.findIndex(s => s.end > rawOffset);
+          startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+        }
+      } else {
+        // Scroll mode: find sentence at reading focus position (40% from screen top)
+        const focusY = scrollPos.value + Dimensions.get('window').height * 0.6;
+        let accY = VERTICAL_CONTENT_PADDING_TOP;
+        for (const cd of chaptersData) {
+          const cl = chapterLayoutsRef.current[cd.chapter.id];
+          if (!cl) continue;
+          const chapterAbsY = accY;
+          accY += cl.height + CHAPTER_MARGIN_BOTTOM;
+          if (focusY >= chapterAbsY && focusY < chapterAbsY + cl.height) {
+            startChapterId = cd.chapter.id;
+            const ratio = Math.max(0, Math.min(1, (focusY - chapterAbsY) / cl.height));
+            const estimatedCharOffset = Math.floor(ratio * cd.content.length);
 
-              // Find the start of the paragraph that contains this offset
-              let pStart = estimatedCharOffset;
-              while (pStart > 0 && cd.content[pStart - 1] !== '\n') {
-                pStart--;
-              }
-
-              const sIdx = cd.sentences.findIndex(s => s.start >= pStart);
-              startSentenceIndex = sIdx !== -1 ? sIdx : 0;
-              break;
+            let pStart = estimatedCharOffset;
+            while (pStart > 0 && cd.content[pStart - 1] !== '\n') {
+              pStart--;
             }
+
+            const sIdx = cd.sentences.findIndex(s => s.start >= pStart);
+            startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+            break;
           }
         }
       }
     }
+
 
     // Scroll to center the starting sentence
     if (settings.flipMode !== 'horizontal' && startChapterId) {
@@ -1156,7 +1148,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           }
           const ratio = sentence.start / Math.max(1, chData.content.length);
           const estimatedY = absoluteChapterY + ratio * chLayout.height;
-          const targetOffset = Math.max(0, estimatedY - Dimensions.get('window').height * 0.4);
+          const targetOffset = Math.max(0, estimatedY - Dimensions.get('window').height * 0.6);
           flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
         }
       }
