@@ -1031,6 +1031,8 @@ export default function ReaderScreen({ route, navigation }: any) {
       if (visibleItem && 'pageNumber' in visibleItem) {
         const idx = horizontalPages.findIndex((p) => p.id === (visibleItem as PageData).id);
         savedPage = Math.max(0, idx);
+      } else {
+        savedPage = Math.max(0, Math.min(horizontalPages.length - 1, Math.round(scrollPos.value / Math.max(window.width, 1))));
       }
     }
     const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
@@ -1643,6 +1645,10 @@ export default function ReaderScreen({ route, navigation }: any) {
       saveCurrentProgressRef.current();
     });
 
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      saveCurrentProgressRef.current();
+    });
+
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'inactive' || nextAppState === 'background') {
         saveCurrentProgressRef.current();
@@ -1654,6 +1660,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
     return () => {
       unsubscribeBeforeRemove();
+      unsubscribeBlur();
       subscription.remove();
     };
   }, [navigation]);
