@@ -402,10 +402,10 @@ export default function ReaderScreen({ route, navigation }: any) {
   // Speech state
   const [isSpeaking, setIsSpeaking] = useState(false);
   const isSpeakingRef = useRef(false);
-  const startSpeechRef = useRef<() => void>(() => {});
-  const stopSpeechRef = useRef<() => void>(() => {});
-  const pauseSpeechRef = useRef<() => void>(() => {});
-  const resumeSpeechRef = useRef<() => void>(() => {});
+  const startSpeechRef = useRef<() => void>(() => { });
+  const stopSpeechRef = useRef<() => void>(() => { });
+  const pauseSpeechRef = useRef<() => void>(() => { });
+  const resumeSpeechRef = useRef<() => void>(() => { });
   const pausedPositionRef = useRef<{ chapterId: string; sentenceIndex: number } | null>(null);
   const [currentSpeakingChapterId, setCurrentSpeakingChapterId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
@@ -414,7 +414,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   // Timer
   const [timerDuration, setTimerDuration] = useState<number | null>(null);
   const [timerRemaining, setTimerRemaining] = useState<number | null>(null);
-  const [isSpeechTimerPanelVisible, setIsSpeechTimerPanelVisible] = useState(false);
   const [isTypographyPanelVisible, setIsTypographyPanelVisible] = useState(false);
   const [isTtsOverlayVisible, setIsTtsOverlayVisible] = useState(false);
   const waveAnims = useRef(
@@ -466,11 +465,11 @@ export default function ReaderScreen({ route, navigation }: any) {
   // Tracking
   const lastSelectionRef = useRef<{ chapterId: string, start: number, timestamp: number } | null>(null);
   const viewableItemsRef = useRef<ViewToken[]>([]);
-  const triggerProgressCheckRef = useRef<() => void>(() => {});
+  const triggerProgressCheckRef = useRef<() => void>(() => { });
   const isPreloadingRef = useRef(false);
   const backLoadFailedRef = useRef(false);
   const suppressStartReachedRef = useRef(false);
-  const handleOverscrollBackLoadRef = useRef<() => Promise<void>>(async () => {});
+  const handleOverscrollBackLoadRef = useRef<() => Promise<void>>(async () => { });
 
   const _onOverscrollJS = () => { handleOverscrollBackLoadRef.current(); };
   const scrollHandler = useAnimatedScrollHandler({
@@ -497,7 +496,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const loadedChapterIdsRef = useRef<Set<string>>(new Set());
   const lastSavedChapterIdRef = useRef<string | null>(null);
   const pendingRestoreRef = useRef<{ offset: number; page: number; mode: string; scrollToItemIndex?: number } | null>(null);
-  const saveCurrentProgressRef = useRef<() => void>(() => {});
+  const saveCurrentProgressRef = useRef<() => void>(() => { });
 
 
   const voicesCancelledRef = useRef(false);
@@ -751,24 +750,24 @@ export default function ReaderScreen({ route, navigation }: any) {
       let startIdx = 0;
       let isChapterJump = false;
       if (chapterId) {
-          const idx = chaptersList.findIndex((c: Chapter) => c.id === chapterId);
-          if (idx !== -1) startIdx = idx;
-          isChapterJump = true;
+        const idx = chaptersList.findIndex((c: Chapter) => c.id === chapterId);
+        if (idx !== -1) startIdx = idx;
+        isChapterJump = true;
       } else {
-          // Load progress
-          const progressKey = `${STORAGE_KEYS.READING_PROGRESS_PREFIX}${bookId}`;
-          const progress = await StorageService.getData(progressKey);
-          if (progress && progress.chapterId) {
-              const idx = chaptersList.findIndex((c: Chapter) => c.id === progress.chapterId);
-              if (idx !== -1) startIdx = idx;
-              if ((progress.currentPosition > 0) || (progress.currentPage > 0)) {
-                pendingRestoreRef.current = {
-                  offset: progress.currentPosition || 0,
-                  page: progress.currentPage || 0,
-                  mode: progress.readingMode || 'scroll',
-                };
-              }
+        // Load progress
+        const progressKey = `${STORAGE_KEYS.READING_PROGRESS_PREFIX}${bookId}`;
+        const progress = await StorageService.getData(progressKey);
+        if (progress && progress.chapterId) {
+          const idx = chaptersList.findIndex((c: Chapter) => c.id === progress.chapterId);
+          if (idx !== -1) startIdx = idx;
+          if ((progress.currentPosition > 0) || (progress.currentPage > 0)) {
+            pendingRestoreRef.current = {
+              offset: progress.currentPosition || 0,
+              page: progress.currentPage || 0,
+              mode: progress.readingMode || 'scroll',
+            };
           }
+        }
       }
 
       if (isChapterJump) {
@@ -956,7 +955,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     }
   };
 
-  const handleStartReachedRef = useRef<() => Promise<void>>(async () => {});
+  const handleStartReachedRef = useRef<() => Promise<void>>(async () => { });
   handleStartReachedRef.current = handleStartReached;
   handleOverscrollBackLoadRef.current = handleOverscrollBackLoad;
 
@@ -1031,208 +1030,207 @@ export default function ReaderScreen({ route, navigation }: any) {
   triggerProgressCheckRef.current = maybeHandleProgress;
 
   const saveProgress = async (cId: string) => {
-      const isHoriz = settings.flipMode === 'horizontal';
-      let savedPage = 0;
-      if (isHoriz) {
-        const visibleItem = viewableItemsRef.current[0]?.item as (PageData | ChapterData) | undefined;
-        if (visibleItem && 'pageNumber' in visibleItem) {
-          const idx = horizontalPages.findIndex((p) => p.id === (visibleItem as PageData).id);
-          savedPage = Math.max(0, idx);
-        }
+    const isHoriz = settings.flipMode === 'horizontal';
+    let savedPage = 0;
+    if (isHoriz) {
+      const visibleItem = viewableItemsRef.current[0]?.item as (PageData | ChapterData) | undefined;
+      if (visibleItem && 'pageNumber' in visibleItem) {
+        const idx = horizontalPages.findIndex((p) => p.id === (visibleItem as PageData).id);
+        savedPage = Math.max(0, idx);
       }
-      const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
-      const progress: ReadingProgress = {
-          id: `progress_${bookId}`,
-          bookId,
-          chapterId: cId,
-          currentPosition: isHoriz ? 0 : Math.round(currentOffset),
-          currentPage: savedPage,
-          readingMode: settings.flipMode,
-          updatedAt: new Date().toISOString()
-      };
-      await StorageService.storeData(`${STORAGE_KEYS.READING_PROGRESS_PREFIX}${bookId}`, progress);
+    }
+    const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
+    const progress: ReadingProgress = {
+      id: `progress_${bookId}`,
+      bookId,
+      chapterId: cId,
+      currentPosition: isHoriz ? 0 : Math.round(currentOffset),
+      currentPage: savedPage,
+      readingMode: settings.flipMode,
+      updatedAt: new Date().toISOString()
+    };
+    await StorageService.storeData(`${STORAGE_KEYS.READING_PROGRESS_PREFIX}${bookId}`, progress);
   };
 
   // Speech Logic
   const toggleSpeech = () => {
-      if (isSpeaking) {
-          pauseSpeechRef.current();
-      } else {
-          setIsTypographyPanelVisible(false);
-          resumeSpeechRef.current();
-      }
+    console.log('Toggling speech. Currently speaking:', isSpeaking);
+    if (isSpeaking) {
+      pauseSpeechRef.current();
+    } else {
+      setIsTypographyPanelVisible(false);
+      startSpeechRef.current();
+    }
   };
 
   const toggleTypographyPanel = () => {
-      setIsSpeechTimerPanelVisible(false);
-      setIsVoiceDropdownVisible(false);
-      setIsTypographyPanelVisible((visible) => !visible);
+    setIsVoiceDropdownVisible(false);
+    setIsTypographyPanelVisible((visible) => !visible);
   };
 
   const startSpeech = (duration: number | null = timerDuration, hidePanel: boolean = true) => {
-      setIsSpeaking(true);
-      isSpeakingRef.current = true;
-      if (hidePanel) {
-          setIsSpeechTimerPanelVisible(false);
+    console.log('Starting speech with duration:', duration);
+    setIsSpeaking(true);
+    isSpeakingRef.current = true;
+
+    setTimerDuration(duration);
+    if (duration !== null) {
+      setTimerRemaining(duration * 60);
+    } else {
+      setTimerRemaining(null);
+    }
+
+    // Determine start point
+    let startChapterId = chaptersData[0]?.chapter.id;
+    let startSentenceIndex = 0;
+
+    // 1. Check selection
+    const now = Date.now();
+    const lastSel = lastSelectionRef.current;
+
+    if (lastSel && (now - lastSel.timestamp < 10000)) { // Valid within 10s
+      const targetChapter = chaptersData.find(c => c.chapter.id === lastSel.chapterId);
+      if (targetChapter) {
+        startChapterId = lastSel.chapterId;
+        // Find sentence containing start index
+        const sIdx = targetChapter.sentences.findIndex(s => lastSel.start >= s.start && lastSel.start < s.end);
+        if (sIdx !== -1) startSentenceIndex = sIdx;
       }
-      setTimerDuration(duration);
-      if (duration !== null) {
-          setTimerRemaining(duration * 60);
-      } else {
-          setTimerRemaining(null);
-      }
+    } else {
+      // 2. From current page start
+      if (viewableItemsRef.current.length > 0) {
+        const firstVisible = viewableItemsRef.current[0].item as PageData | ChapterData;
+        startChapterId = firstVisible.chapter.id;
+        if ('charStart' in firstVisible) {
+          // Horizontal page mode: find first sentence on this page
+          const chData = chaptersData.find(c => c.chapter.id === startChapterId);
+          if (chData) {
+            const pageStartNorm = firstVisible.charStart;
+            const rawContent = chData.content;
+            let rawOffset = 0;
+            let normOffset = 0;
+            while (rawOffset < rawContent.length && normOffset < pageStartNorm) {
+              if (rawContent[rawOffset] === '\r' && rawContent[rawOffset + 1] === '\n') {
+                rawOffset += 2;
+              } else {
+                rawOffset++;
+              }
+              normOffset++;
+            }
+            const sIdx = chData.sentences.findIndex(s => s.end > rawOffset);
+            startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+          }
+        } else {
+          // Scroll mode: find first sentence at screen top
+          const topY = scrollPos.value;
+          for (const cd of chaptersData) {
+            const cl = chapterLayoutsRef.current[cd.chapter.id];
+            if (!cl) continue;
+            // We only want the chapter that is currently visible at the top of the screen
+            if (topY >= cl.y && topY < cl.y + cl.height) {
+              startChapterId = cd.chapter.id;
+              const ratio = Math.max(0, Math.min(1, (topY - cl.y) / cl.height));
+              const estimatedCharOffset = Math.floor(ratio * cd.content.length);
 
-      // Determine start point
-      let startChapterId = chaptersData[0]?.chapter.id;
-      let startSentenceIndex = 0;
+              // Find the start of the paragraph that contains this offset
+              let pStart = estimatedCharOffset;
+              while (pStart > 0 && cd.content[pStart - 1] !== '\n') {
+                pStart--;
+              }
 
-      // 1. Check selection
-      const now = Date.now();
-      const lastSel = lastSelectionRef.current;
-
-      if (lastSel && (now - lastSel.timestamp < 10000)) { // Valid within 10s
-        const targetChapter = chaptersData.find(c => c.chapter.id === lastSel.chapterId);
-        if (targetChapter) {
-          startChapterId = lastSel.chapterId;
-          // Find sentence containing start index
-          const sIdx = targetChapter.sentences.findIndex(s => lastSel.start >= s.start && lastSel.start < s.end);
-          if (sIdx !== -1) startSentenceIndex = sIdx;
-        }
-      } else {
-        // 2. From current page start
-        if (viewableItemsRef.current.length > 0) {
-           const firstVisible = viewableItemsRef.current[0].item as PageData | ChapterData;
-           startChapterId = firstVisible.chapter.id;
-           if ('charStart' in firstVisible) {
-             // Horizontal page mode: find first sentence on this page
-             const chData = chaptersData.find(c => c.chapter.id === startChapterId);
-             if (chData) {
-               const pageStartNorm = firstVisible.charStart;
-               const rawContent = chData.content;
-               let rawOffset = 0;
-               let normOffset = 0;
-               while (rawOffset < rawContent.length && normOffset < pageStartNorm) {
-                 if (rawContent[rawOffset] === '\r' && rawContent[rawOffset + 1] === '\n') {
-                   rawOffset += 2;
-                 } else {
-                   rawOffset++;
-                 }
-                 normOffset++;
-               }
-               const sIdx = chData.sentences.findIndex(s => s.end > rawOffset);
-               startSentenceIndex = sIdx !== -1 ? sIdx : 0;
-             }
-           } else {
-             // Scroll mode: find first sentence at screen top
-             const topY = scrollPos.value;
-             for (const cd of chaptersData) {
-               const cl = chapterLayoutsRef.current[cd.chapter.id];
-               if (!cl) continue;
-               // We only want the chapter that is currently visible at the top of the screen
-               if (topY >= cl.y && topY < cl.y + cl.height) {
-                 startChapterId = cd.chapter.id;
-                 const ratio = Math.max(0, Math.min(1, (topY - cl.y) / cl.height));
-                 const estimatedCharOffset = Math.floor(ratio * cd.content.length);
-
-                 // Find the start of the paragraph that contains this offset
-                 let pStart = estimatedCharOffset;
-                 while (pStart > 0 && cd.content[pStart - 1] !== '\n') {
-                   pStart--;
-                 }
-
-                 const sIdx = cd.sentences.findIndex(s => s.start >= pStart);
-                 startSentenceIndex = sIdx !== -1 ? sIdx : 0;
-                 break;
-               }
-             }
-           }
+              const sIdx = cd.sentences.findIndex(s => s.start >= pStart);
+              startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+              break;
+            }
+          }
         }
       }
+    }
 
-      // Prevent auto-scroll jump when speech starts
-      lastUserScrollRef.current = Date.now();
+    // Prevent auto-scroll jump when speech starts
+    lastUserScrollRef.current = Date.now();
 
-      // @ts-ignore
-      MusicControl.enableControl('play', true);
-      // @ts-ignore
-      MusicControl.enableControl('pause', true);
-      // @ts-ignore
-      MusicControl.enableControl('stop', true);
-      // @ts-ignore
-      MusicControl.enableControl('nextTrack', false);
-      // @ts-ignore
-      MusicControl.enableControl('previousTrack', false);
+    // @ts-ignore
+    MusicControl.enableControl('play', true);
+    // @ts-ignore
+    MusicControl.enableControl('pause', true);
+    // @ts-ignore
+    MusicControl.enableControl('stop', true);
+    // @ts-ignore
+    MusicControl.enableControl('nextTrack', false);
+    // @ts-ignore
+    MusicControl.enableControl('previousTrack', false);
 
-      const startingChapter = chaptersData.find(c => c.chapter.id === startChapterId);
-      // @ts-ignore
-      MusicControl.setNowPlaying({
-        title: book?.title ?? '',
-        artist: startingChapter?.chapter.title ?? '',
-      });
-      // @ts-ignore
-      MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
-      // @ts-ignore
-      if (Platform.OS === 'ios') MusicControl.handleAudioInterruptions(true);
+    const startingChapter = chaptersData.find(c => c.chapter.id === startChapterId);
+    // @ts-ignore
+    MusicControl.setNowPlaying({
+      title: book?.title ?? '',
+      artist: startingChapter?.chapter.title ?? '',
+    });
+    // @ts-ignore
+    MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
+    // @ts-ignore
+    if (Platform.OS === 'ios') MusicControl.handleAudioInterruptions(true);
 
-      if (startChapterId) {
-        speakSentence(startChapterId, startSentenceIndex);
-      }
+    if (startChapterId) {
+      speakSentence(startChapterId, startSentenceIndex);
+    }
   };
 
   const stopSpeech = () => {
-      Speech.stop();
-      pausedPositionRef.current = null;
-      MusicControl.resetNowPlaying();
-      setIsSpeaking(false);
-      isSpeakingRef.current = false;
-      setIsSpeechTimerPanelVisible(false);
-      setTimerDuration(null);
-      setTimerRemaining(null);
-      if (speechTimerRef.current) {
-          clearInterval(speechTimerRef.current);
-          speechTimerRef.current = null;
-      }
+    Speech.stop();
+    pausedPositionRef.current = null;
+    MusicControl.resetNowPlaying();
+    setIsSpeaking(false);
+    isSpeakingRef.current = false;
+    setTimerDuration(null);
+    setTimerRemaining(null);
+    if (speechTimerRef.current) {
+      clearInterval(speechTimerRef.current);
+      speechTimerRef.current = null;
+    }
   };
 
   const pauseSpeech = () => {
-      Speech.stop();
-      const pausedChapterId = currentSpeakingChapterId;
-      const pausedSentenceIndex = currentSentenceIndex;
-      if (pausedChapterId !== null) {
-          pausedPositionRef.current = { chapterId: pausedChapterId, sentenceIndex: pausedSentenceIndex };
-      }
-      setIsSpeaking(false);
-      isSpeakingRef.current = false;
-      if (Platform.OS === 'ios') MusicControl.enableBackgroundMode(true);
+    Speech.stop();
+    const pausedChapterId = currentSpeakingChapterId;
+    const pausedSentenceIndex = currentSentenceIndex;
+    if (pausedChapterId !== null) {
+      pausedPositionRef.current = { chapterId: pausedChapterId, sentenceIndex: pausedSentenceIndex };
+    }
+    setIsSpeaking(false);
+    isSpeakingRef.current = false;
+    // @ts-ignore
+    if (Platform.OS === 'ios') MusicControl.enableBackgroundMode(true);
 
-      const chData = chaptersData.find(c => c.chapter.id === pausedChapterId);
-      // @ts-ignore
-      MusicControl.setNowPlaying({
-          title: book?.title ?? '',
-          artist: chData?.chapter.title ?? '',
-      });
-      // @ts-ignore
-      MusicControl.updatePlayback({ state: MusicControl.STATE_PAUSED });
+    const chData = chaptersData.find(c => c.chapter.id === pausedChapterId);
+    // @ts-ignore
+    MusicControl.setNowPlaying({
+      title: book?.title ?? '',
+      artist: chData?.chapter.title ?? '',
+    });
+    // @ts-ignore
+    MusicControl.updatePlayback({ state: MusicControl.STATE_PAUSED });
   };
 
   const resumeSpeech = () => {
-      const savedPos = pausedPositionRef.current;
-      pausedPositionRef.current = null;
-      if (savedPos) {
-          setIsSpeaking(true);
-          isSpeakingRef.current = true;
-          const chData = chaptersData.find(c => c.chapter.id === savedPos.chapterId);
-          // @ts-ignore
-          MusicControl.setNowPlaying({
-              title: book?.title ?? '',
-              artist: chData?.chapter.title ?? '',
-          });
-          // @ts-ignore
-          MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
-          speakSentence(savedPos.chapterId, savedPos.sentenceIndex);
-      } else {
-          startSpeechRef.current();
-      }
+    const savedPos = pausedPositionRef.current;
+    pausedPositionRef.current = null;
+    if (savedPos) {
+      setIsSpeaking(true);
+      isSpeakingRef.current = true;
+      const chData = chaptersData.find(c => c.chapter.id === savedPos.chapterId);
+      // @ts-ignore
+      MusicControl.setNowPlaying({
+        title: book?.title ?? '',
+        artist: chData?.chapter.title ?? '',
+      });
+      // @ts-ignore
+      MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
+      speakSentence(savedPos.chapterId, savedPos.sentenceIndex);
+    } else {
+      startSpeechRef.current();
+    }
   };
 
   useEffect(() => {
@@ -1323,7 +1321,7 @@ export default function ReaderScreen({ route, navigation }: any) {
             }, 50);
           }
         },
-        onStopped: () => {},
+        onStopped: () => { },
         onError: (e) => {
           console.error('Speech error', e);
           stopSpeech();
@@ -1336,32 +1334,32 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   // Effects for timer
   useEffect(() => {
-      if (isSpeaking && timerRemaining !== null) {
-          speechTimerRef.current = setInterval(() => {
-              setTimerRemaining(prev => {
-                  if (prev === null || prev <= 0) {
-                      stopSpeech();
-                      return 0;
-                  }
-                  return prev - 1;
-              });
-          }, 1000);
-      } else if (!isSpeaking && speechTimerRef.current) {
-          clearInterval(speechTimerRef.current);
-          speechTimerRef.current = null;
-      }
-      return () => {
-          if (speechTimerRef.current) {
-              clearInterval(speechTimerRef.current);
+    if (isSpeaking && timerRemaining !== null) {
+      speechTimerRef.current = setInterval(() => {
+        setTimerRemaining(prev => {
+          if (prev === null || prev <= 0) {
+            stopSpeech();
+            return 0;
           }
-      };
+          return prev - 1;
+        });
+      }, 1000);
+    } else if (!isSpeaking && speechTimerRef.current) {
+      clearInterval(speechTimerRef.current);
+      speechTimerRef.current = null;
+    }
+    return () => {
+      if (speechTimerRef.current) {
+        clearInterval(speechTimerRef.current);
+      }
+    };
   }, [isSpeaking, timerRemaining]);
 
   // Clean up
   useEffect(() => {
-      return () => {
-          stopSpeech();
-      };
+    return () => {
+      stopSpeech();
+    };
   }, []);
 
   // Wave animation for TTS
@@ -1384,8 +1382,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, [isSpeaking]);
 
   const toggleTheme = () => {
-      const next = settings.theme === 'dark' ? 'light' : 'dark';
-      updateSettings({ theme: next });
+    const next = settings.theme === 'dark' ? 'light' : 'dark';
+    updateSettings({ theme: next });
   };
 
   const increaseFontSize = () => updateSettings({ fontSize: Math.min(settings.fontSize + 2, 30) });
@@ -1394,43 +1392,44 @@ export default function ReaderScreen({ route, navigation }: any) {
   const decreaseLineSpacing = () => updateSettings({ lineSpacing: Math.max(1.2, Number((settings.lineSpacing - 0.1).toFixed(1))) });
 
   const startSpeechWithTimer = () => {
-      const duration = isSpeechTimerEnabled && speechTimerMinutes > 0 ? speechTimerMinutes : null;
-      startSpeech(duration);
+    console.log('Starting speech with timer. Timer enabled:', isSpeechTimerEnabled, 'Timer minutes:', speechTimerMinutes);
+    const duration = isSpeechTimerEnabled && speechTimerMinutes > 0 ? speechTimerMinutes : null;
+    startSpeech(duration);
   };
 
   const previewVoice = async (voiceId: string, voiceLanguage?: string) => {
-      // If we are already speaking, do not interrupt to preview.
-      // The new voice will naturally take effect on the next sentence.
-      if (isSpeakingRef.current) {
-          return;
-      }
+    // If we are already speaking, do not interrupt to preview.
+    // The new voice will naturally take effect on the next sentence.
+    if (isSpeakingRef.current) {
+      return;
+    }
 
-      const normalizedLanguage = (voiceLanguage || '').toLowerCase();
-      const previewText = normalizedLanguage.startsWith('zh') ? t('settings.voicePreviewZh') : t('settings.voicePreviewEn');
-      const speechLanguage = normalizedLanguage.startsWith('zh') ? 'zh-CN' : 'en-US';
+    const normalizedLanguage = (voiceLanguage || '').toLowerCase();
+    const previewText = normalizedLanguage.startsWith('zh') ? t('settings.voicePreviewZh') : t('settings.voicePreviewEn');
+    const speechLanguage = normalizedLanguage.startsWith('zh') ? 'zh-CN' : 'en-US';
 
-      Speech.stop();
-      setPreviewingVoiceId(voiceId);
+    Speech.stop();
+    setPreviewingVoiceId(voiceId);
 
-      Speech.speak(previewText, {
-          language: speechLanguage,
-          rate: settings.speechRate,
-          voice: voiceId === 'default' ? undefined : voiceId,
-          useApplicationAudioSession: false,
-          onDone: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
-          onStopped: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
-          onError: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
-      });
+    Speech.speak(previewText, {
+      language: speechLanguage,
+      rate: settings.speechRate,
+      voice: voiceId === 'default' ? undefined : voiceId,
+      useApplicationAudioSession: false,
+      onDone: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
+      onStopped: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
+      onError: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
+    });
   };
 
   const getTimerText = () => {
-      if (timerDuration === null) return t('reader.timerNone');
-      if (isSpeaking && timerRemaining !== null) {
-          const mins = Math.floor(timerRemaining / 60);
-          const secs = timerRemaining % 60;
-          return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-      }
-      return `${timerDuration}m`;
+    if (timerDuration === null) return t('reader.timerNone');
+    if (isSpeaking && timerRemaining !== null) {
+      const mins = Math.floor(timerRemaining / 60);
+      const secs = timerRemaining % 60;
+      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+    return `${timerDuration}m`;
   };
 
   useEffect(() => {
@@ -1444,21 +1443,21 @@ export default function ReaderScreen({ route, navigation }: any) {
   const isDark = settings.theme === 'system' ? colorScheme === 'dark' : settings.theme === 'dark';
 
   const readerColors = useMemo(() => ({
-    bg:           isDark ? '#0E0C0A' : '#FAF7F0',
-    surface:      isDark ? '#1C1916' : '#F3ECE0',
-    border:       isDark ? '#2A2520' : '#E0D4C0',
-    accent:       isDark ? '#C4A96A' : '#A0621A',
-    accentBg:     isDark ? 'rgba(196,169,106,0.1)'  : 'rgba(139,94,32,0.08)',
-    accentBorder: isDark ? 'rgba(196,169,106,0.3)'  : 'rgba(139,94,32,0.25)',
-    red:          '#D64040',
-    textPrimary:  isDark ? '#E8E0D0' : '#2C1A0E',
-    textSub:      isDark ? '#B0A080' : '#9A7A5A',
-    bottomBar:    isDark ? '#0A0806' : '#F3ECE0',
-    iconBox:      isDark ? '#2A2520' : '#E8DCC8',
-    highlight:    isDark ? '#3A2E12' : '#F7E8C4',
+    bg: isDark ? '#0E0C0A' : '#FAF7F0',
+    surface: isDark ? '#1C1916' : '#F3ECE0',
+    border: isDark ? '#2A2520' : '#E0D4C0',
+    accent: isDark ? '#C4A96A' : '#A0621A',
+    accentBg: isDark ? 'rgba(196,169,106,0.1)' : 'rgba(139,94,32,0.08)',
+    accentBorder: isDark ? 'rgba(196,169,106,0.3)' : 'rgba(139,94,32,0.25)',
+    red: '#D64040',
+    textPrimary: isDark ? '#E8E0D0' : '#2C1A0E',
+    textSub: isDark ? '#B0A080' : '#9A7A5A',
+    bottomBar: isDark ? '#0A0806' : '#F3ECE0',
+    iconBox: isDark ? '#2A2520' : '#E8DCC8',
+    highlight: isDark ? '#3A2E12' : '#F7E8C4',
   }), [isDark]);
 
-  const bgColor   = readerColors.bg;
+  const bgColor = readerColors.bg;
   const textColor = readerColors.textPrimary;
   const window = Dimensions.get('window');
   const centerTapTop = window.height * 0.25;
@@ -1475,27 +1474,27 @@ export default function ReaderScreen({ route, navigation }: any) {
   const speechTimerRatio = speechTimerMinutes / 120;
   const speechTimerThumbOffset = speechTimerRatio * speechTimerWidth;
   const sortedVoices = useMemo(() => {
-      const zh: VoiceEntry[] = [];
-      const other: VoiceEntry[] = [];
-      for (const v of voices) {
-        if ((v.language || '').toLowerCase().startsWith('zh')) zh.push(v);
-        else other.push(v);
-      }
-      const sortByLabel = (a: VoiceEntry, b: VoiceEntry) => {
-        const la = `${a.quality === 'Default' ? '0' : '1'} ${a.name} ${a.language} ${a.identifier}`.toLowerCase();
-        const lb = `${b.quality === 'Default' ? '0' : '1'} ${b.name} ${b.language} ${b.identifier}`.toLowerCase();
-        return la.localeCompare(lb);
-      };
-      zh.sort(sortByLabel);
-      other.sort(sortByLabel);
-      return [...zh, ...other];
+    const zh: VoiceEntry[] = [];
+    const other: VoiceEntry[] = [];
+    for (const v of voices) {
+      if ((v.language || '').toLowerCase().startsWith('zh')) zh.push(v);
+      else other.push(v);
+    }
+    const sortByLabel = (a: VoiceEntry, b: VoiceEntry) => {
+      const la = `${a.quality === 'Default' ? '0' : '1'} ${a.name} ${a.language} ${a.identifier}`.toLowerCase();
+      const lb = `${b.quality === 'Default' ? '0' : '1'} ${b.name} ${b.language} ${b.identifier}`.toLowerCase();
+      return la.localeCompare(lb);
+    };
+    zh.sort(sortByLabel);
+    other.sort(sortByLabel);
+    return [...zh, ...other];
   }, [voices]);
   const selectedVoiceLabel = useMemo(() => {
-      if (!settings.voiceType || settings.voiceType === 'default') return t('common.default');
-      const matchedVoice = voices.find((voice) => voice.identifier === settings.voiceType);
-      if (!matchedVoice) return settings.voiceType;
-      const base = getVoiceDisplayLabel(matchedVoice, settings.voiceType, t, language);
-      return matchedVoice.quality === 'Premium' ? `${base} · ${t('voice.qualityPremium')}` : matchedVoice.quality === 'Enhanced' ? `${base} · ${t('voice.qualityEnhanced')}` : base;
+    if (!settings.voiceType || settings.voiceType === 'default') return t('common.default');
+    const matchedVoice = voices.find((voice) => voice.identifier === settings.voiceType);
+    if (!matchedVoice) return settings.voiceType;
+    const base = getVoiceDisplayLabel(matchedVoice, settings.voiceType, t, language);
+    return matchedVoice.quality === 'Premium' ? `${base} · ${t('voice.qualityPremium')}` : matchedVoice.quality === 'Enhanced' ? `${base} · ${t('voice.qualityEnhanced')}` : base;
   }, [language, settings.voiceType, t, voices]);
   const fontOptionMeta = useMemo(
     () => ({
@@ -1513,35 +1512,36 @@ export default function ReaderScreen({ route, navigation }: any) {
   );
 
   const updateSpeechTimerFromPosition = (x: number) => {
-      if (speechTimerWidth <= 0) return;
-      const ratio = Math.max(0, Math.min(1, x / speechTimerWidth));
-      const rawMinutes = Math.round(ratio * 120);
-      const nearestStrongSnapPoint = STRONG_SPEECH_TIMER_SNAP_POINTS.reduce((closest, point) =>
-        Math.abs(point - rawMinutes) < Math.abs(closest - rawMinutes) ? point : closest
-      );
-      const nearestWeakSnapPoint = WEAK_SPEECH_TIMER_SNAP_POINTS.reduce((closest, point) =>
-        Math.abs(point - rawMinutes) < Math.abs(closest - rawMinutes) ? point : closest,
-        WEAK_SPEECH_TIMER_SNAP_POINTS[0] ?? rawMinutes
-      );
-      const snappedMinutes =
-        Math.abs(nearestStrongSnapPoint - rawMinutes) <= STRONG_SPEECH_TIMER_SNAP_THRESHOLD
-          ? nearestStrongSnapPoint
-          : Math.abs(nearestWeakSnapPoint - rawMinutes) <= WEAK_SPEECH_TIMER_SNAP_THRESHOLD
-            ? nearestWeakSnapPoint
-            : rawMinutes;
-      setSpeechTimerMinutes(snappedMinutes);
-      setIsSpeechTimerEnabled(snappedMinutes > 0);
+    console.log('Updating speech timer from position:', x);
+    if (speechTimerWidth <= 0) return;
+    const ratio = Math.max(0, Math.min(1, x / speechTimerWidth));
+    const rawMinutes = Math.round(ratio * 120);
+    const nearestStrongSnapPoint = STRONG_SPEECH_TIMER_SNAP_POINTS.reduce((closest, point) =>
+      Math.abs(point - rawMinutes) < Math.abs(closest - rawMinutes) ? point : closest
+    );
+    const nearestWeakSnapPoint = WEAK_SPEECH_TIMER_SNAP_POINTS.reduce((closest, point) =>
+      Math.abs(point - rawMinutes) < Math.abs(closest - rawMinutes) ? point : closest,
+      WEAK_SPEECH_TIMER_SNAP_POINTS[0] ?? rawMinutes
+    );
+    const snappedMinutes =
+      Math.abs(nearestStrongSnapPoint - rawMinutes) <= STRONG_SPEECH_TIMER_SNAP_THRESHOLD
+        ? nearestStrongSnapPoint
+        : Math.abs(nearestWeakSnapPoint - rawMinutes) <= WEAK_SPEECH_TIMER_SNAP_THRESHOLD
+          ? nearestWeakSnapPoint
+          : rawMinutes;
+    setSpeechTimerMinutes(snappedMinutes);
+    setIsSpeechTimerEnabled(snappedMinutes > 0);
 
-      // If already speaking, update the running timer immediately
-      if (isSpeakingRef.current) {
-          if (snappedMinutes > 0) {
-              setTimerDuration(snappedMinutes);
-              setTimerRemaining(snappedMinutes * 60);
-          } else {
-              setTimerDuration(null);
-              setTimerRemaining(null);
-          }
+    // If already speaking, update the running timer immediately
+    if (isSpeakingRef.current) {
+      if (snappedMinutes > 0) {
+        setTimerDuration(snappedMinutes);
+        setTimerRemaining(snappedMinutes * 60);
+      } else {
+        setTimerDuration(null);
+        setTimerRemaining(null);
       }
+    }
   };
 
   const horizontalPages = useMemo<PageData[]>(() => {
@@ -1829,11 +1829,6 @@ export default function ReaderScreen({ route, navigation }: any) {
     const isInCenterBand = pageY >= centerTapTop && pageY <= centerTapBottom;
 
     if (isTap && isInCenterBand) {
-      if (isSpeechTimerPanelVisible) {
-        setIsSpeechTimerPanelVisible(false);
-        setIsVoiceDropdownVisible(false);
-        return;
-      }
       if (isTypographyPanelVisible) {
         setIsTypographyPanelVisible(false);
         return;
@@ -1894,11 +1889,11 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   if (loading && !book) {
-      return (
-          <View style={[styles.container, styles.center]}>
-              <ActivityIndicator size="large" />
-          </View>
-      );
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
@@ -1907,22 +1902,22 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       {/* Header */}
       {isMenuVisible && (
-          <View style={[styles.header, { paddingTop: insets.top, backgroundColor: readerColors.surface, borderBottomColor: readerColors.border }]}>
-              <TouchableOpacity onPress={handleBack} style={styles.iconButton}>
-                  <Ionicons name="arrow-back" size={24} color={textColor} />
-              </TouchableOpacity>
-              <Text style={[styles.headerTitle, { color: textColor }]} numberOfLines={1}>
-                  {currentHeaderTitle || book?.title}
-              </Text>
-              <View style={styles.headerActions}>
-                <TouchableOpacity onPress={() => navigation.navigate('Chapters', { bookId })} style={styles.iconButton}>
-                  <Ionicons name="list" size={24} color={textColor} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.iconButton}>
-                  <Ionicons name="settings-outline" size={22} color={textColor} />
-                </TouchableOpacity>
-              </View>
+        <View style={[styles.header, { paddingTop: insets.top, backgroundColor: readerColors.surface, borderBottomColor: readerColors.border }]}>
+          <TouchableOpacity onPress={handleBack} style={styles.iconButton}>
+            <Ionicons name="arrow-back" size={24} color={textColor} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: textColor }]} numberOfLines={1}>
+            {currentHeaderTitle || book?.title}
+          </Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={() => navigation.navigate('Chapters', { bookId })} style={styles.iconButton}>
+              <Ionicons name="list" size={24} color={textColor} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.iconButton}>
+              <Ionicons name="settings-outline" size={22} color={textColor} />
+            </TouchableOpacity>
           </View>
+        </View>
       )}
 
       <Animated.FlatList
@@ -2014,303 +2009,155 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       {/* Footer Controls */}
       {isMenuVisible && (
-          <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: readerColors.bottomBar }]}>
-              {/* Mini 播放条 - Menu 可见时显示在控制行上方 */}
-              {isSpeaking && (
-                <TouchableOpacity
-                  onPress={() => setIsTtsOverlayVisible(true)}
-                  style={[styles.miniPlayer, styles.miniPlayerInFooter, {
-                    backgroundColor: readerColors.surface,
-                    borderColor: readerColors.border,
-                  }]}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.miniWave}>
-                    {waveAnims.map((anim, i) => (
-                      <RNAnimated.View key={i} style={[styles.miniWaveBar, { backgroundColor: readerColors.accent, transform: [{ scaleY: anim }] }]} />
-                    ))}
-                  </View>
-                  <View style={styles.miniInfo}>
-                    <Text style={[styles.miniInfoLabel, { color: readerColors.accent }]} numberOfLines={1}>{t('reader.read')}</Text>
-                  </View>
-                  <TouchableOpacity onPress={(e) => { e.stopPropagation(); toggleSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <View style={styles.miniPause}>
-                      <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
-                      <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
-                    </View>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              )}
-              {isSpeechTimerPanelVisible ? (
-                <View style={styles.timerPanel}>
-                  <View style={styles.inlineTimerSliderWrap}>
-                    <View style={styles.inlineTimerSliderLabels}>
-                      <Text style={[styles.inlineTimerSliderLabel, { color: isDark ? '#aaaaaa' : '#666666' }]}>0m</Text>
-                      <Text style={[styles.inlineTimerSliderValue, { color: textColor }]}>
-                        {speechTimerMinutes === 0 ? t('reader.timerNone') : `${speechTimerMinutes}m`}
-                      </Text>
-                      <Text style={[styles.inlineTimerSliderLabel, { color: isDark ? '#aaaaaa' : '#666666' }]}>120m</Text>
-                    </View>
-                    <View style={styles.inlineTimerSliderTrackWrap}>
-                      <View
-                        style={styles.inlineTimerTouchArea}
-                        onLayout={(event) => setSpeechTimerWidth(event.nativeEvent.layout.width)}
-                        onStartShouldSetResponder={() => true}
-                        onMoveShouldSetResponder={() => true}
-                        onResponderGrant={(event) => updateSpeechTimerFromPosition(event.nativeEvent.locationX)}
-                        onResponderMove={(event) => updateSpeechTimerFromPosition(event.nativeEvent.locationX)}
-                      >
-                        <View style={[styles.inlineTimerSliderTrack, { backgroundColor: isDark ? '#333333' : '#d9d9d9' }]} />
-                        <View style={[styles.inlineTimerSliderTrackActive, { width: speechTimerThumbOffset, backgroundColor: '#1E88E5' }]} />
-                        <View
-                          style={[
-                            styles.inlineTimerSliderThumb,
-                            {
-                              left: Math.max(0, speechTimerThumbOffset - 12),
-                              backgroundColor: '#1E88E5',
-                              borderColor: isDark ? '#121212' : '#ffffff',
-                            },
-                          ]}
-                        />
-                      </View>
-                    </View>
-                  </View>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: readerColors.bottomBar }]}>
+          {/* Mini 播放条 - Menu 可见时显示在控制行上方 */}
+          {isSpeaking && (
+            <TouchableOpacity
+              onPress={() => setIsTtsOverlayVisible(true)}
+              style={[styles.miniPlayer, styles.miniPlayerInFooter, {
+                backgroundColor: readerColors.surface,
+                borderColor: readerColors.border,
+              }]}
+              activeOpacity={0.85}
+            >
+              <View style={styles.miniWave}>
+                {waveAnims.map((anim, i) => (
+                  <RNAnimated.View key={i} style={[styles.miniWaveBar, { backgroundColor: readerColors.accent, transform: [{ scaleY: anim }] }]} />
+                ))}
+              </View>
+              <View style={styles.miniInfo}>
+                <Text style={[styles.miniInfoLabel, { color: readerColors.accent }]} numberOfLines={1}>{t('reader.read')}</Text>
+              </View>
+              <TouchableOpacity onPress={(e) => { e.stopPropagation(); toggleSpeech(); }} style={styles.miniCtrl} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <View style={styles.miniPause}>
+                  <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
+                  <View style={[styles.miniPauseBar, { backgroundColor: readerColors.accent }]} />
+                </View>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          )}
+          {isTypographyPanelVisible ? (
+            <View style={[styles.typoPanel, { backgroundColor: readerColors.bottomBar }]}>
+              {/* Handle */}
+              <View style={[styles.typoHandle, { backgroundColor: readerColors.border }]} />
 
-                  <View style={styles.speechQuickSection}>
-                    <View style={styles.speechQuickRow}>
-                      <Text style={[styles.speechQuickLabel, { color: textColor }]}>
-                        {t('settings.speechRate')}: {settings.speechRate.toFixed(1)}x
-                      </Text>
-                      <View style={styles.speechQuickControls}>
-                        <TouchableOpacity
-                          onPress={() => updateSettings({ speechRate: Math.max(0.5, Number((settings.speechRate - 0.1).toFixed(1))) })}
-                          style={[styles.speechQuickButton, { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' }]}
-                        >
-                          <Text style={[styles.speechQuickButtonText, { color: textColor }]}>-</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => updateSettings({ speechRate: Math.min(2.0, Number((settings.speechRate + 0.1).toFixed(1))) })}
-                          style={[styles.speechQuickButton, { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' }]}
-                        >
-                          <Text style={[styles.speechQuickButtonText, { color: textColor }]}>+</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <View style={styles.speechQuickVoiceHeader}>
-                      <Text style={[styles.speechQuickLabel, { color: textColor }]}>{t('settings.voice')}</Text>
-                      <TouchableOpacity
-                        onPress={() => setIsVoiceDropdownVisible((visible) => !visible)}
-                        style={[styles.voiceDropdownTrigger, { borderColor: isDark ? '#3a3a3a' : '#d8d8d8', backgroundColor: isDark ? '#232323' : '#ffffff' }]}
-                      >
-                        <Text style={[styles.voiceDropdownTriggerText, { color: textColor }]} numberOfLines={1}>
-                          {voicesLoading ? t('common.loading') : selectedVoiceLabel}
-                        </Text>
-                        <Ionicons
-                          name={isVoiceDropdownVisible ? 'chevron-up' : 'chevron-down'}
-                          size={16}
-                          color={isDark ? '#9e9e9e' : '#666666'}
-                        />
-                      </TouchableOpacity>
-                    </View>
-
-                    {isVoiceDropdownVisible && (
-                      <View style={[styles.voiceDropdownList, { borderColor: isDark ? '#3a3a3a' : '#d8d8d8', backgroundColor: isDark ? '#1b1b1b' : '#ffffff' }]}>
-                        <ScrollView showsVerticalScrollIndicator={false} style={styles.voiceDropdownScroll}>
-                          <TouchableOpacity
-                            onPress={() => {
-                              updateSettings({ voiceType: 'default' });
-                              setIsVoiceDropdownVisible(false);
-                              previewVoice('default', 'zh-CN');
-                            }}
-                            style={[
-                              styles.voiceDropdownOption,
-                              settings.voiceType === 'default' && [styles.speechVoiceChipActive, styles.voiceDropdownOptionActive],
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.voiceDropdownOptionText,
-                                { color: settings.voiceType === 'default' ? '#ffffff' : textColor },
-                              ]}
-                            >
-                              {previewingVoiceId === 'default' ? t('common.loading') : t('common.default')}
-                            </Text>
-                          </TouchableOpacity>
-                          {sortedVoices.slice(0, 40).map((voice) => {
-                            const selected = settings.voiceType === voice.identifier;
-                            const label = getVoiceDisplayLabel(voice, voice.identifier, t, language);
-                            const isInstalled = voice.installed !== false;
-                            return (
-                              <TouchableOpacity
-                                key={voice.identifier}
-                                onPress={() => {
-                                  if (!isInstalled) { openVoiceSettings(); return; }
-                                  updateSettings({ voiceType: voice.identifier });
-                                  setIsVoiceDropdownVisible(false);
-                                  previewVoice(voice.identifier, voice.language);
-                                }}
-                                style={[
-                                  styles.voiceDropdownOption,
-                                  selected && [styles.speechVoiceChipActive, styles.voiceDropdownOptionActive],
-                                  !isInstalled && { opacity: 0.5 },
-                                ]}
-                              >
-                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                  <Text
-                                    style={[
-                                      styles.voiceDropdownOptionText,
-                                      { color: selected ? '#ffffff' : textColor, flexShrink: 1 },
-                                    ]}
-                                    numberOfLines={1}
-                                  >
-                                    {previewingVoiceId === voice.identifier ? t('common.loading') : label}
-                                  </Text>
-                                  {voice.quality !== 'Default' && (
-                                    <Text style={{ fontSize: 10, color: selected ? '#ffffff' : '#1E88E5', marginLeft: 4 }}>
-                                      {voice.quality === 'Premium' ? t('voice.qualityPremium') : t('voice.qualityEnhanced')}
-                                    </Text>
-                                  )}
-                                </View>
-                                {!isInstalled && (
-                                  <Ionicons name="cloud-download-outline" size={16} color={isDark ? '#9e9e9e' : '#666666'} style={{ marginLeft: 4 }} />
-                                )}
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </ScrollView>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.timerPanelActions}>
-                    <TouchableOpacity onPress={isSpeaking ? stopSpeech : startSpeechWithTimer} style={styles.timerPanelActionButton}>
-                      <Ionicons name={isSpeaking ? "pause-circle" : "play-circle"} size={36} color="#1E88E5" />
+              {/* 字号 + 行距 并排 */}
+              <View style={styles.typoTopRow}>
+                <View style={[styles.typoCol, { backgroundColor: readerColors.surface }]}>
+                  <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>字号</Text>
+                  <View style={styles.typoStepperRow}>
+                    <TouchableOpacity onPress={decreaseFontSize} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
+                      <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={[styles.typoStepVal, { color: readerColors.textPrimary }]}>{settings.fontSize}</Text>
+                    <TouchableOpacity onPress={increaseFontSize} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
+                      <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>+</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
-              ) : isTypographyPanelVisible ? (
-                <View style={[styles.typoPanel, { backgroundColor: readerColors.bottomBar }]}>
-                  {/* Handle */}
-                  <View style={[styles.typoHandle, { backgroundColor: readerColors.border }]} />
 
-                  {/* 字号 + 行距 并排 */}
-                  <View style={styles.typoTopRow}>
-                    <View style={[styles.typoCol, { backgroundColor: readerColors.surface }]}>
-                      <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>字号</Text>
-                      <View style={styles.typoStepperRow}>
-                        <TouchableOpacity onPress={decreaseFontSize} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
-                          <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>−</Text>
-                        </TouchableOpacity>
-                        <Text style={[styles.typoStepVal, { color: readerColors.textPrimary }]}>{settings.fontSize}</Text>
-                        <TouchableOpacity onPress={increaseFontSize} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
-                          <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>+</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <View style={[styles.typoCol, { backgroundColor: readerColors.surface }]}>
-                      <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>行距</Text>
-                      <View style={styles.typoStepperRow}>
-                        <TouchableOpacity onPress={decreaseLineSpacing} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
-                          <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>−</Text>
-                        </TouchableOpacity>
-                        <Text style={[styles.typoStepVal, { color: readerColors.textPrimary }]}>{settings.lineSpacing.toFixed(1)}</Text>
-                        <TouchableOpacity onPress={increaseLineSpacing} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
-                          <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>+</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
+                <View style={[styles.typoCol, { backgroundColor: readerColors.surface }]}>
+                  <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>行距</Text>
+                  <View style={styles.typoStepperRow}>
+                    <TouchableOpacity onPress={decreaseLineSpacing} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
+                      <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={[styles.typoStepVal, { color: readerColors.textPrimary }]}>{settings.lineSpacing.toFixed(1)}</Text>
+                    <TouchableOpacity onPress={increaseLineSpacing} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
+                      <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>+</Text>
+                    </TouchableOpacity>
                   </View>
-
-                  {/* 字体芯片 */}
-                  <Text style={[styles.typoChipsLabel, { color: readerColors.textSub }]}>字体</Text>
-                  <View style={styles.typoChipsRow}>
-                    {typographyFontOptions.map((option) => {
-                      const selected = settings.fontPreset === option.id;
-                      return (
-                        <TouchableOpacity
-                          key={option.id}
-                          onPress={() => updateSettings({ fontPreset: option.id })}
-                          style={[
-                            styles.typoChip,
-                            { backgroundColor: selected ? readerColors.accentBg : readerColors.surface },
-                            selected && { borderWidth: 1, borderColor: readerColors.accentBorder },
-                          ]}
-                        >
-                          <Text style={[styles.typoChipPreview, {
-                            color: selected ? readerColors.accent : readerColors.textPrimary,
-                            fontFamily: getFontFamilyForPreset(option.id),
-                          }]}>汉</Text>
-                          <Text style={[styles.typoChipName, { color: selected ? readerColors.accent : readerColors.textSub }]}>
-                            {fontOptionMeta[option.id].label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
-
                 </View>
-              ) : (
-                <View style={styles.controlsRow}>
-                  {/* 字体 */}
-                  <TouchableOpacity onPress={toggleTypographyPanel} style={styles.ctrlBtn}>
-                    <View style={[styles.ctrlIconBox,
-                      { backgroundColor: isTypographyPanelVisible ? readerColors.accentBg : readerColors.iconBox },
-                      isTypographyPanelVisible && { borderWidth: 1, borderColor: readerColors.accentBorder },
-                    ]}>
-                      <Text style={[styles.ctrlAaSmall, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>A</Text>
-                      <Text style={[styles.ctrlAaLarge, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>A</Text>
-                    </View>
-                    <Text style={[styles.ctrlLabel, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>
-                      {t('settings.fontSize')}
-                    </Text>
-                  </TouchableOpacity>
+              </View>
 
-                  <View style={[styles.ctrlDivider, { backgroundColor: readerColors.border }]} />
+              {/* 字体芯片 */}
+              <Text style={[styles.typoChipsLabel, { color: readerColors.textSub }]}>字体</Text>
+              <View style={styles.typoChipsRow}>
+                {typographyFontOptions.map((option) => {
+                  const selected = settings.fontPreset === option.id;
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      onPress={() => updateSettings({ fontPreset: option.id })}
+                      style={[
+                        styles.typoChip,
+                        { backgroundColor: selected ? readerColors.accentBg : readerColors.surface },
+                        selected && { borderWidth: 1, borderColor: readerColors.accentBorder },
+                      ]}
+                    >
+                      <Text style={[styles.typoChipPreview, {
+                        color: selected ? readerColors.accent : readerColors.textPrimary,
+                        fontFamily: getFontFamilyForPreset(option.id),
+                      }]}>汉</Text>
+                      <Text style={[styles.typoChipName, { color: selected ? readerColors.accent : readerColors.textSub }]}>
+                        {fontOptionMeta[option.id].label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-                  {/* 主题 */}
-                  <TouchableOpacity onPress={toggleTheme} style={styles.ctrlBtn}>
-                    <View style={[styles.ctrlIconBox, { backgroundColor: readerColors.iconBox }]}>
-                      <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={20} color={readerColors.textSub} />
-                    </View>
-                    <Text style={[styles.ctrlLabel, { color: readerColors.textSub }]}>{t('reader.theme')}</Text>
-                  </TouchableOpacity>
 
-                  <View style={[styles.ctrlDivider, { backgroundColor: readerColors.border }]} />
-
-                  {/* 自动翻页 */}
-                  <TouchableOpacity onPress={() => updateSettings({ autoFlip: !settings.autoFlip })} style={styles.ctrlBtn}>
-                    <View style={[styles.ctrlIconBox, { backgroundColor: readerColors.iconBox }]}>
-                      <Ionicons
-                        name={settings.autoFlip ? 'stop-circle-outline' : 'play-circle-outline'}
-                        size={20}
-                        color={settings.autoFlip ? readerColors.red : readerColors.textSub}
-                      />
-                    </View>
-                    <Text style={[styles.ctrlLabel, { color: settings.autoFlip ? readerColors.red : readerColors.textSub }]}>
-                      {settings.autoFlip ? t('reader.autoFlipStop') : t('reader.autoFlipStart')}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <View style={[styles.ctrlDivider, { backgroundColor: readerColors.border }]} />
-
-                  {/* 朗读 */}
-                  <TouchableOpacity onPress={toggleSpeech} style={styles.ctrlBtn}>
-                    <View style={[styles.ctrlIconBox,
-                      { backgroundColor: isSpeaking ? readerColors.accentBg : readerColors.iconBox },
-                      isSpeaking && { borderWidth: 1, borderColor: readerColors.accentBorder },
-                    ]}>
-                      <Ionicons name={isSpeaking ? 'mic' : 'mic-outline'} size={20} color={isSpeaking ? readerColors.red : readerColors.textSub} />
-                    </View>
-                    <Text style={[styles.ctrlLabel, { color: isSpeaking ? readerColors.red : readerColors.textSub }]}>
-                      {isSpeaking ? t('reader.pause') : t('reader.read')}
-                    </Text>
-                  </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.controlsRow}>
+              {/* 字体 */}
+              <TouchableOpacity onPress={toggleTypographyPanel} style={styles.ctrlBtn}>
+                <View style={[styles.ctrlIconBox,
+                { backgroundColor: isTypographyPanelVisible ? readerColors.accentBg : readerColors.iconBox },
+                isTypographyPanelVisible && { borderWidth: 1, borderColor: readerColors.accentBorder },
+                ]}>
+                  <Text style={[styles.ctrlAaSmall, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>A</Text>
+                  <Text style={[styles.ctrlAaLarge, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>A</Text>
                 </View>
-              )}
-          </View>
+                <Text style={[styles.ctrlLabel, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>
+                  {t('settings.fontSize')}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={[styles.ctrlDivider, { backgroundColor: readerColors.border }]} />
+
+              {/* 主题 */}
+              <TouchableOpacity onPress={toggleTheme} style={styles.ctrlBtn}>
+                <View style={[styles.ctrlIconBox, { backgroundColor: readerColors.iconBox }]}>
+                  <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={20} color={readerColors.textSub} />
+                </View>
+                <Text style={[styles.ctrlLabel, { color: readerColors.textSub }]}>{t('reader.theme')}</Text>
+              </TouchableOpacity>
+
+              <View style={[styles.ctrlDivider, { backgroundColor: readerColors.border }]} />
+
+              {/* 自动翻页 */}
+              <TouchableOpacity onPress={() => updateSettings({ autoFlip: !settings.autoFlip })} style={styles.ctrlBtn}>
+                <View style={[styles.ctrlIconBox, { backgroundColor: readerColors.iconBox }]}>
+                  <Ionicons
+                    name={settings.autoFlip ? 'stop-circle-outline' : 'play-circle-outline'}
+                    size={20}
+                    color={settings.autoFlip ? readerColors.red : readerColors.textSub}
+                  />
+                </View>
+                <Text style={[styles.ctrlLabel, { color: settings.autoFlip ? readerColors.red : readerColors.textSub }]}>
+                  {settings.autoFlip ? t('reader.autoFlipStop') : t('reader.autoFlipStart')}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={[styles.ctrlDivider, { backgroundColor: readerColors.border }]} />
+
+              {/* 朗读 */}
+              <TouchableOpacity onPress={toggleSpeech} style={styles.ctrlBtn}>
+                <View style={[styles.ctrlIconBox,
+                { backgroundColor: isSpeaking ? readerColors.accentBg : readerColors.iconBox },
+                isSpeaking && { borderWidth: 1, borderColor: readerColors.accentBorder },
+                ]}>
+                  <Ionicons name={isSpeaking ? 'mic' : 'mic-outline'} size={20} color={isSpeaking ? readerColors.red : readerColors.textSub} />
+                </View>
+                <Text style={[styles.ctrlLabel, { color: isSpeaking ? readerColors.red : readerColors.textSub }]}>
+                  {isSpeaking ? t('reader.pause') : t('reader.read')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       )}
 
       {/* 全屏朗读 Modal */}
@@ -2419,7 +2266,7 @@ export default function ReaderScreen({ route, navigation }: any) {
             <TouchableOpacity
               style={[styles.ttsChip, { backgroundColor: readerColors.iconBox }]}
               onPress={() => {
-                const options = [15, 30, 60, 0];
+                const options = [1, 15, 30, 60, 0];
                 const next = options[(options.indexOf(speechTimerMinutes) + 1) % options.length];
                 setSpeechTimerMinutes(next);
                 setIsSpeechTimerEnabled(next > 0);
@@ -2510,31 +2357,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   center: {
-      alignItems: 'center',
-      justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingBottom: 10,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: '#ccc',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#ccc',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   headerTitle: {
-      flex: 1,
-      fontSize: 18,
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginHorizontal: 10,
+    flex: 1,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginHorizontal: 10,
   },
   iconButton: {
-      padding: 8,
+    padding: 8,
   },
   headerActions: {
     flexDirection: 'row',
@@ -2550,8 +2397,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   content: {
-      textAlign: 'justify',
-      ...(Platform.OS === 'web' ? ({ userSelect: 'text', cursor: 'text' } as any) : null),
+    textAlign: 'justify',
+    ...(Platform.OS === 'web' ? ({ userSelect: 'text', cursor: 'text' } as any) : null),
   },
   chapterDivider: {
     height: 1,
@@ -2581,246 +2428,246 @@ const styles = StyleSheet.create({
     bottom: 12,
   },
   footer: {
-      paddingTop: 10,
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
+    paddingTop: 10,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   timerPanel: {
-      paddingHorizontal: 18,
-      paddingTop: 4,
+    paddingHorizontal: 18,
+    paddingTop: 4,
   },
   inlineTimerSliderWrap: {
-      marginTop: 4,
+    marginTop: 4,
   },
   inlineTimerSliderLabels: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   inlineTimerSliderLabel: {
-      fontSize: 12,
+    fontSize: 12,
   },
   inlineTimerSliderValue: {
-      fontSize: 18,
-      fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '700',
   },
   inlineTimerSliderTrackWrap: {
-      height: 24,
-      justifyContent: 'center',
-      position: 'relative',
+    height: 24,
+    justifyContent: 'center',
+    position: 'relative',
   },
   inlineTimerTouchArea: {
-      width: '100%',
-      height: 24,
-      justifyContent: 'center',
+    width: '100%',
+    height: 24,
+    justifyContent: 'center',
   },
   inlineTimerSliderTrack: {
-      height: 6,
-      borderRadius: 999,
-      width: '100%',
+    height: 6,
+    borderRadius: 999,
+    width: '100%',
   },
   inlineTimerSliderTrackActive: {
-      position: 'absolute',
-      left: 0,
-      height: 6,
-      borderRadius: 999,
+    position: 'absolute',
+    left: 0,
+    height: 6,
+    borderRadius: 999,
   },
   inlineTimerSliderThumb: {
-      position: 'absolute',
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      borderWidth: 3,
-      top: 0,
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 3,
+    top: 0,
   },
   timerPanelActions: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      marginTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 12,
   },
   speechQuickSection: {
-      marginTop: 16,
-      gap: 12,
+    marginTop: 16,
+    gap: 12,
   },
   typographyPanelSection: {
-      marginTop: 4,
-      gap: 12,
+    marginTop: 4,
+    gap: 12,
   },
   typographyTwoColumnRow: {
-      flexDirection: 'row',
-      alignItems: 'stretch',
-      gap: 10,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 10,
   },
   typographyColumn: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   typographyIconRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      gap: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 14,
   },
   typographyIconButton: {
-      paddingVertical: 6,
-      paddingHorizontal: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
   },
   spacingIconCompact: {
-      width: 22,
-      height: 22,
-      justifyContent: 'center',
-      gap: 2,
+    width: 22,
+    height: 22,
+    justifyContent: 'center',
+    gap: 2,
   },
   spacingIconExpanded: {
-      width: 22,
-      height: 22,
-      justifyContent: 'center',
-      gap: 6,
+    width: 22,
+    height: 22,
+    justifyContent: 'center',
+    gap: 6,
   },
   spacingIconLine: {
-      height: 2,
-      borderRadius: 999,
-      width: '100%',
+    height: 2,
+    borderRadius: 999,
+    width: '100%',
   },
   typographyColumnDivider: {
-      width: StyleSheet.hairlineWidth,
+    width: StyleSheet.hairlineWidth,
   },
   typographyRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   typographyLabel: {
-      fontSize: 14,
-      fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '600',
   },
   typographyFontsInlineRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flexWrap: 'wrap',
-      gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   typographyFontChip: {
-      borderWidth: 1,
-      borderRadius: 999,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      minWidth: 68,
-      alignItems: 'center',
-      justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 68,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   typographyFontChipText: {
-      fontSize: 12,
-      lineHeight: 16,
-      fontWeight: '500',
-      includeFontPadding: false,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '500',
+    includeFontPadding: false,
   },
   speechQuickRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   speechQuickLabel: {
-      fontSize: 14,
-      fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '600',
   },
   speechQuickControls: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   speechQuickButton: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      alignItems: 'center',
-      justifyContent: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   speechQuickButtonText: {
-      fontSize: 18,
-      fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '700',
   },
   speechQuickVoiceHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   speechQuickVoiceValue: {
-      flex: 1,
-      textAlign: 'right',
-      fontSize: 12,
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 12,
   },
   voiceDropdownTrigger: {
-      flex: 1,
-      marginLeft: 12,
-      borderWidth: 1,
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 8,
+    flex: 1,
+    marginLeft: 12,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   voiceDropdownTriggerText: {
-      flex: 1,
-      fontSize: 12,
-      textAlign: 'right',
+    flex: 1,
+    fontSize: 12,
+    textAlign: 'right',
   },
   voiceDropdownList: {
-      borderWidth: 1,
-      borderRadius: 12,
-      maxHeight: 220,
-      overflow: 'hidden',
+    borderWidth: 1,
+    borderRadius: 12,
+    maxHeight: 220,
+    overflow: 'hidden',
   },
   voiceDropdownScroll: {
-      maxHeight: 220,
+    maxHeight: 220,
   },
   voiceDropdownOption: {
-      paddingHorizontal: 12,
-      paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   voiceDropdownOptionActive: {
-      borderRadius: 0,
+    borderRadius: 0,
   },
   voiceDropdownOptionText: {
-      fontSize: 13,
+    fontSize: 13,
   },
   speechVoiceList: {
-      paddingVertical: 2,
-      paddingRight: 12,
-      gap: 8,
+    paddingVertical: 2,
+    paddingRight: 12,
+    gap: 8,
   },
   speechVoiceChip: {
-      borderWidth: 1,
-      borderRadius: 999,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      maxWidth: 150,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    maxWidth: 150,
   },
   speechVoiceChipActive: {
-      backgroundColor: '#1E88E5',
-      borderColor: '#1E88E5',
+    backgroundColor: '#1E88E5',
+    borderColor: '#1E88E5',
   },
   speechVoiceChipText: {
-      fontSize: 12,
-      fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '500',
   },
   timerPanelActionButton: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   timerPanelActionText: {
-      fontSize: 15,
-      fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '600',
   },
   controlsRow: {
     flexDirection: 'row',
