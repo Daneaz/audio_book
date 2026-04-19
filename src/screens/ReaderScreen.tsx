@@ -626,6 +626,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       const pageIndex = horizontalPages.findIndex(
         (page) => page.chapter.id === currentSpeakingChapterId && page.content.includes(sentenceText)
       );
+      console.log('[TTS-AUTOSCROLL] sentenceText:', sentenceText?.slice(0, 30), 'pageIndex:', pageIndex, 'currentScrollPage:', Math.round(scrollPos.value / Math.max(window.width, 1)));
       if (pageIndex !== -1) {
         flatListRef.current?.scrollToIndex({ index: pageIndex, animated: true });
       }
@@ -657,6 +658,8 @@ export default function ReaderScreen({ route, navigation }: any) {
       prevSpeakingChapterIdRef.current = currentSpeakingChapterId;
 
       const targetOffset = Math.max(0, estimatedY - screenHeight * 0.4);
+      // Only scroll forward (don't jump back above current reading position)
+      if (targetOffset <= scrollPos.value) return;
       if (isAutoScrolling.value) {
         autoScrollOffset.value = targetOffset;
       }
@@ -1106,6 +1109,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     const lastSel = lastSelectionRef.current;
 
     // 2. From current page start
+    const computedPageIdx = Math.round(scrollPos.value / Math.max(window.width, 1));
     if (viewableItemsRef.current.length > 0) {
       const firstVisible = viewableItemsRef.current[0].item as PageData | ChapterData;
       startChapterId = firstVisible.chapter.id;
@@ -1114,23 +1118,12 @@ export default function ReaderScreen({ route, navigation }: any) {
         const chData = chaptersData.find(c => c.chapter.id === startChapterId);
         if (chData) {
           const pageStartNorm = firstVisible.charStart;
-          const rawContent = chData.content;
-          let rawOffset = 0;
-          let normOffset = 0;
-          while (rawOffset < rawContent.length && normOffset < pageStartNorm) {
-            if (rawContent[rawOffset] === '\r' && rawContent[rawOffset + 1] === '\n') {
-              rawOffset += 2;
-            } else {
-              rawOffset++;
-            }
-            normOffset++;
-          }
-          const sIdx = chData.sentences.findIndex(s => s.end > rawOffset);
+          const sIdx = chData.sentences.findIndex(s => s.end > pageStartNorm);
           startSentenceIndex = sIdx !== -1 ? sIdx : 0;
         }
       } else {
-        // Scroll mode: find sentence at reading focus position (40% from screen top)
-        const focusY = scrollPos.value + Dimensions.get('window').height * 0.4;
+        // Scroll mode: find first sentence at the top of visible content
+        const focusY = scrollPos.value + 1;
         let accY = VERTICAL_CONTENT_PADDING_TOP;
         for (const cd of chaptersData) {
           const cl = chapterLayoutsRef.current[cd.chapter.id];
@@ -1156,26 +1149,6 @@ export default function ReaderScreen({ route, navigation }: any) {
     }
 
 
-    // Scroll to center the starting sentence
-    if (settings.flipMode !== 'horizontal' && startChapterId) {
-      const chLayout = chapterLayoutsRef.current[startChapterId];
-      if (chLayout) {
-        const chData = chaptersData.find(c => c.chapter.id === startChapterId);
-        const sentence = chData?.sentences[startSentenceIndex];
-        if (chData && sentence) {
-          const chapterIndex = chaptersData.findIndex(c => c.chapter.id === startChapterId);
-          let absoluteChapterY = VERTICAL_CONTENT_PADDING_TOP;
-          for (let i = 0; i < chapterIndex; i++) {
-            const prevLayout = chapterLayoutsRef.current[chaptersData[i].chapter.id];
-            if (prevLayout) absoluteChapterY += prevLayout.height + CHAPTER_MARGIN_BOTTOM;
-          }
-          const ratio = sentence.start / Math.max(1, chData.content.length);
-          const estimatedY = absoluteChapterY + ratio * chLayout.height;
-          const targetOffset = Math.max(0, estimatedY - Dimensions.get('window').height * 0.6);
-          flatListRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
-        }
-      }
-    }
     lastUserScrollRef.current = 0;
 
     // @ts-ignore
