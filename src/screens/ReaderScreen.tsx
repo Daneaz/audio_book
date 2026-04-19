@@ -580,7 +580,11 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   // Restore reading position after initial load
   useEffect(() => {
-    if (loading || !pendingRestoreRef.current) return;
+    if (loading) return;
+    if (!pendingRestoreRef.current) {
+      suppressStartReachedRef.current = false;
+      return;
+    }
     const restore = pendingRestoreRef.current;
     pendingRestoreRef.current = null;
     setTimeout(() => {
@@ -606,6 +610,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         flatListRef.current?.scrollToOffset({ offset: restore.offset, animated: false });
         scrollPos.value = restore.offset;
       }
+      suppressStartReachedRef.current = false;
     }, 80);
   }, [loading]);
 
@@ -782,6 +787,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       chapterProgressRef.current = 0;
       isPreloadingRef.current = false;
       backLoadFailedRef.current = false;
+      loadingPrevRef.current = false;
       suppressStartReachedRef.current = true; // cleared on first user scroll
       // Load only the current chapter; next chapter is preloaded lazily when user reaches 80%
       await loadChaptersBatch(chaptersList, startIdx, 1, recentlyReadBook, true);
@@ -1124,7 +1130,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         }
       } else {
         // Scroll mode: find sentence at reading focus position (40% from screen top)
-        const focusY = scrollPos.value + Dimensions.get('window').height * 0.6;
+        const focusY = scrollPos.value + Dimensions.get('window').height * 0.4;
         let accY = VERTICAL_CONTENT_PADDING_TOP;
         for (const cd of chaptersData) {
           const cl = chapterLayoutsRef.current[cd.chapter.id];
