@@ -1037,11 +1037,23 @@ export default function ReaderScreen({ route, navigation }: any) {
       }
     }
     const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
+    let chapterRelativeOffset = 0;
+    if (!isHoriz) {
+      const chapterIndex = chaptersData.findIndex(c => c.chapter.id === cId);
+      if (chapterIndex !== -1) {
+        let absoluteChapterY = VERTICAL_CONTENT_PADDING_TOP;
+        for (let i = 0; i < chapterIndex; i++) {
+          const prevLayout = chapterLayoutsRef.current[chaptersData[i].chapter.id];
+          if (prevLayout) absoluteChapterY += prevLayout.height + CHAPTER_MARGIN_BOTTOM;
+        }
+        chapterRelativeOffset = Math.max(0, Math.round(currentOffset) - (absoluteChapterY - VERTICAL_CONTENT_PADDING_TOP));
+      }
+    }
     const progress: ReadingProgress = {
       id: `progress_${bookId}`,
       bookId,
       chapterId: cId,
-      currentPosition: isHoriz ? 0 : Math.round(currentOffset),
+      currentPosition: isHoriz ? 0 : chapterRelativeOffset,
       currentPage: savedPage,
       readingMode: settings.flipMode,
       updatedAt: new Date().toISOString()
