@@ -381,6 +381,8 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   // Data for FlatList
   const [chaptersData, setChaptersData] = useState<ChapterData[]>([]);
+  const chaptersDataRef = useRef<ChapterData[]>([]);
+  chaptersDataRef.current = chaptersData;
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingPrevRef = useRef(false);
@@ -1039,11 +1041,11 @@ export default function ReaderScreen({ route, navigation }: any) {
     const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
     let chapterRelativeOffset = 0;
     if (!isHoriz) {
-      const chapterIndex = chaptersData.findIndex(c => c.chapter.id === cId);
+      const chapterIndex = chaptersDataRef.current.findIndex(c => c.chapter.id === cId);
       if (chapterIndex !== -1) {
         let absoluteChapterY = VERTICAL_CONTENT_PADDING_TOP;
         for (let i = 0; i < chapterIndex; i++) {
-          const prevLayout = chapterLayoutsRef.current[chaptersData[i].chapter.id];
+          const prevLayout = chapterLayoutsRef.current[chaptersDataRef.current[i].chapter.id];
           if (prevLayout) absoluteChapterY += prevLayout.height + CHAPTER_MARGIN_BOTTOM;
         }
         chapterRelativeOffset = Math.max(0, Math.round(currentOffset) - (absoluteChapterY - VERTICAL_CONTENT_PADDING_TOP));
@@ -1630,11 +1632,33 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, [chaptersData, horizontalPages, settings.flipMode, window.width]);
 
   const saveCurrentProgress = useCallback(() => {
+    const isHoriz = settings.flipMode === 'horizontal';
+    if (!isHoriz) {
+      const currentOffset = isAutoScrolling.value ? autoScrollOffset.value : scrollPos.value;
+      const chapters = chaptersDataRef.current;
+      let accY = VERTICAL_CONTENT_PADDING_TOP;
+      let targetId: string | null = null;
+      for (const cd of chapters) {
+        const layout = chapterLayoutsRef.current[cd.chapter.id];
+        if (!layout) { accY += 0; continue; }
+        if (currentOffset < accY + layout.height + CHAPTER_MARGIN_BOTTOM) {
+          targetId = cd.chapter.id;
+          break;
+        }
+        accY += layout.height + CHAPTER_MARGIN_BOTTOM;
+      }
+      if (!targetId && chapters.length > 0) targetId = chapters[chapters.length - 1].chapter.id;
+      if (targetId) {
+        lastSavedChapterIdRef.current = targetId;
+        void saveProgress(targetId);
+      }
+      return;
+    }
     const currentItem = getCurrentVisibleReaderItem();
     if (!currentItem) return;
     lastSavedChapterIdRef.current = currentItem.chapter.id;
     void saveProgress(currentItem.chapter.id);
-  }, [getCurrentVisibleReaderItem]);
+  }, [getCurrentVisibleReaderItem, settings.flipMode]);
 
   useEffect(() => {
     saveCurrentProgressRef.current = saveCurrentProgress;
