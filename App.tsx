@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -57,12 +57,10 @@ export default function App() {
 
   if (!fontsLoaded && !fontError && !fontFallbackReady) {
     return (
-      <SafeAreaProvider>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f5f5' }}>
-          <ActivityIndicator size="large" color="#1E88E5" />
-        </View>
-        <StatusBar style="dark" />
-      </SafeAreaProvider>
+      <View style={styles.splash}>
+        <Image source={require('./assets/splash.png')} style={styles.splashImage} resizeMode="cover" />
+        <StatusBar style="dark" hidden />
+      </View>
     );
   }
 
@@ -73,3 +71,14 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  splash: {
+    flex: 1,
+  },
+  splashImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+});

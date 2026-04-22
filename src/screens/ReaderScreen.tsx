@@ -1123,7 +1123,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         }
       } else {
         // Scroll mode: find first sentence at the top of visible content
-        const focusY = scrollPos.value + 1;
+        const focusY = scrollPos.value + 2;
         let accY = VERTICAL_CONTENT_PADDING_TOP;
         for (const cd of chaptersData) {
           const cl = chapterLayoutsRef.current[cd.chapter.id];
