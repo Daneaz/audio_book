@@ -2298,15 +2298,6 @@ export default function ReaderScreen({ route, navigation }: any) {
                 const next = options[(options.indexOf(speechTimerMinutes) + 1) % options.length];
                 setSpeechTimerMinutes(next);
                 setIsSpeechTimerEnabled(next > 0);
-                if (isSpeakingRef.current) {
-                  if (next > 0) {
-                    setTimerDuration(next);
-                    setTimerRemaining(next * 60);
-                  } else {
-                    setTimerDuration(null);
-                    setTimerRemaining(null);
-                  }
-                }
               }}
             >
               <Text style={[styles.ttsChipText, { color: readerColors.textSub }]}>
