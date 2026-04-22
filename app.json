@@ -36,9 +36,9 @@
     },
     "android": {
       "splash": {
-        "image": "./assets/splash.png",
-        "resizeMode": "cover",
-        "backgroundColor": "#ffffff"
+        "image": "./assets/icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#203B33"
       },
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",

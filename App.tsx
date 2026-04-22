@@ -24,7 +24,7 @@ async function checkForUpdate() {
 }
 
 export default function App() {
-  const [fontFallbackReady, setFontFallbackReady] = useState(false);
+  const [appReady, setAppReady] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     LXGWWenKai: require('./assets/fonts/LXGWWenKai-Regular.ttf'),
     NotoSansSC: require('./assets/fonts/NotoSansCJKsc-Regular.otf'),
@@ -33,6 +33,7 @@ export default function App() {
   });
 
   useEffect(() => {
+    SplashScreen.hideAsync();
     if (!__DEV__) {
       checkForUpdate();
     }
@@ -42,20 +43,15 @@ export default function App() {
     if (fontsLoaded || fontError) {
       const elapsed = Date.now() - splashStartTime;
       const delay = Math.max(0, MIN_SPLASH_MS - elapsed);
-      const timer = setTimeout(() => {
-        SplashScreen.hideAsync();
-      }, delay);
+      const timer = setTimeout(() => setAppReady(true), delay);
       return () => clearTimeout(timer);
     }
 
-    const timer = setTimeout(() => {
-      setFontFallbackReady(true);
-    }, 2500);
-
+    const timer = setTimeout(() => setAppReady(true), 2500);
     return () => clearTimeout(timer);
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError && !fontFallbackReady) {
+  if (!appReady) {
     return (
       <View style={styles.splash}>
         <Image source={require('./assets/splash.png')} style={styles.splashImage} resizeMode="cover" />
@@ -75,6 +71,7 @@ export default function App() {
 const styles = StyleSheet.create({
   splash: {
     flex: 1,
+    backgroundColor: '#203B33',
   },
   splashImage: {
     flex: 1,
