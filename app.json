@@ -72,6 +72,15 @@
         "projectId": "e5dde792-2f6d-43f2-a4b7-64ca9fee5e87"
       }
     },
-    "owner": "eugenewwj"
+    "owner": "eugenewwj",
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ]
+    ]
   }
 }
