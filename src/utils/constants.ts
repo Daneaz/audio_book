@@ -3,4 +3,6 @@ export const STORAGE_KEYS = {
   CHAPTERS_PREFIX: '@audio_book_chapters_',
   READING_PROGRESS_PREFIX: '@audio_book_progress_',
   USER_SETTINGS: '@audio_book_settings',
+  MEMBERSHIP: '@audio_book_membership',
+  AD_STATE: '@audio_book_ad_state',
 };
