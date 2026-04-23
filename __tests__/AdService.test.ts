@@ -25,6 +25,8 @@ jest.mock('react-native-google-mobile-ads', () => ({
   RewardedAdEventType: {
     LOADED: 'loaded',
     EARNED_REWARD: 'earned_reward',
+  },
+  AdEventType: {
     ERROR: 'error',
   },
   TestIds: {
@@ -71,9 +73,6 @@ describe('AdService', () => {
 
   describe('hideBannerForOneHour', () => {
     it('writes bannerHiddenUntil ~1 hour from now', async () => {
-      (MembershipService.isActive as jest.Mock).mockResolvedValue(false);
-      (StorageService.getData as jest.Mock).mockResolvedValue(null);
-
       await AdService.hideBannerForOneHour();
 
       const call = (StorageService.storeData as jest.Mock).mock.calls[0];
@@ -81,6 +80,83 @@ describe('AdService', () => {
       const writtenTime = new Date(call[1].bannerHiddenUntil).getTime();
       const expectedTime = Date.now() + 60 * 60 * 1000;
       expect(Math.abs(writtenTime - expectedTime)).toBeLessThan(1000);
+    });
+  });
+
+  describe('showRewardedAd', () => {
+    function makeMockRewardedAd() {
+      const listeners: Record<string, ((...args: any[]) => void)[]> = {};
+      return {
+        addAdEventListener: jest.fn((event: string, cb: (...args: any[]) => void) => {
+          if (!listeners[event]) listeners[event] = [];
+          listeners[event].push(cb);
+          return () => {
+            listeners[event] = listeners[event].filter(fn => fn !== cb);
+          };
+        }),
+        load: jest.fn(),
+        show: jest.fn().mockResolvedValue(undefined),
+        emit: (event: string, ...args: any[]) => {
+          (listeners[event] || []).forEach(cb => cb(...args));
+        },
+        listenerCount: (event: string) => (listeners[event] || []).length,
+      };
+    }
+
+    it('resolves and calls hideBannerForOneHour when user earns reward', async () => {
+      const mockAd = makeMockRewardedAd();
+      const { RewardedAd } = jest.requireMock('react-native-google-mobile-ads');
+      (RewardedAd.createForAdRequest as jest.Mock).mockReturnValue(mockAd);
+      (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
+
+      const promise = AdService.showRewardedAd();
+      mockAd.emit('loaded');
+      await Promise.resolve();
+      mockAd.emit('earned_reward');
+      await promise;
+
+      expect(StorageService.storeData).toHaveBeenCalledWith(
+        STORAGE_KEYS.AD_STATE,
+        expect.objectContaining({ bannerHiddenUntil: expect.any(String) })
+      );
+    });
+
+    it('rejects when load fails', async () => {
+      const mockAd = makeMockRewardedAd();
+      const { RewardedAd } = jest.requireMock('react-native-google-mobile-ads');
+      (RewardedAd.createForAdRequest as jest.Mock).mockReturnValue(mockAd);
+
+      const loadError = new Error('load failed');
+      const promise = AdService.showRewardedAd();
+      mockAd.emit('error', loadError);
+
+      await expect(promise).rejects.toThrow('load failed');
+    });
+
+    it('rejects when show fails', async () => {
+      const mockAd = makeMockRewardedAd();
+      const { RewardedAd } = jest.requireMock('react-native-google-mobile-ads');
+      (RewardedAd.createForAdRequest as jest.Mock).mockReturnValue(mockAd);
+
+      const showError = new Error('show failed');
+      mockAd.show.mockRejectedValue(showError);
+
+      const promise = AdService.showRewardedAd();
+      mockAd.emit('loaded');
+      await expect(promise).rejects.toThrow('show failed');
+    });
+
+    it('cleans up both listeners when load fails', async () => {
+      const mockAd = makeMockRewardedAd();
+      const { RewardedAd } = jest.requireMock('react-native-google-mobile-ads');
+      (RewardedAd.createForAdRequest as jest.Mock).mockReturnValue(mockAd);
+
+      const promise = AdService.showRewardedAd();
+      mockAd.emit('error', new Error('fail'));
+      await promise.catch(() => {});
+
+      expect(mockAd.listenerCount('loaded')).toBe(0);
+      expect(mockAd.listenerCount('error')).toBe(0);
     });
   });
 });

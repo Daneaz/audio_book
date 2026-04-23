@@ -1,4 +1,4 @@
-import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { AdEventType, RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 import StorageService from './StorageService';
 import MembershipService from './MembershipService';
 import { STORAGE_KEYS } from '../utils/constants';
@@ -32,28 +32,36 @@ class AdService {
     });
 
     await new Promise<void>((resolve, reject) => {
-      const unsubLoad = rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
-        unsubLoad();
+      let unsubLoad: () => void;
+      let unsubError: () => void;
+      const cleanup = () => { unsubLoad?.(); unsubError?.(); };
+
+      unsubLoad = rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
+        cleanup();
         resolve();
       });
-      const unsubError = rewardedAd.addAdEventListener(RewardedAdEventType.ERROR as any, (error: Error) => {
-        unsubError();
+      unsubError = rewardedAd.addAdEventListener(AdEventType.ERROR, (error: Error) => {
+        cleanup();
         reject(error);
       });
       rewardedAd.load();
     });
 
     await new Promise<void>((resolve, reject) => {
-      const unsubEarned = rewardedAd.addAdEventListener(
+      let unsubEarned: () => void;
+      let unsubError: () => void;
+      const cleanup = () => { unsubEarned?.(); unsubError?.(); };
+
+      unsubEarned = rewardedAd.addAdEventListener(
         RewardedAdEventType.EARNED_REWARD,
         async () => {
-          unsubEarned();
+          cleanup();
           await this.hideBannerForOneHour();
           resolve();
         }
       );
-      const unsubError = rewardedAd.addAdEventListener(RewardedAdEventType.ERROR as any, (error: Error) => {
-        unsubError();
+      unsubError = rewardedAd.addAdEventListener(AdEventType.ERROR, (error: Error) => {
+        cleanup();
         reject(error);
       });
       rewardedAd.show().catch(reject);
