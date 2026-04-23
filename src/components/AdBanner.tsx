@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdService from '../services/AdService';
 import { AD_UNIT_IDS } from '../utils/constants';
 export const AD_BANNER_HEIGHT = 50;
@@ -12,6 +13,7 @@ interface AdBannerProps {
 
 export default function AdBanner({ visible, onHidden }: AdBannerProps) {
   const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const handleHidePress = async () => {
     setLoading(true);
@@ -28,7 +30,7 @@ export default function AdBanner({ visible, onHidden }: AdBannerProps) {
   if (!visible) return null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { bottom: insets.bottom }]}>
       <BannerAd
         unitId={AD_UNIT_IDS.BANNER}
         size={BannerAdSize.BANNER}
