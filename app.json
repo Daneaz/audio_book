@@ -19,7 +19,6 @@
       },
       "supportsTablet": true,
       "bundleIdentifier": "com.eugenewwj.inkvoice",
-      "buildNumber": "1",
       "icon": "./assets/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -46,7 +45,6 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.eugenewwj.inkvoice",
-      "versionCode": 1,
       "usesCleartextTraffic": true,
       "permissions": [
         "android.permission.INTERNET",
