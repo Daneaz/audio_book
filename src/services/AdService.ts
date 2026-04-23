@@ -1,0 +1,64 @@
+import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
+import StorageService from './StorageService';
+import MembershipService from './MembershipService';
+import { STORAGE_KEYS } from '../utils/constants';
+
+const BANNER_HIDDEN_DURATION_MS = 60 * 60 * 1000;
+
+export interface AdState {
+  bannerHiddenUntil: string | null;
+}
+
+class AdService {
+  async shouldShowBanner(): Promise<boolean> {
+    const isMember = await MembershipService.isActive();
+    if (isMember) return false;
+
+    const state: AdState | null = await StorageService.getData(STORAGE_KEYS.AD_STATE);
+    if (state?.bannerHiddenUntil && new Date(state.bannerHiddenUntil) > new Date()) {
+      return false;
+    }
+    return true;
+  }
+
+  async hideBannerForOneHour(): Promise<void> {
+    const until = new Date(Date.now() + BANNER_HIDDEN_DURATION_MS).toISOString();
+    await StorageService.storeData(STORAGE_KEYS.AD_STATE, { bannerHiddenUntil: until });
+  }
+
+  async showRewardedAd(): Promise<void> {
+    const rewardedAd = RewardedAd.createForAdRequest(TestIds.REWARDED, {
+      requestNonPersonalizedAdsOnly: true,
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const unsubLoad = rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
+        unsubLoad();
+        resolve();
+      });
+      const unsubError = rewardedAd.addAdEventListener(RewardedAdEventType.ERROR as any, (error: Error) => {
+        unsubError();
+        reject(error);
+      });
+      rewardedAd.load();
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const unsubEarned = rewardedAd.addAdEventListener(
+        RewardedAdEventType.EARNED_REWARD,
+        async () => {
+          unsubEarned();
+          await this.hideBannerForOneHour();
+          resolve();
+        }
+      );
+      const unsubError = rewardedAd.addAdEventListener(RewardedAdEventType.ERROR as any, (error: Error) => {
+        unsubError();
+        reject(error);
+      });
+      rewardedAd.show().catch(reject);
+    });
+  }
+}
+
+export default new AdService();
