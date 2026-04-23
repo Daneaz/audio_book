@@ -19,6 +19,8 @@ import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useSettings from '../hooks/useSettings';
 import useI18n from '../i18n';
 import { TranslationKey } from '../i18n/translations';
+import AdBanner, { AD_BANNER_HEIGHT } from '../components/AdBanner';
+import AdService from '../services/AdService';
 
 interface ChapterData {
   chapter: Chapter;
@@ -401,6 +403,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   // Navigation & UI state
   const [currentHeaderTitle, setCurrentHeaderTitle] = useState('');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [showAd, setShowAd] = useState(false);
 
   // Speech state
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -550,6 +553,10 @@ export default function ReaderScreen({ route, navigation }: any) {
     loadVoices();
     return () => { voicesCancelledRef.current = true; };
   }, [loadVoices]);
+
+  useEffect(() => {
+    AdService.shouldShowBanner().then(setShowAd);
+  }, []);
 
   const openVoiceSettings = useCallback(() => {
     promptThenOpenSystemSettings(t('settings.voiceHintIos'), t('common.cancel'), t('common.ok'));
@@ -2006,7 +2013,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           style={[styles.miniPlayer, {
             backgroundColor: readerColors.bottomBar,
             borderTopColor: readerColors.border,
-            bottom: insets.bottom,
+            bottom: (showAd && !isMenuVisible ? AD_BANNER_HEIGHT : 0) + insets.bottom,
           }]}
           activeOpacity={0.85}
         >
@@ -2376,6 +2383,10 @@ export default function ReaderScreen({ route, navigation }: any) {
           )}
         </View>
       </Modal>
+      <AdBanner
+        visible={!isMenuVisible && showAd}
+        onHidden={() => setShowAd(false)}
+      />
     </View>
   );
 }
