@@ -1,7 +1,7 @@
 import { AdEventType, RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 import StorageService from './StorageService';
 import MembershipService from './MembershipService';
-import { STORAGE_KEYS } from '../utils/constants';
+import { AD_UNIT_IDS, STORAGE_KEYS } from '../utils/constants';
 
 const BANNER_HIDDEN_DURATION_MS = 60 * 60 * 1000;
 
@@ -27,7 +27,7 @@ class AdService {
   }
 
   async showRewardedAd(): Promise<void> {
-    const rewardedAd = RewardedAd.createForAdRequest(TestIds.REWARDED, {
+    const rewardedAd = RewardedAd.createForAdRequest(AD_UNIT_IDS.REWARDED, {
       requestNonPersonalizedAdsOnly: true,
     });
 

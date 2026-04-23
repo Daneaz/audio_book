@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 项目指令
 
 ### 边界
-不要更新任何 ios 或 android 文件夹中的文件。本项目是基于 Expo 的 React Native iOS/Android 双端应用。
+不要直接更新 ios 或 android 文件夹中的文件, 仅允许通过 expo prebuild 重新生成
 
 ## 常用命令
 

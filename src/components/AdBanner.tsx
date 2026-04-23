@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import AdService from '../services/AdService';
-
+import { AD_UNIT_IDS } from '../utils/constants';
 export const AD_BANNER_HEIGHT = 50;
 
 interface AdBannerProps {
@@ -30,7 +30,7 @@ export default function AdBanner({ visible, onHidden }: AdBannerProps) {
   return (
     <View style={styles.container}>
       <BannerAd
-        unitId={TestIds.BANNER}
+        unitId={AD_UNIT_IDS.BANNER}
         size={BannerAdSize.BANNER}
         requestOptions={{ requestNonPersonalizedAdsOnly: true }}
       />
