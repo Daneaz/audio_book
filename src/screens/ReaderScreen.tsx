@@ -2047,6 +2047,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       {/* Footer Controls */}
       {isMenuVisible && (
         <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: readerColors.bottomBar }]}>
+          <AdBanner visible={showAd} onHidden={() => setShowAd(false)} floating={false} />
           {/* Mini 播放条 - Menu 可见时显示在控制行上方 */}
           {isSpeaking && (
             <TouchableOpacity
@@ -2386,7 +2387,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         </View>
       </Modal>
       <AdBanner
-        visible={!isMenuVisible && showAd}
+        visible={showAd && !isMenuVisible}
         onHidden={() => setShowAd(false)}
       />
     </View>

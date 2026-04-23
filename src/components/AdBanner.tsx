@@ -9,9 +9,10 @@ export const AD_BANNER_HEIGHT = 50;
 interface AdBannerProps {
   visible: boolean;
   onHidden: () => void;
+  floating?: boolean;
 }
 
-export default function AdBanner({ visible, onHidden }: AdBannerProps) {
+export default function AdBanner({ visible, onHidden, floating = true }: AdBannerProps) {
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -30,7 +31,7 @@ export default function AdBanner({ visible, onHidden }: AdBannerProps) {
   if (!visible) return null;
 
   return (
-    <View style={[styles.container, { bottom: insets.bottom }]}>
+    <View style={[styles.container, floating ? { position: 'absolute', bottom: insets.bottom, left: 0, right: 0 } : styles.inline]}>
       <BannerAd
         unitId={AD_UNIT_IDS.BANNER}
         size={BannerAdSize.BANNER}
@@ -54,14 +55,13 @@ export default function AdBanner({ visible, onHidden }: AdBannerProps) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     height: AD_BANNER_HEIGHT,
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  inline: {
+    width: '100%',
   },
   hideButton: {
     position: 'absolute',
