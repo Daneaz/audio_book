@@ -50,7 +50,8 @@ class AdService {
     await new Promise<void>((resolve, reject) => {
       let unsubEarned: () => void;
       let unsubError: () => void;
-      const cleanup = () => { unsubEarned?.(); unsubError?.(); };
+      let unsubClosed: () => void;
+      const cleanup = () => { unsubEarned?.(); unsubError?.(); unsubClosed?.(); };
 
       unsubEarned = rewardedAd.addAdEventListener(
         RewardedAdEventType.EARNED_REWARD,
@@ -63,6 +64,10 @@ class AdService {
       unsubError = rewardedAd.addAdEventListener(AdEventType.ERROR, (error: Error) => {
         cleanup();
         reject(error);
+      });
+      unsubClosed = rewardedAd.addAdEventListener(AdEventType.CLOSED, () => {
+        cleanup();
+        reject(new Error('ad closed without reward'));
       });
       rewardedAd.show().catch(reject);
     });

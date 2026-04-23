@@ -23,11 +23,12 @@ jest.mock('react-native-google-mobile-ads', () => ({
     createForAdRequest: jest.fn(),
   },
   RewardedAdEventType: {
-    LOADED: 'loaded',
-    EARNED_REWARD: 'earned_reward',
+    LOADED: 'rewarded_loaded',
+    EARNED_REWARD: 'rewarded_earned_reward',
   },
   AdEventType: {
     ERROR: 'error',
+    CLOSED: 'closed',
   },
   TestIds: {
     BANNER: 'test-banner-id',
@@ -110,9 +111,9 @@ describe('AdService', () => {
       (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
 
       const promise = AdService.showRewardedAd();
-      mockAd.emit('loaded');
+      mockAd.emit('rewarded_loaded');
       await Promise.resolve();
-      mockAd.emit('earned_reward');
+      mockAd.emit('rewarded_earned_reward');
       await promise;
 
       expect(StorageService.storeData).toHaveBeenCalledWith(
@@ -142,7 +143,7 @@ describe('AdService', () => {
       mockAd.show.mockRejectedValue(showError);
 
       const promise = AdService.showRewardedAd();
-      mockAd.emit('loaded');
+      mockAd.emit('rewarded_loaded');
       await expect(promise).rejects.toThrow('show failed');
     });
 
@@ -155,8 +156,26 @@ describe('AdService', () => {
       mockAd.emit('error', new Error('fail'));
       await promise.catch(() => {});
 
-      expect(mockAd.listenerCount('loaded')).toBe(0);
+      expect(mockAd.listenerCount('rewarded_loaded')).toBe(0);
       expect(mockAd.listenerCount('error')).toBe(0);
+    });
+
+    it('rejects when user dismisses ad without earning reward', async () => {
+      const mockAd = makeMockRewardedAd();
+      const { RewardedAd } = jest.requireMock('react-native-google-mobile-ads');
+      (RewardedAd.createForAdRequest as jest.Mock).mockReturnValue(mockAd);
+      (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
+
+      const promise = AdService.showRewardedAd();
+      mockAd.emit('rewarded_loaded');
+      await Promise.resolve();
+      mockAd.emit('closed');
+
+      await expect(promise).rejects.toThrow('ad closed without reward');
+      expect(StorageService.storeData).not.toHaveBeenCalled();
+      expect(mockAd.listenerCount('rewarded_earned_reward')).toBe(0);
+      expect(mockAd.listenerCount('error')).toBe(0);
+      expect(mockAd.listenerCount('closed')).toBe(0);
     });
   });
 });

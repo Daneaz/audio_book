@@ -555,7 +555,9 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, [loadVoices]);
 
   useEffect(() => {
-    AdService.shouldShowBanner().then(setShowAd);
+    let cancelled = false;
+    AdService.shouldShowBanner().then(v => { if (!cancelled) setShowAd(v); });
+    return () => { cancelled = true; };
   }, []);
 
   const openVoiceSettings = useCallback(() => {
