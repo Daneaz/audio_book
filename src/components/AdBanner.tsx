@@ -13,8 +13,6 @@ interface AdBannerProps {
 export default function AdBanner({ visible, onHidden }: AdBannerProps) {
   const [loading, setLoading] = useState(false);
 
-  if (!visible) return null;
-
   const handleHidePress = async () => {
     setLoading(true);
     try {
@@ -26,6 +24,8 @@ export default function AdBanner({ visible, onHidden }: AdBannerProps) {
       setLoading(false);
     }
   };
+
+  if (!visible) return null;
 
   return (
     <View style={styles.container}>
