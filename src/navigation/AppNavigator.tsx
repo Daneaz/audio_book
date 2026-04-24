@@ -9,6 +9,7 @@ import ReaderScreen from '../screens/ReaderScreen';
 import UploadScreen from '../screens/UploadScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ChaptersScreen from '../screens/ChaptersScreen';
+import MembershipScreen from '../screens/MembershipScreen';
 import useSettings from '../hooks/useSettings';
 import BookService from '../services/BookService';
 import { getTranslator } from '../i18n';
@@ -79,9 +80,14 @@ export default function AppNavigator() {
           options={({ navigation }) => ({
             title: t('nav.bookshelf'),
             headerRight: () => (
-              <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={{ paddingHorizontal: 14 }}>
-                <Ionicons name="settings-outline" size={22} color={isDark ? '#C4A96A' : '#A0621A'} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => navigation.navigate('Membership')} style={{ paddingHorizontal: 10 }}>
+                  <Ionicons name="diamond-outline" size={22} color={isDark ? '#C4A96A' : '#A0621A'} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={{ paddingHorizontal: 14 }}>
+                  <Ionicons name="settings-outline" size={22} color={isDark ? '#C4A96A' : '#A0621A'} />
+                </TouchableOpacity>
+              </View>
             ),
           })}
         />
@@ -93,6 +99,11 @@ export default function AppNavigator() {
         <Stack.Screen name="Upload" component={UploadScreen} options={{ title: t('nav.upload') }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
         <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ title: t('nav.chapters') }} />
+        <Stack.Screen
+          name="Membership"
+          component={MembershipScreen}
+          options={{ presentation: 'modal', headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
     </>
