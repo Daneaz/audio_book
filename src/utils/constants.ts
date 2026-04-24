@@ -23,3 +23,16 @@ export const AD_UNIT_IDS = {
   BANNER: TestIds.BANNER,
   REWARDED: TestIds.REWARDED
 };
+
+export const REVENUECAT_API_KEYS = {
+  IOS: 'appl_PLACEHOLDER',
+  ANDROID: 'goog_PLACEHOLDER',
+};
+
+export const MEMBERSHIP_PRODUCT_IDS = {
+  MONTHLY: 'membership_monthly',
+  YEARLY: 'membership_yearly',
+  LIFETIME: 'membership_lifetime',
+};
+
+export const MEMBERSHIP_ENTITLEMENT = 'premium';
