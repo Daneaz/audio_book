@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
 import * as SplashScreen from 'expo-splash-screen';
 import AppNavigator from './src/navigation/AppNavigator';
+import MembershipService from './src/services/MembershipService';
 
 SplashScreen.preventAutoHideAsync();
 const splashStartTime = Date.now();
@@ -37,6 +38,10 @@ export default function App() {
     if (!__DEV__) {
       checkForUpdate();
     }
+  }, []);
+
+  useEffect(() => {
+    MembershipService.initialize();
   }, []);
 
   useEffect(() => {
