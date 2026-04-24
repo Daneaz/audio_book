@@ -19,6 +19,7 @@ import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useSettings from '../hooks/useSettings';
 import useI18n from '../i18n';
 import { TranslationKey } from '../i18n/translations';
+import { useFocusEffect } from '@react-navigation/native';
 import AdBanner, { AD_BANNER_HEIGHT } from '../components/AdBanner';
 import AdService from '../services/AdService';
 
@@ -559,6 +560,14 @@ export default function ReaderScreen({ route, navigation }: any) {
     AdService.shouldShowBanner().then(v => { if (!cancelled) setShowAd(v); });
     return () => { cancelled = true; };
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      AdService.shouldShowBanner().then(v => { if (!cancelled) setShowAd(v); });
+      return () => { cancelled = true; };
+    }, [])
+  );
 
   const openVoiceSettings = useCallback(() => {
     promptThenOpenSystemSettings(t('settings.voiceHintIos'), t('common.cancel'), t('common.ok'));
