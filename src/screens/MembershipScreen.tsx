@@ -48,8 +48,9 @@ export default function MembershipScreen({ navigation }: any) {
   const handleRestore = async () => {
     try {
       await restore();
-      Alert.alert('恢复成功', '会员权益已恢复');
-      navigation.goBack();
+      Alert.alert('恢复成功', '会员权益已恢复', [
+        { text: '确定', onPress: () => navigation.goBack() },
+      ]);
     } catch (e: any) {
       Alert.alert('恢复失败', e?.message ?? '未找到可恢复的购买记录');
     }
