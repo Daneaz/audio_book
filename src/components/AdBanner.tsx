@@ -9,10 +9,11 @@ export const AD_BANNER_HEIGHT = 50;
 interface AdBannerProps {
   visible: boolean;
   onHidden: () => void;
+  onUpgradePress: () => void;
   floating?: boolean;
 }
 
-export default function AdBanner({ visible, onHidden, floating = true }: AdBannerProps) {
+export default function AdBanner({ visible, onHidden, onUpgradePress, floating = true }: AdBannerProps) {
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -37,6 +38,14 @@ export default function AdBanner({ visible, onHidden, floating = true }: AdBanne
         size={BannerAdSize.BANNER}
         requestOptions={{ requestNonPersonalizedAdsOnly: true }}
       />
+      <TouchableOpacity
+        style={styles.upgradeButton}
+        onPress={onUpgradePress}
+        disabled={loading}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Text style={styles.upgradeText}>升级会员</Text>
+      </TouchableOpacity>
       <TouchableOpacity
         style={styles.hideButton}
         onPress={handleHidePress}
@@ -71,6 +80,17 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   hideText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+  },
+  upgradeButton: {
+    position: 'absolute',
+    top: 4,
+    left: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  upgradeText: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: 11,
   },
