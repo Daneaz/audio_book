@@ -15,7 +15,10 @@
     "preset": "jest-expo",
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|uuid)"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^react-native-google-mobile-ads$": "<rootDir>/__mocks__/react-native-google-mobile-ads.js"
+    }
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
