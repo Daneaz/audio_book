@@ -1,5 +1,7 @@
+import Purchases, { CustomerInfo } from 'react-native-purchases';
+import { Platform } from 'react-native';
 import StorageService from './StorageService';
-import { STORAGE_KEYS } from '../utils/constants';
+import { STORAGE_KEYS, REVENUECAT_API_KEYS, MEMBERSHIP_ENTITLEMENT } from '../utils/constants';
 
 export interface MembershipState {
   isActive: boolean;
@@ -7,38 +9,76 @@ export interface MembershipState {
   expiresAt: string | null;
 }
 
+type MembershipType = 'lifetime' | 'monthly' | 'yearly';
+
+function inferType(productIdentifier: string): MembershipType {
+  if (productIdentifier.includes('lifetime')) return 'lifetime';
+  if (productIdentifier.includes('yearly')) return 'yearly';
+  return 'monthly';
+}
+
 class MembershipService {
-  async getState(): Promise<MembershipState> {
+  async initialize(): Promise<void> {
+    const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEYS.IOS : REVENUECAT_API_KEYS.ANDROID;
+    Purchases.configure({ apiKey });
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      await this._syncCache(customerInfo);
+    } catch {
+      // 忽略网络错误，fallback 到本地缓存
+    }
+  }
+
+  async isActive(): Promise<boolean> {
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      await this._syncCache(customerInfo);
+      return !!customerInfo.entitlements.active[MEMBERSHIP_ENTITLEMENT];
+    } catch {
+      const state = await this._getCachedState();
+      return this._isActiveFromCache(state);
+    }
+  }
+
+  async purchase(productId: string): Promise<void> {
+    const products = await Purchases.getProducts([productId]);
+    if (products.length === 0) throw new Error(`Product not found: ${productId}`);
+    const { customerInfo } = await Purchases.purchaseStoreProduct(products[0]);
+    await this._syncCache(customerInfo);
+  }
+
+  async restore(): Promise<void> {
+    const customerInfo = await Purchases.restorePurchases();
+    await this._syncCache(customerInfo);
+  }
+
+  async getCustomerInfo(): Promise<CustomerInfo> {
+    return Purchases.getCustomerInfo();
+  }
+
+  async syncWithServer(): Promise<void> {
+    // 占位，未来后端验证用
+  }
+
+  private async _syncCache(customerInfo: CustomerInfo): Promise<void> {
+    const entitlement = customerInfo.entitlements.active[MEMBERSHIP_ENTITLEMENT];
+    const isActive = !!entitlement;
+    const type: MembershipType | null = entitlement ? inferType(entitlement.productIdentifier) : null;
+    const expiresAt = entitlement?.expirationDate ?? null;
+    await StorageService.storeData(STORAGE_KEYS.MEMBERSHIP, { isActive, type, expiresAt });
+  }
+
+  private async _getCachedState(): Promise<MembershipState> {
     const state = await StorageService.getData(STORAGE_KEYS.MEMBERSHIP);
     if (!state) return { isActive: false, type: null, expiresAt: null };
     return state as MembershipState;
   }
 
-  async isActive(): Promise<boolean> {
-    const state = await this.getState();
+  private _isActiveFromCache(state: MembershipState): boolean {
     if (!state.isActive || !state.type) return false;
     if (state.type === 'lifetime') return true;
     if (!state.expiresAt) return false;
     return new Date(state.expiresAt) > new Date();
-  }
-
-  async setMembership(
-    type: 'lifetime' | 'monthly' | 'yearly',
-    expiresAt: string | null
-  ): Promise<void> {
-    await StorageService.storeData(STORAGE_KEYS.MEMBERSHIP, {
-      isActive: true,
-      type,
-      expiresAt,
-    });
-  }
-
-  async clearMembership(): Promise<void> {
-    await StorageService.storeData(STORAGE_KEYS.MEMBERSHIP, {
-      isActive: false,
-      type: null,
-      expiresAt: null,
-    });
   }
 }
 
