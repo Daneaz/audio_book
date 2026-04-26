@@ -6,6 +6,7 @@ export interface Book {
   author: string;
   filePath: string;
   fileName: string;
+  fileType: 'txt' | 'epub';
   totalChapters: number;
   totalPages: number;
   createdAt: string;
@@ -21,6 +22,14 @@ export interface Chapter {
   startPosition: number;
   endPosition: number;
   pageCount: number;
+  htmlFilePath?: string;
+}
+
+export interface RichTextBlock {
+  type: 'h1' | 'h2' | 'h3' | 'p' | 'blockquote';
+  text: string;
+  flatStart: number;
+  flatEnd: number;
 }
 
 export interface ReadingProgress {
