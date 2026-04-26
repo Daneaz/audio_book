@@ -83,11 +83,10 @@ class EpubService {
       await makeDirectoryAsync(parentDir, { intermediates: true } as any);
       await writeAsStringAsync(absPath, content);
 
-      const hrefBasename = item.href.includes('/') ? item.href.substring(item.href.lastIndexOf('/') + 1) : item.href;
-      const titleKey = Object.keys(titleMap).find(k => k.endsWith(hrefBasename));
+      const chapterTitle = titleMap[item.href] ?? titleMap[item.href.split('#')[0]];
       chapters.push({
         htmlFilePath: relPath,
-        title: (titleKey ? titleMap[titleKey] : undefined) || `Chapter ${i + 1}`,
+        title: chapterTitle || `Chapter ${i + 1}`,
       });
     }
 
