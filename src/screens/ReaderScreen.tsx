@@ -352,7 +352,7 @@ interface ReaderPageItemProps {
   contentHeight: number;
   isDark: boolean;
   isMenuVisible: boolean;
-  activeSentenceText: string | null;
+  activeSentence: ParsedSentence | null;
 }
 
 const ReaderPageItem = React.memo(({
@@ -367,11 +367,11 @@ const ReaderPageItem = React.memo(({
   contentHeight,
   isDark,
   isMenuVisible,
-  activeSentenceText,
+  activeSentence,
 }: ReaderPageItemProps) => {
-  const fragments = useMemo(() => activeSentenceText
-    ? getPageHighlightedFragments(item.content, activeSentenceText)
-    : [{ text: item.content, highlighted: false }], [item.content, activeSentenceText]);
+  const fragments = useMemo(() => activeSentence
+    ? getPageHighlightedFragments(item.content, activeSentence.text)
+    : [{ text: item.content, highlighted: false }], [item.content, activeSentence]);
 
   return (
     <View style={[styles.pageContainer, { width: windowWidth, paddingTop: topPadding, paddingBottom: bottomPadding }]}>
@@ -382,7 +382,15 @@ const ReaderPageItem = React.memo(({
       ) : null}
       {item.blocks ? (
         item.blocks.map((block, idx) => {
-          const sentIdx = activeSentenceText ? block.text.indexOf(activeSentenceText) : -1;
+          const pageRelStart = activeSentence ? activeSentence.start - item.charStart : -1;
+          const pageRelEnd = activeSentence ? activeSentence.end - item.charStart : -1;
+          const hasOverlap = activeSentence
+            ? pageRelStart < block.flatEnd && pageRelEnd > block.flatStart
+            : false;
+          const sentHighlight = hasOverlap ? {
+            start: Math.max(0, pageRelStart - block.flatStart),
+            end: Math.min(block.text.length, pageRelEnd - block.flatStart),
+          } : undefined;
           return (
             <EpubBlock
               key={`${item.id}_block_${idx}`}
@@ -392,7 +400,7 @@ const ReaderPageItem = React.memo(({
               textColor={textColor}
               fontFamily={fontFamily}
               isDark={isDark}
-              highlightRange={sentIdx >= 0 ? { start: sentIdx, end: sentIdx + activeSentenceText!.length } : undefined}
+              highlightRange={sentHighlight}
             />
           );
         })
@@ -436,7 +444,11 @@ const ReaderPageItem = React.memo(({
   prev.contentHeight === next.contentHeight &&
   prev.isDark === next.isDark &&
   prev.isMenuVisible === next.isMenuVisible &&
-  prev.activeSentenceText === next.activeSentenceText
+  (() => {
+    const ps = prev.activeSentence;
+    const ns = next.activeSentence;
+    return ps === ns || (ps?.start === ns?.start && ps?.end === ns?.end && ps?.text === ns?.text);
+  })()
 ));
 
 export default function ReaderScreen({ route, navigation }: any) {
@@ -1852,7 +1864,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           contentHeight={horizontalContentHeight}
           isDark={isDark}
           isMenuVisible={isMenuVisible}
-          activeSentenceText={currentSpeakingChapterId === pageItem.chapter.id ? activeSentence?.text || null : null}
+          activeSentence={currentSpeakingChapterId === pageItem.chapter.id ? activeSentence : null}
         />
       );
     }
