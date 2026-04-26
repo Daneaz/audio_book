@@ -164,6 +164,39 @@ describe('MembershipService', () => {
       (Purchases.getProducts as jest.Mock).mockResolvedValue([]);
       await expect(MembershipService.purchase('membership_monthly')).rejects.toThrow('Product not found');
     });
+
+    it('throws when purchaseStoreProduct throws', async () => {
+      const product = { identifier: 'monthly' };
+      (Purchases.getProducts as jest.Mock).mockResolvedValue([product]);
+      (Purchases.purchaseStoreProduct as jest.Mock).mockRejectedValue(new Error('network error'));
+      await expect(MembershipService.purchase('monthly')).rejects.toThrow('network error');
+    });
+
+    it('syncs cache with type yearly for yearly product', async () => {
+      const product = { identifier: 'membership_yearly' };
+      (Purchases.getProducts as jest.Mock).mockResolvedValue([product]);
+      const customerInfo = makeCustomerInfo(true, 'membership_yearly');
+      (Purchases.purchaseStoreProduct as jest.Mock).mockResolvedValue({ customerInfo });
+      (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
+      await MembershipService.purchase('membership_yearly');
+      expect(StorageService.storeData).toHaveBeenCalledWith(
+        STORAGE_KEYS.MEMBERSHIP,
+        expect.objectContaining({ isActive: true, type: 'yearly' })
+      );
+    });
+
+    it('syncs cache with type lifetime and null expiresAt for lifetime product', async () => {
+      const product = { identifier: 'membership_lifetime' };
+      (Purchases.getProducts as jest.Mock).mockResolvedValue([product]);
+      const customerInfo = makeCustomerInfo(true, 'membership_lifetime', null);
+      (Purchases.purchaseStoreProduct as jest.Mock).mockResolvedValue({ customerInfo });
+      (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
+      await MembershipService.purchase('membership_lifetime');
+      expect(StorageService.storeData).toHaveBeenCalledWith(
+        STORAGE_KEYS.MEMBERSHIP,
+        expect.objectContaining({ isActive: true, type: 'lifetime', expiresAt: null })
+      );
+    });
   });
 
   describe('restore', () => {
@@ -179,6 +212,48 @@ describe('MembershipService', () => {
         STORAGE_KEYS.MEMBERSHIP,
         expect.objectContaining({ isActive: true, type: 'lifetime', expiresAt: null })
       );
+    });
+
+    it('throws when restorePurchases throws', async () => {
+      (Purchases.restorePurchases as jest.Mock).mockRejectedValue(new Error('restore failed'));
+      await expect(MembershipService.restore()).rejects.toThrow('restore failed');
+    });
+
+    it('syncs cache with isActive false when no entitlement after restore', async () => {
+      const customerInfo = makeCustomerInfo(false);
+      (Purchases.restorePurchases as jest.Mock).mockResolvedValue(customerInfo);
+      (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
+      await MembershipService.restore();
+      expect(StorageService.storeData).toHaveBeenCalledWith(
+        STORAGE_KEYS.MEMBERSHIP,
+        expect.objectContaining({ isActive: false, type: null })
+      );
+    });
+  });
+
+  describe('getProductPrices', () => {
+    it('returns price map for multiple products', async () => {
+      (Purchases.getProducts as jest.Mock).mockResolvedValue([
+        { identifier: 'monthly', priceString: '$2.99' },
+        { identifier: 'yearly', priceString: '$19.99' },
+        { identifier: 'lifetime', priceString: '$49.99' },
+      ]);
+      const result = await MembershipService.getProductPrices(['monthly', 'yearly', 'lifetime']);
+      expect(result).toEqual({ monthly: '$2.99', yearly: '$19.99', lifetime: '$49.99' });
+    });
+
+    it('returns empty object when product list is empty', async () => {
+      (Purchases.getProducts as jest.Mock).mockResolvedValue([]);
+      const result = await MembershipService.getProductPrices([]);
+      expect(result).toEqual({});
+    });
+
+    it('returns single product price', async () => {
+      (Purchases.getProducts as jest.Mock).mockResolvedValue([
+        { identifier: 'monthly', priceString: '$2.99' },
+      ]);
+      const result = await MembershipService.getProductPrices(['monthly']);
+      expect(result).toEqual({ monthly: '$2.99' });
     });
   });
 });
