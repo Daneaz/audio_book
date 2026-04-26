@@ -70,6 +70,12 @@ export default function UploadScreen({ navigation }: any) {
 
   const processFile = async (fileName: string, fileUri: string): Promise<boolean> => {
     try {
+      const isEpub = fileName.toLowerCase().endsWith('.epub');
+      if (isEpub) {
+        const { book } = await BookService.addEpubBook(fileUri, fileName);
+        if (!book) return false;
+        return true;
+      }
       const newBook = await BookService.addBook(fileUri, fileName);
       const chapters = await ChapterService.parseChapters(newBook.id, newBook.filePath);
       newBook.totalChapters = chapters.length;
@@ -84,7 +90,7 @@ export default function UploadScreen({ navigation }: any) {
   const handleLocalPick = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'text/plain',
+        type: ['text/plain', 'application/epub+zip'],
         copyToCacheDirectory: true,
       });
       if (result.canceled || !result.assets[0]) return;
