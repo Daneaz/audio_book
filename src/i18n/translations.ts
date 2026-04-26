@@ -117,7 +117,29 @@ export type TranslationKey =
   | 'settings.appVersion'
   | 'settings.otaVersion'
   | 'settings.otaBuiltin'
-  | 'settings.otaChannel';
+  | 'settings.otaChannel'
+  | 'membership.title'
+  | 'membership.benefits'
+  | 'membership.choosePlan'
+  | 'membership.subscribe'
+  | 'membership.restore'
+  | 'membership.purchaseFailed'
+  | 'membership.purchaseFailedMsg'
+  | 'membership.restoreSuccess'
+  | 'membership.restoreSuccessMsg'
+  | 'membership.restoreFailed'
+  | 'membership.restoreFailedMsg'
+  | 'membership.planMonthlyLabel'
+  | 'membership.planMonthlySub'
+  | 'membership.planMonthlyPrice'
+  | 'membership.planYearlyLabel'
+  | 'membership.planYearlySub'
+  | 'membership.planYearlyPrice'
+  | 'membership.planLifetimeLabel'
+  | 'membership.planLifetimeSub'
+  | 'membership.planLifetimePrice'
+  | 'membership.benefitNoAds'
+  | 'membership.benefitMoreSoon';
 
 type TranslationMap = Record<TranslationKey, string>;
 
@@ -242,6 +264,28 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.otaVersion': 'OTA 更新',
     'settings.otaBuiltin': '内置版本',
     'settings.otaChannel': '渠道',
+    'membership.title': '墨声会员',
+    'membership.benefits': '会员权益',
+    'membership.choosePlan': '选择方案',
+    'membership.subscribe': '立即订阅',
+    'membership.restore': '恢复购买',
+    'membership.purchaseFailed': '购买失败',
+    'membership.purchaseFailedMsg': '请稍后重试',
+    'membership.restoreSuccess': '恢复成功',
+    'membership.restoreSuccessMsg': '会员权益已恢复',
+    'membership.restoreFailed': '恢复失败',
+    'membership.restoreFailedMsg': '未找到可恢复的购买记录',
+    'membership.planMonthlyLabel': '月度会员',
+    'membership.planMonthlySub': '按月订阅',
+    'membership.planMonthlyPrice': '¥ --/月',
+    'membership.planYearlyLabel': '年度会员',
+    'membership.planYearlySub': '按年订阅，更划算',
+    'membership.planYearlyPrice': '¥ --/年',
+    'membership.planLifetimeLabel': '永久会员',
+    'membership.planLifetimeSub': '一次买断，终身有效',
+    'membership.planLifetimePrice': '¥ --',
+    'membership.benefitNoAds': '去除全部广告',
+    'membership.benefitMoreSoon': '更多权益即将推出...',
   },
   en: {
     'common.loading': 'Loading...',
@@ -363,5 +407,27 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.otaVersion': 'OTA Update',
     'settings.otaBuiltin': 'Built-in',
     'settings.otaChannel': 'Channel',
+    'membership.title': 'Membership',
+    'membership.benefits': 'Benefits',
+    'membership.choosePlan': 'Choose Plan',
+    'membership.subscribe': 'Subscribe Now',
+    'membership.restore': 'Restore Purchase',
+    'membership.purchaseFailed': 'Purchase Failed',
+    'membership.purchaseFailedMsg': 'Please try again later',
+    'membership.restoreSuccess': 'Restored',
+    'membership.restoreSuccessMsg': 'Your membership benefits have been restored',
+    'membership.restoreFailed': 'Restore Failed',
+    'membership.restoreFailedMsg': 'No purchases found to restore',
+    'membership.planMonthlyLabel': 'Monthly',
+    'membership.planMonthlySub': 'Billed monthly',
+    'membership.planMonthlyPrice': '$ --/mo',
+    'membership.planYearlyLabel': 'Yearly',
+    'membership.planYearlySub': 'Billed annually, best value',
+    'membership.planYearlyPrice': '$ --/yr',
+    'membership.planLifetimeLabel': 'Lifetime',
+    'membership.planLifetimeSub': 'One-time purchase, forever',
+    'membership.planLifetimePrice': '$ --',
+    'membership.benefitNoAds': 'Remove all ads',
+    'membership.benefitMoreSoon': 'More benefits coming soon...',
   },
 };

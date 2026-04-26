@@ -7,16 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import useMembership from '../hooks/useMembership';
 import { MEMBERSHIP_PRODUCT_IDS } from '../utils/constants';
+import useI18n from '../i18n';
 
 type PlanId = typeof MEMBERSHIP_PRODUCT_IDS[keyof typeof MEMBERSHIP_PRODUCT_IDS];
-
-const PLANS: { id: PlanId; label: string; sublabel: string; price: string }[] = [
-  { id: MEMBERSHIP_PRODUCT_IDS.MONTHLY, label: '月度会员', sublabel: '按月订阅', price: '¥ --/月' },
-  { id: MEMBERSHIP_PRODUCT_IDS.YEARLY, label: '年度会员', sublabel: '按年订阅，更划算', price: '¥ --/年' },
-  { id: MEMBERSHIP_PRODUCT_IDS.LIFETIME, label: '永久会员', sublabel: '一次买断，终身有效', price: '¥ --' },
-];
-
-const BENEFITS = ['去除全部广告', '更多权益即将推出...'];
 
 export default function MembershipScreen({ navigation }: any) {
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(MEMBERSHIP_PRODUCT_IDS.YEARLY);
@@ -24,6 +17,15 @@ export default function MembershipScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { t } = useI18n();
+
+  const PLANS: { id: PlanId; label: string; sublabel: string; price: string }[] = [
+    { id: MEMBERSHIP_PRODUCT_IDS.MONTHLY, label: t('membership.planMonthlyLabel'), sublabel: t('membership.planMonthlySub'), price: t('membership.planMonthlyPrice') },
+    { id: MEMBERSHIP_PRODUCT_IDS.YEARLY, label: t('membership.planYearlyLabel'), sublabel: t('membership.planYearlySub'), price: t('membership.planYearlyPrice') },
+    { id: MEMBERSHIP_PRODUCT_IDS.LIFETIME, label: t('membership.planLifetimeLabel'), sublabel: t('membership.planLifetimeSub'), price: t('membership.planLifetimePrice') },
+  ];
+
+  const BENEFITS = [t('membership.benefitNoAds'), t('membership.benefitMoreSoon')];
 
   const colors = {
     bg:      isDark ? '#0E0C0A' : '#FAF7F0',
@@ -40,7 +42,7 @@ export default function MembershipScreen({ navigation }: any) {
       navigation.goBack();
     } catch (e: any) {
       if (!e?.userCancelled && !e?.message?.toLowerCase().includes('cancel')) {
-        Alert.alert('购买失败', e?.message ?? '请稍后重试');
+        Alert.alert(t('membership.purchaseFailed'), e?.message ?? t('membership.purchaseFailedMsg'));
       }
     }
   };
@@ -48,11 +50,11 @@ export default function MembershipScreen({ navigation }: any) {
   const handleRestore = async () => {
     try {
       await restore();
-      Alert.alert('恢复成功', '会员权益已恢复', [
-        { text: '确定', onPress: () => navigation.goBack() },
+      Alert.alert(t('membership.restoreSuccess'), t('membership.restoreSuccessMsg'), [
+        { text: t('common.ok'), onPress: () => navigation.goBack() },
       ]);
     } catch (e: any) {
-      Alert.alert('恢复失败', e?.message ?? '未找到可恢复的购买记录');
+      Alert.alert(t('membership.restoreFailed'), e?.message ?? t('membership.restoreFailedMsg'));
     }
   };
 
@@ -62,13 +64,13 @@ export default function MembershipScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>墨声会员</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('membership.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.benefitsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>会员权益</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('membership.benefits')}</Text>
           {BENEFITS.map((benefit, i) => (
             <View key={i} style={styles.benefitRow}>
               <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
@@ -77,7 +79,7 @@ export default function MembershipScreen({ navigation }: any) {
           ))}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24, marginBottom: 12 }]}>选择方案</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24, marginBottom: 12 }]}>{t('membership.choosePlan')}</Text>
         {PLANS.map(plan => {
           const isSelected = selectedPlan === plan.id;
           return (
@@ -106,10 +108,10 @@ export default function MembershipScreen({ navigation }: any) {
           onPress={handlePurchase}
           disabled={isLoading}
         >
-          {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.purchaseButtonText}>立即订阅</Text>}
+          {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.purchaseButtonText}>{t('membership.subscribe')}</Text>}
         </TouchableOpacity>
         <TouchableOpacity onPress={handleRestore} disabled={isLoading} style={styles.restoreButton}>
-          <Text style={[styles.restoreText, { color: colors.subText }]}>恢复购买</Text>
+          <Text style={[styles.restoreText, { color: colors.subText }]}>{t('membership.restore')}</Text>
         </TouchableOpacity>
       </View>
     </View>
