@@ -1,11 +1,12 @@
 module.exports = function (api) {
-  api.cache(true);
+  const isTest = api.env('test');
+  api.cache.using(() => process.env.NODE_ENV);
   return {
     presets: [
       [
         'babel-preset-expo',
         {
-          reanimated: false,
+          reanimated: !isTest,
         },
       ],
     ],
