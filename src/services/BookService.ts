@@ -13,18 +13,18 @@ class BookService {
 
     if (Platform.OS !== 'web') {
         return data.map((book: Book) => {
-            // Fix paths for iOS/Android where documentDirectory might change after app reinstall/rebuild
-            if (book.fileName && !book.filePath.startsWith('blob:') && !book.filePath.startsWith('data:')) {
-                 return {
-                     ...book,
-                     filePath: `${documentDirectory}${book.fileName}`
-                 };
+            const updated = {
+                ...book,
+                fileType: book.fileType ?? 'txt',
+            };
+            if (updated.fileName && !updated.filePath.startsWith('blob:') && !updated.filePath.startsWith('data:')) {
+                return { ...updated, filePath: `${documentDirectory}${updated.fileName}` };
             }
-            return book;
+            return updated;
         });
     }
 
-    return data;
+    return data.map((book: Book) => ({ ...book, fileType: book.fileType ?? 'txt' }));
   }
 
   async addBook(fileUri: string, fileName: string): Promise<Book> {
@@ -54,6 +54,7 @@ class BookService {
       author: 'Unknown',
       filePath: newPath,
       fileName: fileName,
+      fileType: 'txt',
       totalChapters: 0,
       totalPages: 0,
       createdAt: new Date().toISOString(),
@@ -65,24 +66,74 @@ class BookService {
     return newBook;
   }
 
+  async addEpubBook(fileUri: string, fileName: string): Promise<{ book: Book; chapters: import('../types').Chapter[] }> {
+    const books = await this.getBooks();
+    const id = Crypto.randomUUID();
+
+    const newPath = documentDirectory ? `${documentDirectory}${fileName}` : fileUri;
+    if (documentDirectory) {
+      try {
+        await copyAsync({ from: fileUri, to: newPath });
+      } catch (error) {
+        console.warn('EPUB file copy failed, using original uri.', error);
+      }
+    }
+
+    const EpubService = (await import('./EpubService')).default;
+    const { metadata, chapters: spineChapters } = await EpubService.extract(id, newPath);
+
+    const newBook: Book = {
+      id,
+      title: metadata.title || fileName.replace(/\.epub$/i, ''),
+      author: metadata.author || 'Unknown',
+      filePath: newPath,
+      fileName,
+      fileType: 'epub',
+      totalChapters: spineChapters.length,
+      totalPages: 0,
+      createdAt: new Date().toISOString(),
+      lastReadAt: new Date().toISOString(),
+    };
+
+    const chapters: import('../types').Chapter[] = spineChapters.map((c, i) => ({
+      id: Crypto.randomUUID(),
+      bookId: id,
+      title: c.title,
+      chapterNumber: i + 1,
+      startPosition: 0,
+      endPosition: 0,
+      htmlFilePath: c.htmlFilePath,
+      pageCount: 0,
+    }));
+
+    books.push(newBook);
+    await StorageService.storeData(STORAGE_KEYS.BOOKS, books);
+    await StorageService.storeData(`${STORAGE_KEYS.CHAPTERS_PREFIX}${id}`, chapters);
+
+    return { book: newBook, chapters };
+  }
+
   async removeBook(bookId: string) {
     let books = await this.getBooks();
     const book = books.find(b => b.id === bookId);
     if (book) {
-        try {
-            if (book.filePath.startsWith('file://')) {
-                await deleteAsync(book.filePath, { idempotent: true });
-            }
-            if (book.coverImageUri?.startsWith('file://')) {
-                await deleteAsync(book.coverImageUri.split('?')[0], { idempotent: true });
-            }
-        } catch (e) {
-            console.error("Error deleting file", e);
+      try {
+        if (book.filePath.startsWith('file://')) {
+          await deleteAsync(book.filePath, { idempotent: true });
         }
+        if (book.coverImageUri?.startsWith('file://')) {
+          await deleteAsync(book.coverImageUri.split('?')[0], { idempotent: true });
+        }
+        if (book.fileType === 'epub') {
+          const EpubService = (await import('./EpubService')).default;
+          await EpubService.cleanup(bookId);
+        }
+      } catch (e) {
+        console.error('Error deleting file', e);
+      }
     }
     books = books.filter(b => b.id !== bookId);
     await StorageService.storeData(STORAGE_KEYS.BOOKS, books);
-    
     await StorageService.removeData(`${STORAGE_KEYS.CHAPTERS_PREFIX}${bookId}`);
     await StorageService.removeData(`${STORAGE_KEYS.READING_PROGRESS_PREFIX}${bookId}`);
   }

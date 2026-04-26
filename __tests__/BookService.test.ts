@@ -27,7 +27,7 @@ describe('BookService', () => {
     (StorageService.getData as jest.Mock).mockResolvedValue(mockBooks);
 
     const books = await BookService.getBooks();
-    expect(books).toEqual(mockBooks);
+    expect(books).toEqual([{ id: '1', title: 'Test Book', fileType: 'txt' }]);
     expect(StorageService.getData).toHaveBeenCalledWith(STORAGE_KEYS.BOOKS);
   });
 
