@@ -1,7 +1,7 @@
 import MembershipService from '../src/services/MembershipService';
 import StorageService from '../src/services/StorageService';
 import Purchases from 'react-native-purchases';
-import { STORAGE_KEYS, MEMBERSHIP_ENTITLEMENT } from '../src/utils/constants';
+import { STORAGE_KEYS, MEMBERSHIP_ENTITLEMENT, REVENUECAT_API_KEYS } from '../src/utils/constants';
 
 jest.mock('react-native', () => ({
   Platform: { OS: 'ios' },
@@ -65,6 +65,18 @@ describe('MembershipService', () => {
       (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('network'));
       await expect(MembershipService.initialize()).resolves.toBeUndefined();
     });
+
+    it('calls Purchases.configure with android api key on android', async () => {
+      const { Platform } = require('react-native');
+      Platform.OS = 'android';
+      (Purchases.getCustomerInfo as jest.Mock).mockResolvedValue(makeCustomerInfo(false));
+      (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
+      await MembershipService.initialize();
+      expect(Purchases.configure).toHaveBeenCalledWith(
+        expect.objectContaining({ apiKey: REVENUECAT_API_KEYS.ANDROID })
+      );
+      Platform.OS = 'ios';
+    });
   });
 
   describe('isActive', () => {
@@ -93,6 +105,39 @@ describe('MembershipService', () => {
       const past = new Date(Date.now() - 86400000).toISOString();
       (StorageService.getData as jest.Mock).mockResolvedValue({
         isActive: true, type: 'yearly', expiresAt: past,
+      });
+      expect(await MembershipService.isActive()).toBe(false);
+    });
+
+    it('returns false when local cache is null', async () => {
+      (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
+      (StorageService.getData as jest.Mock).mockResolvedValue(null);
+      expect(await MembershipService.isActive()).toBe(false);
+    });
+
+    it('returns true from cache when monthly type has future expiry', async () => {
+      (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
+      const future = new Date(Date.now() + 86400000).toISOString();
+      (StorageService.getData as jest.Mock).mockResolvedValue({
+        isActive: true, type: 'monthly', expiresAt: future,
+      });
+      expect(await MembershipService.isActive()).toBe(true);
+    });
+
+    it('returns false when expiresAt equals current time exactly', async () => {
+      jest.useFakeTimers({ now: new Date('2026-01-01T00:00:00.000Z') });
+      (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
+      (StorageService.getData as jest.Mock).mockResolvedValue({
+        isActive: true, type: 'monthly', expiresAt: '2026-01-01T00:00:00.000Z',
+      });
+      expect(await MembershipService.isActive()).toBe(false);
+      jest.useRealTimers();
+    });
+
+    it('returns false from cache when type is null even if isActive is true', async () => {
+      (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
+      (StorageService.getData as jest.Mock).mockResolvedValue({
+        isActive: true, type: null, expiresAt: null,
       });
       expect(await MembershipService.isActive()).toBe(false);
     });
