@@ -140,4 +140,101 @@ describe('MembershipScreen', () => {
       expect(queryByText('membership.subscribe')).toBeNull();
     });
   });
+
+  describe('handlePurchase — 核心支付路径', () => {
+    it('calls navigation.goBack after successful purchase', async () => {
+      const purchase = jest.fn().mockResolvedValue(undefined);
+      mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
+      const navigation = makeNavigation();
+      const { getByText } = render(<MembershipScreen navigation={navigation} />);
+
+      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+
+      expect(navigation.goBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('does NOT show Alert when error has userCancelled=true', async () => {
+      const cancelError = Object.assign(new Error('cancelled'), { userCancelled: true });
+      const purchase = jest.fn().mockRejectedValue(cancelError);
+      mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
+      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+
+      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+
+      expect(Alert.alert).not.toHaveBeenCalled();
+    });
+
+    it('does NOT show Alert when error message contains "cancel"', async () => {
+      const cancelError = new Error('User cancelled the purchase');
+      const purchase = jest.fn().mockRejectedValue(cancelError);
+      mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
+      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+
+      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+
+      expect(Alert.alert).not.toHaveBeenCalled();
+    });
+
+    it('shows Alert with error message for real payment failure', async () => {
+      const paymentError = new Error('Payment method declined');
+      const purchase = jest.fn().mockRejectedValue(paymentError);
+      mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
+      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+
+      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'membership.purchaseFailed',
+        'Payment method declined'
+      );
+    });
+  });
+
+  describe('handleRestore — 恢复购买', () => {
+    it('shows success Alert when restore succeeds', async () => {
+      const restore = jest.fn().mockResolvedValue(undefined);
+      mockUseMembership.mockReturnValue(makeDefaultHookState({ restore }));
+      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+
+      await act(async () => { fireEvent.press(getByText('membership.restore')); });
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'membership.restoreSuccess',
+        'membership.restoreSuccessMsg',
+        expect.arrayContaining([
+          expect.objectContaining({ text: 'common.ok' }),
+        ])
+      );
+    });
+
+    it('calls navigation.goBack when OK is pressed on success Alert', async () => {
+      const restore = jest.fn().mockResolvedValue(undefined);
+      mockUseMembership.mockReturnValue(makeDefaultHookState({ restore }));
+      const navigation = makeNavigation();
+      const { getByText } = render(<MembershipScreen navigation={navigation} />);
+
+      await act(async () => { fireEvent.press(getByText('membership.restore')); });
+
+      const alertCall = (Alert.alert as jest.Mock).mock.calls[0];
+      const buttons: any[] = alertCall[2];
+      const okButton = buttons.find((b: any) => b.text === 'common.ok');
+
+      act(() => { okButton.onPress(); });
+
+      expect(navigation.goBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows failure Alert when restore throws', async () => {
+      const restore = jest.fn().mockRejectedValue(new Error('No purchases found'));
+      mockUseMembership.mockReturnValue(makeDefaultHookState({ restore }));
+      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+
+      await act(async () => { fireEvent.press(getByText('membership.restore')); });
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'membership.restoreFailed',
+        'No purchases found'
+      );
+    });
+  });
 });
