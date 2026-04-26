@@ -57,7 +57,7 @@ describe('MembershipService', () => {
       (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
       await MembershipService.initialize();
       expect(Purchases.configure).toHaveBeenCalledWith(
-        expect.objectContaining({ apiKey: 'appl_PLACEHOLDER' })
+        expect.objectContaining({ apiKey: 'test_ujLWLhuhfjBhbmUelAGOqGBNhwV' })
       );
     });
 

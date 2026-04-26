@@ -13,8 +13,13 @@
   },
   "jest": {
     "preset": "jest-expo",
-    "testPathIgnorePatterns": ["/node_modules/", "/.worktrees/"],
-    "watchPathIgnorePatterns": ["/.worktrees/"],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/.worktrees/"
+    ],
+    "watchPathIgnorePatterns": [
+      "/.worktrees/"
+    ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|uuid)"
     ],
@@ -64,6 +69,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^13.3.3",
     "@types/react": "~19.1.10",
     "@types/react-native": "^0.72.8",
     "@types/uuid": "^10.0.0",
