@@ -6,6 +6,8 @@ import {
   writeAsStringAsync,
   makeDirectoryAsync,
   deleteAsync,
+  getInfoAsync,
+  EncodingType,
 } from 'expo-file-system/legacy';
 
 interface EpubMetadata {
@@ -42,7 +44,59 @@ class EpubService {
   }
 
   async extract(bookId: string, epubPath: string): Promise<EpubExtractResult> {
-    const base64data = await readAsStringAsync(epubPath, { encoding: 'base64' } as any);
+    const info = await getInfoAsync(epubPath);
+    if (!info.exists) throw new Error(`EPUB file not found: ${epubPath}`);
+
+    if (info.isDirectory) {
+      return this._extractFromDir(bookId, epubPath);
+    }
+    return this._extractFromZip(bookId, epubPath);
+  }
+
+  private async _extractFromDir(bookId: string, dirPath: string): Promise<EpubExtractResult> {
+    const dir = dirPath.endsWith('/') ? dirPath.slice(0, -1) : dirPath;
+
+    const containerXml = await readAsStringAsync(`${dir}/META-INF/container.xml`);
+    const opfRelPath = this._parseContainerXml(containerXml);
+    const opfXml = await readAsStringAsync(`${dir}/${opfRelPath}`);
+    const opfDir = opfRelPath.includes('/') ? opfRelPath.substring(0, opfRelPath.lastIndexOf('/') + 1) : '';
+    const { metadata, spine, manifest } = this._parseOpf(opfXml, opfDir);
+
+    const ncxItem = manifest.find(m => m.mediaType === 'application/x-dtbncx+xml');
+    const navItem = manifest.find(m => m.properties === 'nav');
+    let titleMap: Record<string, string> = {};
+    if (ncxItem) {
+      const ncxXml = await readAsStringAsync(`${dir}/${ncxItem.href}`);
+      titleMap = this._parseNcx(ncxXml, opfDir);
+    } else if (navItem) {
+      const navHtml = await readAsStringAsync(`${dir}/${navItem.href}`);
+      titleMap = this._parseNav(navHtml, opfDir);
+    }
+
+    const extractDir = this.getExtractDir(bookId);
+    await makeDirectoryAsync(extractDir, { intermediates: true } as any);
+
+    const chapters: EpubChapterInfo[] = [];
+    for (let i = 0; i < spine.length; i++) {
+      const item = manifest.find(m => m.id === spine[i]);
+      if (!item) continue;
+      const content = await readAsStringAsync(`${dir}/${item.href}`);
+
+      const relPath = `epub_${bookId}/${item.href}`;
+      const absPath = `${documentDirectory}${relPath}`;
+      const parentDir = absPath.substring(0, absPath.lastIndexOf('/') + 1);
+      await makeDirectoryAsync(parentDir, { intermediates: true } as any);
+      await writeAsStringAsync(absPath, content);
+
+      const chapterTitle = titleMap[item.href] ?? titleMap[item.href.split('#')[0]];
+      chapters.push({ htmlFilePath: relPath, title: chapterTitle || `Chapter ${i + 1}` });
+    }
+
+    return { metadata, chapters };
+  }
+
+  private async _extractFromZip(bookId: string, epubPath: string): Promise<EpubExtractResult> {
+    const base64data = await readAsStringAsync(epubPath, { encoding: EncodingType.Base64 });
     const zip = await JSZip.loadAsync(base64data, { base64: true });
 
     const containerXml = await zip.files['META-INF/container.xml']?.async('string');
@@ -58,7 +112,6 @@ class EpubService {
     const ncxItem = manifest.find(m => m.mediaType === 'application/x-dtbncx+xml');
     const navItem = manifest.find(m => m.properties === 'nav');
     let titleMap: Record<string, string> = {};
-
     if (ncxItem) {
       const ncxXml = await zip.files[ncxItem.href]?.async('string');
       if (ncxXml) titleMap = this._parseNcx(ncxXml, opfDir);
@@ -84,10 +137,7 @@ class EpubService {
       await writeAsStringAsync(absPath, content);
 
       const chapterTitle = titleMap[item.href] ?? titleMap[item.href.split('#')[0]];
-      chapters.push({
-        htmlFilePath: relPath,
-        title: chapterTitle || `Chapter ${i + 1}`,
-      });
+      chapters.push({ htmlFilePath: relPath, title: chapterTitle || `Chapter ${i + 1}` });
     }
 
     return { metadata, chapters };

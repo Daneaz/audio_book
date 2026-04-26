@@ -25,14 +25,14 @@ export const AD_UNIT_IDS = {
 };
 
 export const REVENUECAT_API_KEYS = {
-  IOS: 'appl_PLACEHOLDER',
-  ANDROID: 'goog_PLACEHOLDER',
+  IOS: 'test_ujLWLhuhfjBhbmUelAGOqGBNhwV',
+  ANDROID: 'test_ujLWLhuhfjBhbmUelAGOqGBNhwV',
 };
 
 export const MEMBERSHIP_PRODUCT_IDS = {
-  MONTHLY: 'membership_monthly',
-  YEARLY: 'membership_yearly',
-  LIFETIME: 'membership_lifetime',
+  MONTHLY: 'monthly',
+  YEARLY: 'yearly',
+  LIFETIME: 'lifetime',
 };
 
 export const MEMBERSHIP_ENTITLEMENT = 'premium';

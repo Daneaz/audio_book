@@ -70,23 +70,26 @@ class BookService {
     const books = await this.getBooks();
     const id = Crypto.randomUUID();
 
-    const newPath = documentDirectory ? `${documentDirectory}${fileName}` : fileUri;
+    const EpubService = (await import('./EpubService')).default;
+    const { metadata, chapters: spineChapters } = await EpubService.extract(id, fileUri);
+
+    let storedPath = fileUri;
     if (documentDirectory) {
+      const destPath = `${documentDirectory}${fileName}`;
       try {
-        await copyAsync({ from: fileUri, to: newPath });
+        await deleteAsync(destPath, { idempotent: true });
+        await copyAsync({ from: fileUri, to: destPath });
+        storedPath = destPath;
       } catch (error) {
-        console.warn('EPUB file copy failed, using original uri.', error);
+        console.warn('EPUB file copy failed, using cache uri.', error);
       }
     }
-
-    const EpubService = (await import('./EpubService')).default;
-    const { metadata, chapters: spineChapters } = await EpubService.extract(id, newPath);
 
     const newBook: Book = {
       id,
       title: metadata.title || fileName.replace(/\.epub$/i, ''),
       author: metadata.author || 'Unknown',
-      filePath: newPath,
+      filePath: storedPath,
       fileName,
       fileType: 'epub',
       totalChapters: spineChapters.length,

@@ -18,7 +18,7 @@ const PAGE_STRINGS: Record<'zh' | 'en', {
     title: '传书到书架',
     subtitle: '将文件传输到手机书架',
     dropText: '点击选择 · 或拖入文件',
-    dropHint: '支持 .txt 格式，可多选',
+    dropHint: '支持 .txt / .epub 格式，可多选',
     btnEmpty: '请先选择文件',
     btnUpload: '上传 {n} 个文件',
     btnContinue: '继续上传',
@@ -29,7 +29,7 @@ const PAGE_STRINGS: Record<'zh' | 'en', {
     title: 'Transfer to Shelf',
     subtitle: 'Send files to your bookshelf',
     dropText: 'Click to select · or drag & drop',
-    dropHint: 'Supports .txt, multiple files allowed',
+    dropHint: 'Supports .txt / .epub, multiple files allowed',
     btnEmpty: 'Select a file first',
     btnUpload: 'Upload {n} file(s)',
     btnContinue: 'Upload more',
@@ -83,7 +83,7 @@ ul li{padding:6px 10px;background:#f0f4f8;border-radius:6px;font-size:13px;color
 <p class="sub">${s.subtitle}</p>
 </div>
 <div class="dz" id="dz">
-<input type="file" id="fi" accept=".txt" multiple>
+<input type="file" id="fi" accept=".txt,.epub" multiple>
 <div class="dz-icon">📄</div>
 <div class="dz-text">${s.dropText}</div>
 <div class="dz-hint">${s.dropHint}</div>
@@ -103,7 +103,7 @@ dz.addEventListener('dragleave',function(){dz.classList.remove('over')});
 dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');setFiles(e.dataTransfer.files)});
 fi.addEventListener('change',function(){setFiles(fi.files)});
 function setFiles(fs){
-  files=Array.from(fs).filter(function(f){return f.name.endsWith('.txt')});
+  files=Array.from(fs).filter(function(f){return f.name.endsWith('.txt')||f.name.endsWith('.epub')});
   fl.innerHTML=files.map(function(f){return'<li>'+f.name+'</li>'}).join('');
   btn.textContent=files.length?T.btnUpload.replace('{n}',files.length):T.btnEmpty;
   btn.disabled=!files.length;st.className='st';

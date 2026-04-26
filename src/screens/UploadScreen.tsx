@@ -70,19 +70,22 @@ export default function UploadScreen({ navigation }: any) {
 
   const processFile = async (fileName: string, fileUri: string): Promise<boolean> => {
     try {
-      const isEpub = fileName.toLowerCase().endsWith('.epub');
-      if (isEpub) {
+      const lower = fileName.toLowerCase();
+      if (lower.endsWith('.epub')) {
         const { book } = await BookService.addEpubBook(fileUri, fileName);
         if (!book) return false;
         return true;
       }
+      if (!lower.endsWith('.txt')) return false;
       const newBook = await BookService.addBook(fileUri, fileName);
       const chapters = await ChapterService.parseChapters(newBook.id, newBook.filePath);
       newBook.totalChapters = chapters.length;
       await BookService.updateBook(newBook);
       await StorageService.storeData(`${STORAGE_KEYS.CHAPTERS_PREFIX}${newBook.id}`, chapters);
       return true;
-    } catch {
+    } catch (e: any) {
+      console.error('[processFile] error:', e);
+      Alert.alert('导入失败（调试）', String(e?.message ?? e));
       return false;
     }
   };
@@ -90,7 +93,7 @@ export default function UploadScreen({ navigation }: any) {
   const handleLocalPick = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['text/plain', 'application/epub+zip'],
+        type: '*/*',
         copyToCacheDirectory: true,
       });
       if (result.canceled || !result.assets[0]) return;
