@@ -128,4 +128,94 @@ describe('useMembership', () => {
       expect(result.current.membershipType).toBe(null);
     });
   });
+
+  describe('purchase()', () => {
+    it('sets isLoading true during purchase and false after success', async () => {
+      let resolvePurchase!: () => void;
+      (MembershipService.purchase as jest.Mock).mockImplementation(
+        () => new Promise<void>(resolve => { resolvePurchase = resolve; })
+      );
+      const { result } = renderHook(() => useMembership());
+
+      act(() => { result.current.purchase('monthly'); });
+      expect(result.current.isLoading).toBe(true);
+
+      await act(async () => { resolvePurchase(); });
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.error).toBe(null);
+    });
+
+    it('sets error message and rethrows when purchase fails', async () => {
+      (MembershipService.purchase as jest.Mock).mockRejectedValue(new Error('payment declined'));
+      const { result } = renderHook(() => useMembership());
+
+      let threwError = false;
+      await act(async () => {
+        try {
+          await result.current.purchase('monthly');
+        } catch {
+          threwError = true;
+        }
+      });
+
+      expect(threwError).toBe(true);
+      expect(result.current.error).toBe('payment declined');
+    });
+
+    it('sets isLoading false in finally even when purchase throws', async () => {
+      (MembershipService.purchase as jest.Mock).mockRejectedValue(new Error('fail'));
+      const { result } = renderHook(() => useMembership());
+
+      await act(async () => {
+        try { await result.current.purchase('monthly'); } catch {}
+      });
+
+      expect(result.current.isLoading).toBe(false);
+    });
+  });
+
+  describe('restore()', () => {
+    it('sets isLoading true during restore and false after success', async () => {
+      let resolveRestore!: () => void;
+      (MembershipService.restore as jest.Mock).mockImplementation(
+        () => new Promise<void>(resolve => { resolveRestore = resolve; })
+      );
+      const { result } = renderHook(() => useMembership());
+
+      act(() => { result.current.restore(); });
+      expect(result.current.isLoading).toBe(true);
+
+      await act(async () => { resolveRestore(); });
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.error).toBe(null);
+    });
+
+    it('sets error message and rethrows when restore fails', async () => {
+      (MembershipService.restore as jest.Mock).mockRejectedValue(new Error('no purchases found'));
+      const { result } = renderHook(() => useMembership());
+
+      let threwError = false;
+      await act(async () => {
+        try {
+          await result.current.restore();
+        } catch {
+          threwError = true;
+        }
+      });
+
+      expect(threwError).toBe(true);
+      expect(result.current.error).toBe('no purchases found');
+    });
+
+    it('sets isLoading false in finally even when restore throws', async () => {
+      (MembershipService.restore as jest.Mock).mockRejectedValue(new Error('fail'));
+      const { result } = renderHook(() => useMembership());
+
+      await act(async () => {
+        try { await result.current.restore(); } catch {}
+      });
+
+      expect(result.current.isLoading).toBe(false);
+    });
+  });
 });
