@@ -40,6 +40,15 @@ class MembershipService {
     }
   }
 
+  async getProductPrices(productIds: string[]): Promise<Record<string, string>> {
+    const products = await Purchases.getProducts(productIds);
+    const map: Record<string, string> = {};
+    for (const p of products) {
+      map[p.identifier] = p.priceString;
+    }
+    return map;
+  }
+
   async purchase(productId: string): Promise<void> {
     const products = await Purchases.getProducts([productId]);
     if (products.length === 0) throw new Error(`Product not found: ${productId}`);

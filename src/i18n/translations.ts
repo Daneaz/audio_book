@@ -131,13 +131,12 @@ export type TranslationKey =
   | 'membership.restoreFailedMsg'
   | 'membership.planMonthlyLabel'
   | 'membership.planMonthlySub'
-  | 'membership.planMonthlyPrice'
   | 'membership.planYearlyLabel'
   | 'membership.planYearlySub'
-  | 'membership.planYearlyPrice'
   | 'membership.planLifetimeLabel'
   | 'membership.planLifetimeSub'
-  | 'membership.planLifetimePrice'
+  | 'membership.perMonth'
+  | 'membership.perYear'
   | 'membership.benefitNoAds'
   | 'membership.benefitMoreSoon';
 
@@ -277,13 +276,12 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.restoreFailedMsg': '未找到可恢复的购买记录',
     'membership.planMonthlyLabel': '月度会员',
     'membership.planMonthlySub': '按月订阅',
-    'membership.planMonthlyPrice': '¥ --/月',
     'membership.planYearlyLabel': '年度会员',
     'membership.planYearlySub': '按年订阅，更划算',
-    'membership.planYearlyPrice': '¥ --/年',
     'membership.planLifetimeLabel': '永久会员',
     'membership.planLifetimeSub': '一次买断，终身有效',
-    'membership.planLifetimePrice': '¥ --',
+    'membership.perMonth': '/月',
+    'membership.perYear': '/年',
     'membership.benefitNoAds': '去除全部广告',
     'membership.benefitMoreSoon': '更多权益即将推出...',
   },
@@ -420,13 +418,12 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.restoreFailedMsg': 'No purchases found to restore',
     'membership.planMonthlyLabel': 'Monthly',
     'membership.planMonthlySub': 'Billed monthly',
-    'membership.planMonthlyPrice': '$ --/mo',
     'membership.planYearlyLabel': 'Yearly',
     'membership.planYearlySub': 'Billed annually, best value',
-    'membership.planYearlyPrice': '$ --/yr',
     'membership.planLifetimeLabel': 'Lifetime',
     'membership.planLifetimeSub': 'One-time purchase, forever',
-    'membership.planLifetimePrice': '$ --',
+    'membership.perMonth': '/mo',
+    'membership.perYear': '/yr',
     'membership.benefitNoAds': 'Remove all ads',
     'membership.benefitMoreSoon': 'More benefits coming soon...',
   },

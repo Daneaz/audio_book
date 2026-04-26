@@ -35,4 +35,4 @@ export const MEMBERSHIP_PRODUCT_IDS = {
   LIFETIME: 'lifetime',
 };
 
-export const MEMBERSHIP_ENTITLEMENT = 'premium';
+export const MEMBERSHIP_ENTITLEMENT = 'InkVoice Pro';

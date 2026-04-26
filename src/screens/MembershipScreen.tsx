@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   ActivityIndicator, useColorScheme, Alert,
@@ -6,23 +6,39 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import useMembership from '../hooks/useMembership';
+import MembershipService from '../services/MembershipService';
 import { MEMBERSHIP_PRODUCT_IDS } from '../utils/constants';
 import useI18n from '../i18n';
 
 type PlanId = typeof MEMBERSHIP_PRODUCT_IDS[keyof typeof MEMBERSHIP_PRODUCT_IDS];
 
+const ALL_PRODUCT_IDS = Object.values(MEMBERSHIP_PRODUCT_IDS);
+
 export default function MembershipScreen({ navigation }: any) {
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(MEMBERSHIP_PRODUCT_IDS.YEARLY);
+  const [productPrices, setProductPrices] = useState<Record<string, string>>({});
   const { purchase, restore, isLoading } = useMembership();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { t } = useI18n();
 
-  const PLANS: { id: PlanId; label: string; sublabel: string; price: string }[] = [
-    { id: MEMBERSHIP_PRODUCT_IDS.MONTHLY, label: t('membership.planMonthlyLabel'), sublabel: t('membership.planMonthlySub'), price: t('membership.planMonthlyPrice') },
-    { id: MEMBERSHIP_PRODUCT_IDS.YEARLY, label: t('membership.planYearlyLabel'), sublabel: t('membership.planYearlySub'), price: t('membership.planYearlyPrice') },
-    { id: MEMBERSHIP_PRODUCT_IDS.LIFETIME, label: t('membership.planLifetimeLabel'), sublabel: t('membership.planLifetimeSub'), price: t('membership.planLifetimePrice') },
+  useEffect(() => {
+    MembershipService.getProductPrices(ALL_PRODUCT_IDS).then(setProductPrices).catch(() => {});
+  }, []);
+
+  function planPrice(id: PlanId): string {
+    const raw = productPrices[id];
+    if (!raw) return '--';
+    if (id === MEMBERSHIP_PRODUCT_IDS.MONTHLY) return raw + t('membership.perMonth');
+    if (id === MEMBERSHIP_PRODUCT_IDS.YEARLY) return raw + t('membership.perYear');
+    return raw;
+  }
+
+  const PLANS: { id: PlanId; label: string; sublabel: string }[] = [
+    { id: MEMBERSHIP_PRODUCT_IDS.MONTHLY, label: t('membership.planMonthlyLabel'), sublabel: t('membership.planMonthlySub') },
+    { id: MEMBERSHIP_PRODUCT_IDS.YEARLY, label: t('membership.planYearlyLabel'), sublabel: t('membership.planYearlySub') },
+    { id: MEMBERSHIP_PRODUCT_IDS.LIFETIME, label: t('membership.planLifetimeLabel'), sublabel: t('membership.planLifetimeSub') },
   ];
 
   const BENEFITS = [t('membership.benefitNoAds'), t('membership.benefitMoreSoon')];
@@ -95,7 +111,7 @@ export default function MembershipScreen({ navigation }: any) {
                 <Text style={[styles.planLabel, { color: colors.text }]}>{plan.label}</Text>
                 <Text style={[styles.planSublabel, { color: colors.subText }]}>{plan.sublabel}</Text>
               </View>
-              <Text style={[styles.planPrice, { color: colors.accent }]}>{plan.price}</Text>
+              <Text style={[styles.planPrice, { color: colors.accent }]}>{planPrice(plan.id)}</Text>
               {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.accent} style={styles.planCheck} />}
             </TouchableOpacity>
           );
