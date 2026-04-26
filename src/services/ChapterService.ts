@@ -1,4 +1,4 @@
-import { readAsStringAsync, getInfoAsync } from 'expo-file-system/legacy';
+import { readAsStringAsync, getInfoAsync, documentDirectory } from 'expo-file-system/legacy';
 import { Chapter } from '../types';
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
@@ -92,6 +92,44 @@ class ChapterService {
           console.error("Error reading chapter content", e);
           return "";
       }
+  }
+  async getChapterBlocks(htmlFilePath: string): Promise<import('../types').RichTextBlock[]> {
+    try {
+      const absPath = `${documentDirectory}${htmlFilePath}`;
+      const fileInfo = await getInfoAsync(absPath);
+      if (!fileInfo.exists) throw new Error(`HTML file not found: ${absPath}`);
+      const html = await readAsStringAsync(absPath);
+      return this._parseHtmlToBlocks(html);
+    } catch (e) {
+      console.error('Error loading epub chapter blocks', e);
+      return [];
+    }
+  }
+
+  _parseHtmlToBlocks(html: string): import('../types').RichTextBlock[] {
+    const blocks: import('../types').RichTextBlock[] = [];
+    const blockRegex = /<(h[1-3]|p|blockquote)[^>]*>([\s\S]*?)<\/\1>/gi;
+    let flatOffset = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = blockRegex.exec(html)) !== null) {
+      const tag = match[1].toLowerCase() as import('../types').RichTextBlock['type'];
+      const text = match[2]
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&#\d+;/g, '')
+        .trim();
+
+      if (!text) continue;
+
+      blocks.push({ type: tag, text, flatStart: flatOffset, flatEnd: flatOffset + text.length });
+      flatOffset += text.length;
+    }
+
+    return blocks;
   }
 }
 
