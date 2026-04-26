@@ -10,7 +10,7 @@ import BookService from '../services/BookService';
 import ChapterService from '../services/ChapterService';
 import StorageService from '../services/StorageService';
 import { STORAGE_KEYS } from '../utils/constants';
-import { Book, Chapter, ReadingProgress } from '../types';
+import { Book, Chapter, ReadingProgress, RichTextBlock } from '../types';
 import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, splitIntoSubClauses } from '../utils/textUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex } from '../utils/readingProgress';
@@ -21,12 +21,14 @@ import useI18n from '../i18n';
 import { TranslationKey } from '../i18n/translations';
 import { useFocusEffect } from '@react-navigation/native';
 import AdBanner, { AD_BANNER_HEIGHT } from '../components/AdBanner';
+import EpubBlock from '../components/EpubBlock';
 import AdService from '../services/AdService';
 
 interface ChapterData {
   chapter: Chapter;
   content: string;
   sentences: ParsedSentence[];
+  blocks?: RichTextBlock[];
 }
 
 interface PageData {
@@ -36,6 +38,7 @@ interface PageData {
   pageNumber: number;
   pageCount: number;
   charStart: number; // offset in normalized chapter content
+  blocks?: RichTextBlock[];
 }
 
 interface HighlightFragment {
@@ -197,6 +200,25 @@ function getPageHighlightedFragments(
   ].filter((fragment) => fragment.text.length > 0);
 }
 
+function getBlocksForPage(
+  blocks: RichTextBlock[],
+  pageCharStart: number,
+  pageContent: string
+): RichTextBlock[] {
+  const pageEnd = pageCharStart + pageContent.length;
+  return blocks
+    .filter(b => b.flatStart < pageEnd && b.flatEnd > pageCharStart)
+    .map(b => ({
+      ...b,
+      text: b.text.substring(
+        Math.max(0, pageCharStart - b.flatStart),
+        Math.min(b.text.length, pageEnd - b.flatStart)
+      ),
+      flatStart: Math.max(b.flatStart, pageCharStart) - pageCharStart,
+      flatEnd: Math.min(b.flatEnd, pageEnd) - pageCharStart,
+    }));
+}
+
 interface ReaderChapterItemProps {
   item: ChapterData;
   isHorizontal: boolean;
@@ -241,7 +263,31 @@ const ReaderChapterItem = React.memo(({
       }}
     >
       <Text style={[styles.chapterTitle, { color: textColor }]}>{item.chapter.title}</Text>
-      {isSpeaking ? (
+      {item.blocks ? (
+        item.blocks.map((block, idx) => {
+          const hasOverlap = activeSentence
+            ? activeSentence.start < block.flatEnd && activeSentence.end > block.flatStart
+            : false;
+          const sentHighlight = hasOverlap && activeSentence
+            ? {
+                start: Math.max(0, activeSentence.start - block.flatStart),
+                end: Math.min(block.text.length, activeSentence.end - block.flatStart),
+              }
+            : undefined;
+          return (
+            <EpubBlock
+              key={`${item.chapter.id}_block_${idx}`}
+              block={block}
+              fontSize={fontSize}
+              lineHeight={lineHeight}
+              textColor={textColor}
+              fontFamily={fontFamily}
+              isDark={isDark}
+              highlightRange={sentHighlight}
+            />
+          );
+        })
+      ) : isSpeaking ? (
         <Text
           selectable
           style={[styles.content, { fontSize, color: textColor, lineHeight, fontFamily }]}
@@ -334,27 +380,45 @@ const ReaderPageItem = React.memo(({
           {item.chapter.title}
         </Text>
       ) : null}
-      <Text
-        style={[
-          styles.pageContent,
-          {
-            color: textColor,
-            fontSize,
-            lineHeight,
-            fontFamily,
-            height: contentHeight,
-          },
-        ]}
-      >
-        {fragments.map((fragment, index) => (
-          <Text
-            key={`${item.id}_fragment_${index}`}
-            style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#3A2E12' : '#F7E8C4', color: textColor }] : undefined}
-          >
-            {fragment.text}
-          </Text>
-        ))}
-      </Text>
+      {item.blocks ? (
+        item.blocks.map((block, idx) => {
+          const sentIdx = activeSentenceText ? block.text.indexOf(activeSentenceText) : -1;
+          return (
+            <EpubBlock
+              key={`${item.id}_block_${idx}`}
+              block={block}
+              fontSize={fontSize}
+              lineHeight={lineHeight}
+              textColor={textColor}
+              fontFamily={fontFamily}
+              isDark={isDark}
+              highlightRange={sentIdx >= 0 ? { start: sentIdx, end: sentIdx + activeSentenceText!.length } : undefined}
+            />
+          );
+        })
+      ) : (
+        <Text
+          style={[
+            styles.pageContent,
+            {
+              color: textColor,
+              fontSize,
+              lineHeight,
+              fontFamily,
+              height: contentHeight,
+            },
+          ]}
+        >
+          {fragments.map((fragment, index) => (
+            <Text
+              key={`${item.id}_fragment_${index}`}
+              style={fragment.highlighted ? [styles.highlightedSentence, { backgroundColor: isDark ? '#3A2E12' : '#F7E8C4', color: textColor }] : undefined}
+            >
+              {fragment.text}
+            </Text>
+          ))}
+        </Text>
+      )}
       <Text style={[styles.pageIndicator, styles.pageIndicatorOverlay, { color: isDark ? '#888' : '#777', opacity: isMenuVisible ? 1 : 0 }]}>
         {item.pageNumber} / {item.pageCount}
       </Text>
@@ -856,12 +920,20 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       loadedChapterIdsRef.current.add(ch.id);
       try {
-        const content = await ChapterService.getChapterContent(currentBook.filePath, ch.startPosition, ch.endPosition);
+        let content: string;
+        let blocks: RichTextBlock[] | undefined;
+        if (currentBook.fileType === 'epub' && ch.htmlFilePath) {
+          blocks = await ChapterService.getChapterBlocks(ch.htmlFilePath);
+          content = blocks.map(b => b.text).join('');
+        } else {
+          content = await ChapterService.getChapterContent(currentBook.filePath, ch.startPosition, ch.endPosition);
+        }
         const sentences = parseSentences(content);
         newData.push({
           chapter: ch,
           content,
-          sentences
+          sentences,
+          blocks,
         });
       } catch (e) {
         if (!reset) loadedChapterIdsRef.current.delete(ch.id);
@@ -912,9 +984,16 @@ export default function ReaderScreen({ route, navigation }: any) {
     loadingPrevRef.current = true;
     loadedChapterIdsRef.current.add(ch.id);
     try {
-      const content = await ChapterService.getChapterContent(book.filePath, ch.startPosition, ch.endPosition);
+      let content: string;
+      let blocks: RichTextBlock[] | undefined;
+      if (book.fileType === 'epub' && ch.htmlFilePath) {
+        blocks = await ChapterService.getChapterBlocks(ch.htmlFilePath);
+        content = blocks.map(b => b.text).join('');
+      } else {
+        content = await ChapterService.getChapterContent(book.filePath, ch.startPosition, ch.endPosition);
+      }
       const sentences = parseSentences(content);
-      setChaptersData(prev => [{ chapter: ch, content, sentences }, ...prev]);
+      setChaptersData(prev => [{ chapter: ch, content, sentences, blocks }, ...prev]);
       setChapterWindow(prev => ({ ...prev, prevId: ch.id }));
     } catch (e) {
       loadedChapterIdsRef.current.delete(ch.id);
@@ -942,9 +1021,16 @@ export default function ReaderScreen({ route, navigation }: any) {
     setChapterWindow(prev => ({ ...prev, isBackLoading: true }));
     loadedChapterIdsRef.current.add(ch.id);
     try {
-      const content = await ChapterService.getChapterContent(book.filePath, ch.startPosition, ch.endPosition);
+      let content: string;
+      let blocks: RichTextBlock[] | undefined;
+      if (book.fileType === 'epub' && ch.htmlFilePath) {
+        blocks = await ChapterService.getChapterBlocks(ch.htmlFilePath);
+        content = blocks.map(b => b.text).join('');
+      } else {
+        content = await ChapterService.getChapterContent(book.filePath, ch.startPosition, ch.endPosition);
+      }
       const sentences = parseSentences(content);
-      setChaptersData(prev => [{ chapter: ch, content, sentences }, ...prev]);
+      setChaptersData(prev => [{ chapter: ch, content, sentences, blocks }, ...prev]);
       setChapterWindow(prev => ({ ...prev, prevId: ch.id, isBackLoading: false }));
 
       if (settings.flipMode === 'scroll') {
@@ -1021,9 +1107,16 @@ export default function ReaderScreen({ route, navigation }: any) {
         setChapterWindow(prev => ({ ...prev, isPreloading: true }));
         loadedChapterIdsRef.current.add(nextChapter.id);
         try {
-          const content = await ChapterService.getChapterContent(book.filePath, nextChapter.startPosition, nextChapter.endPosition);
+          let content: string;
+          let blocks: RichTextBlock[] | undefined;
+          if (book.fileType === 'epub' && nextChapter.htmlFilePath) {
+            blocks = await ChapterService.getChapterBlocks(nextChapter.htmlFilePath);
+            content = blocks.map(b => b.text).join('');
+          } else {
+            content = await ChapterService.getChapterContent(book.filePath, nextChapter.startPosition, nextChapter.endPosition);
+          }
           const sentences = parseSentences(content);
-          setChaptersData(prev => [...prev, { chapter: nextChapter, content, sentences }]);
+          setChaptersData(prev => [...prev, { chapter: nextChapter, content, sentences, blocks }]);
           setChapterWindow(prev => ({ ...prev, nextId: nextChapter.id, isPreloading: false }));
         } catch (e) {
           loadedChapterIdsRef.current.delete(nextChapter.id);
@@ -1575,6 +1668,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       return splitPages.map((pageContent, index) => {
         const charStart = cumOffset;
         cumOffset += pageContent.length;
+        const pageBlocks = chapterData.blocks ? getBlocksForPage(chapterData.blocks, charStart, pageContent) : undefined;
         return {
           id: `${chapterData.chapter.id}_page_${index + 1}`,
           chapter: chapterData.chapter,
@@ -1582,6 +1676,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           pageNumber: index + 1,
           pageCount: splitPages.length,
           charStart,
+          blocks: pageBlocks,
         };
       });
     });
