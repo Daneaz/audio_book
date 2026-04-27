@@ -74,7 +74,7 @@ export default function MembershipScreen({ navigation }: any) {
 
   const handlePurchase = async () => {
     if (isTrial) {
-      Linking.openURL('https://apps.apple.com/account/subscriptions');
+      Linking.openURL('https://apps.apple.com/account/subscriptions').catch(() => {});
       return;
     }
     try {

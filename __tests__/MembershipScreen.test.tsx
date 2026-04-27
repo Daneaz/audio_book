@@ -69,6 +69,7 @@ describe('MembershipScreen', () => {
     mockUseMembership.mockReturnValue(makeDefaultHookState());
     (MembershipService.getProductPrices as jest.Mock).mockResolvedValue({});
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as any);
   });
 
   afterEach(() => {
@@ -265,6 +266,22 @@ describe('MembershipScreen', () => {
       );
       const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
       expect(getByText('membership.manageSubscription')).toBeTruthy();
+    });
+
+    it('tapping manageSubscription calls Linking.openURL and does not call purchase', async () => {
+      const purchase = jest.fn();
+      const expiresAt = new Date(Date.now() + 86400000 * 5).toISOString();
+      mockUseMembership.mockReturnValue(
+        makeDefaultHookState({ isActive: true, isTrial: true, expiresAt, purchase })
+      );
+      const navigation = makeNavigation();
+      const { getByText } = render(<MembershipScreen navigation={navigation} />);
+
+      await act(async () => { fireEvent.press(getByText('membership.manageSubscription')); });
+
+      expect(Linking.openURL).toHaveBeenCalledWith('https://apps.apple.com/account/subscriptions');
+      expect(purchase).not.toHaveBeenCalled();
+      expect(navigation.goBack).not.toHaveBeenCalled();
     });
   });
 });
