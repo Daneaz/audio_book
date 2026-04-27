@@ -40,7 +40,7 @@ function makeCustomerInfo(
   entitlementActive: boolean,
   productId = 'membership_monthly',
   expirationDate: string | null = new Date(Date.now() + 86400000).toISOString(),
-  periodType: string = 'normal'
+  periodType: string = 'NORMAL'
 ) {
   const active: Record<string, any> = {};
   if (entitlementActive) {
@@ -236,7 +236,7 @@ describe('MembershipService', () => {
     it('writes isTrial=true when periodType is trial', async () => {
       const product = { identifier: 'membership_yearly' };
       (Purchases.getProducts as jest.Mock).mockResolvedValue([product]);
-      const customerInfo = makeCustomerInfo(true, 'membership_yearly', new Date(Date.now() + 86400000 * 10).toISOString(), 'trial');
+      const customerInfo = makeCustomerInfo(true, 'membership_yearly', new Date(Date.now() + 86400000 * 10).toISOString(), 'TRIAL');
       (Purchases.purchaseStoreProduct as jest.Mock).mockResolvedValue({ customerInfo });
       (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
 
@@ -251,7 +251,7 @@ describe('MembershipService', () => {
     it('writes isTrial=false when periodType is normal', async () => {
       const product = { identifier: 'membership_monthly' };
       (Purchases.getProducts as jest.Mock).mockResolvedValue([product]);
-      const customerInfo = makeCustomerInfo(true, 'membership_monthly', new Date(Date.now() + 86400000).toISOString(), 'normal');
+      const customerInfo = makeCustomerInfo(true, 'membership_monthly', new Date(Date.now() + 86400000).toISOString(), 'NORMAL');
       (Purchases.purchaseStoreProduct as jest.Mock).mockResolvedValue({ customerInfo });
       (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
 

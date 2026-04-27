@@ -35,7 +35,7 @@ function makeCustomerInfo(
   entitlementActive: boolean,
   productId = 'membership_monthly',
   expirationDate: string | null = new Date(Date.now() + 86400000).toISOString(),
-  periodType: string = 'normal'
+  periodType: string = 'NORMAL'
 ) {
   const active: Record<string, any> = {};
   if (entitlementActive) {
@@ -128,6 +128,7 @@ describe('useMembership', () => {
 
       expect(result.current.isActive).toBe(false);
       expect(result.current.membershipType).toBe(null);
+      expect(result.current.isTrial).toBe(false);
     });
 
     it('sets isTrial=true when listener fires with periodType trial', () => {
@@ -139,7 +140,7 @@ describe('useMembership', () => {
       const { result } = renderHook(() => useMembership());
 
       act(() => {
-        capturedListener!(makeCustomerInfo(true, 'membership_yearly', expiresAt, 'trial'));
+        capturedListener!(makeCustomerInfo(true, 'membership_yearly', expiresAt, 'TRIAL'));
       });
 
       expect(result.current.isTrial).toBe(true);
@@ -156,6 +157,25 @@ describe('useMembership', () => {
         capturedListener!(makeCustomerInfo(true, 'membership_monthly'));
       });
 
+      expect(result.current.isTrial).toBe(false);
+    });
+
+    it('resets isTrial to false when listener fires with periodType NORMAL after TRIAL', () => {
+      let capturedListener: ((info: any) => void) | undefined;
+      (Purchases.addCustomerInfoUpdateListener as jest.Mock).mockImplementation((cb) => {
+        capturedListener = cb;
+      });
+      const expiresAt = new Date(Date.now() + 86400000 * 10).toISOString();
+      const { result } = renderHook(() => useMembership());
+
+      act(() => {
+        capturedListener!(makeCustomerInfo(true, 'membership_yearly', expiresAt, 'TRIAL'));
+      });
+      expect(result.current.isTrial).toBe(true);
+
+      act(() => {
+        capturedListener!(makeCustomerInfo(true, 'membership_yearly', expiresAt, 'NORMAL'));
+      });
       expect(result.current.isTrial).toBe(false);
     });
   });

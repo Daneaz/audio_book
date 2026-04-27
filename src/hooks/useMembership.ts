@@ -23,7 +23,7 @@ function extractState(customerInfo: CustomerInfo): Pick<UseMembershipReturn, 'is
     isActive: true,
     membershipType,
     expiresAt: entitlement.expirationDate ?? null,
-    isTrial: entitlement.periodType === 'trial',
+    isTrial: entitlement.periodType === 'TRIAL',
   };
 }
 

@@ -75,7 +75,7 @@ class MembershipService {
     const isActive = !!entitlement;
     const type: MembershipType | null = entitlement ? inferType(entitlement.productIdentifier) : null;
     const expiresAt = entitlement?.expirationDate ?? null;
-    const isTrial = entitlement?.periodType === 'trial';
+    const isTrial = entitlement?.periodType === 'TRIAL';
     await StorageService.storeData(STORAGE_KEYS.MEMBERSHIP, { isActive, type, expiresAt, isTrial });
   }
 
