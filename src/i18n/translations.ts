@@ -141,7 +141,6 @@ export type TranslationKey =
   | 'membership.benefitMoreSoon'
   | 'membership.freeTrial'
   | 'membership.trialBadge'
-  | 'membership.trialBanner'
   | 'membership.trialActive'
   | 'membership.manageSubscription'
   | 'membership.subscribed'
@@ -294,7 +293,6 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.benefitMoreSoon': '更多权益即将推出...',
     'membership.freeTrial': '免费试用 14 天',
     'membership.trialBadge': '前 14 天免费',
-    'membership.trialBanner': '试用中 · 还剩 {days} 天到期',
     'membership.trialActive': '试用中 · 还剩 {days} 天',
     'membership.manageSubscription': '管理订阅',
     'membership.subscribed': '已订阅',
@@ -444,7 +442,6 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.benefitMoreSoon': 'More benefits coming soon...',
     'membership.freeTrial': 'Try Free for 14 Days',
     'membership.trialBadge': 'First 14 days free',
-    'membership.trialBanner': 'Trial · {days} days left',
     'membership.trialActive': 'Trial · {days} days left',
     'membership.manageSubscription': 'Manage Subscription',
     'membership.subscribed': 'Subscribed',
