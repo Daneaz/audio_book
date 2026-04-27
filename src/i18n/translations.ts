@@ -138,7 +138,15 @@ export type TranslationKey =
   | 'membership.perMonth'
   | 'membership.perYear'
   | 'membership.benefitNoAds'
-  | 'membership.benefitMoreSoon';
+  | 'membership.benefitMoreSoon'
+  | 'membership.freeTrial'
+  | 'membership.trialBadge'
+  | 'membership.trialBanner'
+  | 'membership.trialActive'
+  | 'membership.manageSubscription'
+  | 'membership.subscribed'
+  | 'membership.upgrade'
+  | 'membership.buyNow';
 
 type TranslationMap = Record<TranslationKey, string>;
 
@@ -284,6 +292,14 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.perYear': '/年',
     'membership.benefitNoAds': '去除全部广告',
     'membership.benefitMoreSoon': '更多权益即将推出...',
+    'membership.freeTrial': '免费试用 14 天',
+    'membership.trialBadge': '前 14 天免费',
+    'membership.trialBanner': '试用中 · 还剩 {days} 天到期',
+    'membership.trialActive': '试用中 · 还剩 {days} 天',
+    'membership.manageSubscription': '管理订阅',
+    'membership.subscribed': '已订阅',
+    'membership.upgrade': '升级',
+    'membership.buyNow': '立即购买',
   },
   en: {
     'common.loading': 'Loading...',
@@ -426,5 +442,13 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.perYear': '/yr',
     'membership.benefitNoAds': 'Remove all ads',
     'membership.benefitMoreSoon': 'More benefits coming soon...',
+    'membership.freeTrial': 'Try Free for 14 Days',
+    'membership.trialBadge': 'First 14 days free',
+    'membership.trialBanner': 'Trial · {days} days left',
+    'membership.trialActive': 'Trial · {days} days left',
+    'membership.manageSubscription': 'Manage Subscription',
+    'membership.subscribed': 'Subscribed',
+    'membership.upgrade': 'Upgrade',
+    'membership.buyNow': 'Buy Now',
   },
 };
