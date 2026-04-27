@@ -9,6 +9,7 @@ import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils'
 import { VoiceEntry, mergeWithInstalledVoices } from '../utils/voiceUtils';
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useI18n from '../i18n';
+import useMembership from '../hooks/useMembership';
 
 const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
   'Daniel',
@@ -19,8 +20,9 @@ const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
   'Tessa',
 ]);
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ navigation }: any) {
   const { settings, updateSettings, loading } = useSettings();
+  const { isActive, isTrial, expiresAt } = useMembership();
   const { t, language } = useI18n();
   const [voicesLoading, setVoicesLoading] = useState(false);
   const [voices, setVoices] = useState<VoiceEntry[]>([]);
@@ -174,6 +176,10 @@ export default function SettingsScreen() {
     switchOn:    isDark ? '#C4A96A' : '#2C1A0E',
   }), [isDark]);
 
+  const trialDaysLeft = isTrial && expiresAt
+    ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))
+    : 0;
+
   if (loading) return <View style={[styles.container, { backgroundColor: sc.bg }]}><Text style={{color: sc.textPrimary}}>{t('common.loading')}</Text></View>;
 
   return (
@@ -181,6 +187,32 @@ export default function SettingsScreen() {
       style={{ flex: 1, backgroundColor: sc.bg }}
       contentContainerStyle={[styles.container, { backgroundColor: sc.bg }]}
     >
+      {/* ===== 会员 ===== */}
+      <TouchableOpacity
+        testID="membership-row"
+        onPress={() => navigation.navigate('Membership')}
+        style={[styles.groupCard, { backgroundColor: sc.surface, borderColor: sc.border, marginBottom: 8 }]}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.settingsRow, { borderBottomWidth: 0 }]}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('membership.title')}</Text>
+          {isTrial ? (
+            <Text testID="membership-trial-badge" style={[styles.rowValue, { color: '#B8860B', fontWeight: '500' }]}>
+              {t('membership.trialActive', { days: trialDaysLeft })}
+            </Text>
+          ) : isActive ? (
+            <Text style={[styles.rowValue, { color: '#4CAF50', fontWeight: '500' }]}>
+              {t('membership.subscribed')}
+            </Text>
+          ) : (
+            <Text style={[styles.rowValue, { color: sc.accent, fontWeight: '500' }]}>
+              {t('membership.upgrade')}
+            </Text>
+          )}
+          <Ionicons name="chevron-forward" size={16} color={sc.textSub} style={{ marginLeft: 4 }} />
+        </View>
+      </TouchableOpacity>
+
       {/* ===== 外观 ===== */}
       <Text style={[styles.groupLabel, { color: sc.accent }]}>{t('settings.appearance')}</Text>
       <View style={[styles.groupCard, { backgroundColor: sc.surface, borderColor: sc.border }]}>
