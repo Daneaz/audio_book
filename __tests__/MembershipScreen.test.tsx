@@ -1,9 +1,11 @@
 import React from 'react';
 import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import MembershipScreen from '../src/screens/MembershipScreen';
 import MembershipService from '../src/services/MembershipService';
 import useMembershipHook from '../src/hooks/useMembership';
+
+jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as any);
 
 jest.mock('react-native-google-mobile-ads', () => ({
   TestIds: { BANNER: 'test-banner-id', REWARDED: 'test-rewarded-id' },
@@ -49,6 +51,7 @@ const makeDefaultHookState = (overrides = {}) => ({
   isActive: false,
   membershipType: null as null,
   expiresAt: null as null,
+  isTrial: false,
   isLoading: false,
   error: null as null,
   purchase: jest.fn().mockResolvedValue(undefined),
@@ -105,7 +108,7 @@ describe('MembershipScreen', () => {
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
       const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
 
       expect(purchase).toHaveBeenCalledWith('yearly');
     });
@@ -116,18 +119,18 @@ describe('MembershipScreen', () => {
       const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
       fireEvent.press(getByText('membership.planMonthlyLabel'));
-      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
 
       expect(purchase).toHaveBeenCalledWith('monthly');
     });
 
-    it('tapping lifetime plan then subscribe calls purchase with lifetime', async () => {
+    it('tapping lifetime plan shows buyNow button and calls purchase with lifetime', async () => {
       const purchase = jest.fn().mockResolvedValue(undefined);
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
       const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
       fireEvent.press(getByText('membership.planLifetimeLabel'));
-      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+      await act(async () => { fireEvent.press(getByText('membership.buyNow')); });
 
       expect(purchase).toHaveBeenCalledWith('lifetime');
     });
@@ -137,7 +140,8 @@ describe('MembershipScreen', () => {
     it('hides subscribe text and shows loading when isLoading is true', () => {
       mockUseMembership.mockReturnValue(makeDefaultHookState({ isLoading: true }));
       const { queryByText } = render(<MembershipScreen navigation={makeNavigation()} />);
-      expect(queryByText('membership.subscribe')).toBeNull();
+      expect(queryByText('membership.freeTrial')).toBeNull();
+      expect(queryByText('membership.buyNow')).toBeNull();
     });
   });
 
@@ -148,7 +152,7 @@ describe('MembershipScreen', () => {
       const navigation = makeNavigation();
       const { getByText } = render(<MembershipScreen navigation={navigation} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
 
       expect(navigation.goBack).toHaveBeenCalledTimes(1);
     });
@@ -159,7 +163,7 @@ describe('MembershipScreen', () => {
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
       const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
 
       expect(Alert.alert).not.toHaveBeenCalled();
     });
@@ -170,7 +174,7 @@ describe('MembershipScreen', () => {
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
       const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
 
       expect(Alert.alert).not.toHaveBeenCalled();
     });
@@ -181,7 +185,7 @@ describe('MembershipScreen', () => {
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
       const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.subscribe')); });
+      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
 
       expect(Alert.alert).toHaveBeenCalledWith(
         'membership.purchaseFailed',
@@ -235,6 +239,32 @@ describe('MembershipScreen', () => {
         'membership.restoreFailed',
         'No purchases found'
       );
+    });
+  });
+
+  describe('试用状态', () => {
+    it('shows trial banner when isTrial is true', () => {
+      const expiresAt = new Date(Date.now() + 86400000 * 10).toISOString();
+      mockUseMembership.mockReturnValue(
+        makeDefaultHookState({ isActive: true, isTrial: true, expiresAt })
+      );
+      const { getByTestId } = render(<MembershipScreen navigation={makeNavigation()} />);
+      expect(getByTestId('trial-banner')).toBeTruthy();
+    });
+
+    it('does not show trial banner when isTrial is false', () => {
+      mockUseMembership.mockReturnValue(makeDefaultHookState({ isActive: false, isTrial: false }));
+      const { queryByTestId } = render(<MembershipScreen navigation={makeNavigation()} />);
+      expect(queryByTestId('trial-banner')).toBeNull();
+    });
+
+    it('shows manageSubscription button when isTrial is true', () => {
+      const expiresAt = new Date(Date.now() + 86400000 * 5).toISOString();
+      mockUseMembership.mockReturnValue(
+        makeDefaultHookState({ isActive: true, isTrial: true, expiresAt })
+      );
+      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      expect(getByText('membership.manageSubscription')).toBeTruthy();
     });
   });
 });

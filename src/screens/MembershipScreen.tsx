@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, useColorScheme, Alert,
+  ActivityIndicator, useColorScheme, Alert, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +17,7 @@ const ALL_PRODUCT_IDS = Object.values(MEMBERSHIP_PRODUCT_IDS);
 export default function MembershipScreen({ navigation }: any) {
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(MEMBERSHIP_PRODUCT_IDS.YEARLY);
   const [productPrices, setProductPrices] = useState<Record<string, string>>({});
-  const { purchase, restore, isLoading } = useMembership();
+  const { purchase, restore, isLoading, isTrial, expiresAt } = useMembership();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -35,10 +35,29 @@ export default function MembershipScreen({ navigation }: any) {
     return raw;
   }
 
-  const PLANS: { id: PlanId; label: string; sublabel: string }[] = [
-    { id: MEMBERSHIP_PRODUCT_IDS.MONTHLY, label: t('membership.planMonthlyLabel'), sublabel: t('membership.planMonthlySub') },
-    { id: MEMBERSHIP_PRODUCT_IDS.YEARLY, label: t('membership.planYearlyLabel'), sublabel: t('membership.planYearlySub') },
-    { id: MEMBERSHIP_PRODUCT_IDS.LIFETIME, label: t('membership.planLifetimeLabel'), sublabel: t('membership.planLifetimeSub') },
+  function planSublabel(id: PlanId, baseSublabel: string): string {
+    if (id === MEMBERSHIP_PRODUCT_IDS.MONTHLY || id === MEMBERSHIP_PRODUCT_IDS.YEARLY) {
+      return `${baseSublabel}  ·  ${t('membership.trialBadge')}`;
+    }
+    return baseSublabel;
+  }
+
+  const trialDaysLeft = isTrial && expiresAt
+    ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))
+    : 0;
+
+  const isTrialEligible = selectedPlan !== MEMBERSHIP_PRODUCT_IDS.LIFETIME;
+
+  function buttonLabel(): string {
+    if (isTrial) return t('membership.manageSubscription');
+    if (isTrialEligible) return t('membership.freeTrial');
+    return t('membership.buyNow');
+  }
+
+  const PLANS: { id: PlanId; label: string; baseSublabel: string }[] = [
+    { id: MEMBERSHIP_PRODUCT_IDS.MONTHLY, label: t('membership.planMonthlyLabel'), baseSublabel: t('membership.planMonthlySub') },
+    { id: MEMBERSHIP_PRODUCT_IDS.YEARLY, label: t('membership.planYearlyLabel'), baseSublabel: t('membership.planYearlySub') },
+    { id: MEMBERSHIP_PRODUCT_IDS.LIFETIME, label: t('membership.planLifetimeLabel'), baseSublabel: t('membership.planLifetimeSub') },
   ];
 
   const BENEFITS = [t('membership.benefitNoAds'), t('membership.benefitMoreSoon')];
@@ -50,9 +69,14 @@ export default function MembershipScreen({ navigation }: any) {
     accent:  isDark ? '#C4A96A' : '#A0621A',
     text:    isDark ? '#E8E0D0' : '#2C1A0E',
     subText: isDark ? '#6A5A44' : '#9A7A5A',
+    trial:   '#B8860B',
   };
 
   const handlePurchase = async () => {
+    if (isTrial) {
+      Linking.openURL('https://apps.apple.com/account/subscriptions');
+      return;
+    }
     try {
       await purchase(selectedPlan);
       navigation.goBack();
@@ -85,6 +109,15 @@ export default function MembershipScreen({ navigation }: any) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {isTrial && (
+          <View testID="trial-banner" style={[styles.trialBanner, { borderColor: colors.trial }]}>
+            <Ionicons name="time-outline" size={16} color={colors.trial} />
+            <Text style={[styles.trialBannerText, { color: colors.trial }]}>
+              {t('membership.trialActive', { days: trialDaysLeft })}
+            </Text>
+          </View>
+        )}
+
         <View style={[styles.benefitsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('membership.benefits')}</Text>
           {BENEFITS.map((benefit, i) => (
@@ -109,7 +142,9 @@ export default function MembershipScreen({ navigation }: any) {
             >
               <View style={styles.planInfo}>
                 <Text style={[styles.planLabel, { color: colors.text }]}>{plan.label}</Text>
-                <Text style={[styles.planSublabel, { color: colors.subText }]}>{plan.sublabel}</Text>
+                <Text style={[styles.planSublabel, { color: colors.subText }]}>
+                  {planSublabel(plan.id, plan.baseSublabel)}
+                </Text>
               </View>
               <Text style={[styles.planPrice, { color: colors.accent }]}>{planPrice(plan.id)}</Text>
               {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.accent} style={styles.planCheck} />}
@@ -124,7 +159,7 @@ export default function MembershipScreen({ navigation }: any) {
           onPress={handlePurchase}
           disabled={isLoading}
         >
-          {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.purchaseButtonText}>{t('membership.subscribe')}</Text>}
+          {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.purchaseButtonText}>{buttonLabel()}</Text>}
         </TouchableOpacity>
         <TouchableOpacity onPress={handleRestore} disabled={isLoading} style={styles.restoreButton}>
           <Text style={[styles.restoreText, { color: colors.subText }]}>{t('membership.restore')}</Text>
@@ -142,6 +177,12 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 17, fontWeight: '600' },
   content: { padding: 20, paddingBottom: 8 },
+  trialBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8,
+    marginBottom: 16, backgroundColor: 'rgba(184,134,11,0.08)',
+  },
+  trialBannerText: { fontSize: 13, fontWeight: '500' },
   benefitsCard: { borderRadius: 12, padding: 16, borderWidth: 1 },
   sectionTitle: { fontSize: 15, fontWeight: '600', marginBottom: 10 },
   benefitRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
