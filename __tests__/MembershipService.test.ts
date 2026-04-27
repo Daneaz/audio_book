@@ -39,11 +39,12 @@ jest.mock('react-native-purchases', () => ({
 function makeCustomerInfo(
   entitlementActive: boolean,
   productId = 'membership_monthly',
-  expirationDate: string | null = new Date(Date.now() + 86400000).toISOString()
+  expirationDate: string | null = new Date(Date.now() + 86400000).toISOString(),
+  periodType: string = 'normal'
 ) {
   const active: Record<string, any> = {};
   if (entitlementActive) {
-    active[MEMBERSHIP_ENTITLEMENT] = { productIdentifier: productId, expirationDate };
+    active[MEMBERSHIP_ENTITLEMENT] = { productIdentifier: productId, expirationDate, periodType };
   }
   return { entitlements: { active } };
 }
@@ -95,7 +96,7 @@ describe('MembershipService', () => {
     it('falls back to local cache when RevenueCat throws', async () => {
       (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
       (StorageService.getData as jest.Mock).mockResolvedValue({
-        isActive: true, type: 'lifetime', expiresAt: null,
+        isActive: true, type: 'lifetime', expiresAt: null, isTrial: false,
       });
       expect(await MembershipService.isActive()).toBe(true);
     });
@@ -104,7 +105,7 @@ describe('MembershipService', () => {
       (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
       const past = new Date(Date.now() - 86400000).toISOString();
       (StorageService.getData as jest.Mock).mockResolvedValue({
-        isActive: true, type: 'yearly', expiresAt: past,
+        isActive: true, type: 'yearly', expiresAt: past, isTrial: false,
       });
       expect(await MembershipService.isActive()).toBe(false);
     });
@@ -119,7 +120,7 @@ describe('MembershipService', () => {
       (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
       const future = new Date(Date.now() + 86400000).toISOString();
       (StorageService.getData as jest.Mock).mockResolvedValue({
-        isActive: true, type: 'monthly', expiresAt: future,
+        isActive: true, type: 'monthly', expiresAt: future, isTrial: false,
       });
       expect(await MembershipService.isActive()).toBe(true);
     });
@@ -128,7 +129,7 @@ describe('MembershipService', () => {
       jest.useFakeTimers({ now: new Date('2026-01-01T00:00:00.000Z') });
       (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
       (StorageService.getData as jest.Mock).mockResolvedValue({
-        isActive: true, type: 'monthly', expiresAt: '2026-01-01T00:00:00.000Z',
+        isActive: true, type: 'monthly', expiresAt: '2026-01-01T00:00:00.000Z', isTrial: false,
       });
       expect(await MembershipService.isActive()).toBe(false);
       jest.useRealTimers();
@@ -137,7 +138,7 @@ describe('MembershipService', () => {
     it('returns false from cache when type is null even if isActive is true', async () => {
       (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
       (StorageService.getData as jest.Mock).mockResolvedValue({
-        isActive: true, type: null, expiresAt: null,
+        isActive: true, type: null, expiresAt: null, isTrial: false,
       });
       expect(await MembershipService.isActive()).toBe(false);
     });
@@ -228,6 +229,47 @@ describe('MembershipService', () => {
         STORAGE_KEYS.MEMBERSHIP,
         expect.objectContaining({ isActive: false, type: null })
       );
+    });
+  });
+
+  describe('_syncCache — isTrial', () => {
+    it('writes isTrial=true when periodType is trial', async () => {
+      const product = { identifier: 'membership_yearly' };
+      (Purchases.getProducts as jest.Mock).mockResolvedValue([product]);
+      const customerInfo = makeCustomerInfo(true, 'membership_yearly', new Date(Date.now() + 86400000 * 10).toISOString(), 'trial');
+      (Purchases.purchaseStoreProduct as jest.Mock).mockResolvedValue({ customerInfo });
+      (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
+
+      await MembershipService.purchase('membership_yearly');
+
+      expect(StorageService.storeData).toHaveBeenCalledWith(
+        STORAGE_KEYS.MEMBERSHIP,
+        expect.objectContaining({ isTrial: true })
+      );
+    });
+
+    it('writes isTrial=false when periodType is normal', async () => {
+      const product = { identifier: 'membership_monthly' };
+      (Purchases.getProducts as jest.Mock).mockResolvedValue([product]);
+      const customerInfo = makeCustomerInfo(true, 'membership_monthly', new Date(Date.now() + 86400000).toISOString(), 'normal');
+      (Purchases.purchaseStoreProduct as jest.Mock).mockResolvedValue({ customerInfo });
+      (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
+
+      await MembershipService.purchase('membership_monthly');
+
+      expect(StorageService.storeData).toHaveBeenCalledWith(
+        STORAGE_KEYS.MEMBERSHIP,
+        expect.objectContaining({ isTrial: false })
+      );
+    });
+
+    it('does not crash when reading legacy cache without isTrial field', async () => {
+      (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('offline'));
+      (StorageService.getData as jest.Mock).mockResolvedValue({
+        isActive: true, type: 'lifetime', expiresAt: null,
+        // 故意省略 isTrial，模拟旧缓存
+      });
+      expect(await MembershipService.isActive()).toBe(true);
     });
   });
 
