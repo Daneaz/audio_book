@@ -2164,7 +2164,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       {isMenuVisible && (
         <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: readerColors.bottomBar }]}>
           <AdBanner
-            visible={showAd}
+            visible={false}
             onHidden={() => setShowAd(false)}
             onUpgradePress={() => navigation.navigate('Membership')}
             floating={false}
@@ -2508,7 +2508,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         </View>
       </Modal>
       <AdBanner
-        visible={showAd && !isMenuVisible}
+        visible={false}
         onHidden={() => setShowAd(false)}
         onUpgradePress={() => navigation.navigate('Membership')}
       />

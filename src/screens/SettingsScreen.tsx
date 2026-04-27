@@ -189,31 +189,7 @@ export default function SettingsScreen({ navigation }: any) {
       style={{ flex: 1, backgroundColor: sc.bg }}
       contentContainerStyle={[styles.container, { backgroundColor: sc.bg }]}
     >
-      {/* ===== 会员 ===== */}
-      <TouchableOpacity
-        testID="membership-row"
-        onPress={() => navigation.navigate('Membership')}
-        style={[styles.groupCard, { backgroundColor: sc.surface, borderColor: sc.border, marginBottom: 8 }]}
-        activeOpacity={0.7}
-      >
-        <View style={[styles.settingsRow, { borderBottomWidth: 0 }]}>
-          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('membership.title')}</Text>
-          {isTrial ? (
-            <Text testID="membership-trial-badge" style={[styles.rowValue, { color: sc.trial, fontWeight: '500' }]}>
-              {t('membership.trialActive', { days: trialDaysLeft })}
-            </Text>
-          ) : isActive ? (
-            <Text style={[styles.rowValue, { color: sc.success, fontWeight: '500' }]}>
-              {t('membership.subscribed')}
-            </Text>
-          ) : (
-            <Text style={[styles.rowValue, { color: sc.accent, fontWeight: '500' }]}>
-              {t('membership.upgrade')}
-            </Text>
-          )}
-          <Ionicons name="chevron-forward" size={16} color={sc.textSub} style={{ marginLeft: 4 }} />
-        </View>
-      </TouchableOpacity>
+      {/* ===== 会员 ===== TODO: 上线后重新启用 */}
 
       {/* ===== 外观 ===== */}
       <Text style={[styles.groupLabel, { color: sc.accent }]}>{t('settings.appearance')}</Text>
