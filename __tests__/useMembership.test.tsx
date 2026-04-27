@@ -34,11 +34,12 @@ jest.mock('react-native-purchases', () => ({
 function makeCustomerInfo(
   entitlementActive: boolean,
   productId = 'membership_monthly',
-  expirationDate: string | null = new Date(Date.now() + 86400000).toISOString()
+  expirationDate: string | null = new Date(Date.now() + 86400000).toISOString(),
+  periodType: string = 'normal'
 ) {
   const active: Record<string, any> = {};
   if (entitlementActive) {
-    active[MEMBERSHIP_ENTITLEMENT] = { productIdentifier: productId, expirationDate };
+    active[MEMBERSHIP_ENTITLEMENT] = { productIdentifier: productId, expirationDate, periodType };
   }
   return { entitlements: { active } };
 }
@@ -58,6 +59,7 @@ describe('useMembership', () => {
       expect(result.current.error).toBe(null);
       expect(result.current.membershipType).toBe(null);
       expect(result.current.expiresAt).toBe(null);
+      expect(result.current.isTrial).toBe(false);
     });
   });
 
@@ -126,6 +128,35 @@ describe('useMembership', () => {
 
       expect(result.current.isActive).toBe(false);
       expect(result.current.membershipType).toBe(null);
+    });
+
+    it('sets isTrial=true when listener fires with periodType trial', () => {
+      let capturedListener: ((info: any) => void) | undefined;
+      (Purchases.addCustomerInfoUpdateListener as jest.Mock).mockImplementation((cb) => {
+        capturedListener = cb;
+      });
+      const expiresAt = new Date(Date.now() + 86400000 * 10).toISOString();
+      const { result } = renderHook(() => useMembership());
+
+      act(() => {
+        capturedListener!(makeCustomerInfo(true, 'membership_yearly', expiresAt, 'trial'));
+      });
+
+      expect(result.current.isTrial).toBe(true);
+    });
+
+    it('sets isTrial=false when listener fires with periodType normal', () => {
+      let capturedListener: ((info: any) => void) | undefined;
+      (Purchases.addCustomerInfoUpdateListener as jest.Mock).mockImplementation((cb) => {
+        capturedListener = cb;
+      });
+      const { result } = renderHook(() => useMembership());
+
+      act(() => {
+        capturedListener!(makeCustomerInfo(true, 'membership_monthly'));
+      });
+
+      expect(result.current.isTrial).toBe(false);
     });
   });
 

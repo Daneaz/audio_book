@@ -7,24 +7,31 @@ export interface UseMembershipReturn {
   isActive: boolean;
   membershipType: MembershipState['type'];
   expiresAt: string | null;
+  isTrial: boolean;
   purchase: (productId: string) => Promise<void>;
   restore: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }
 
-function extractState(customerInfo: CustomerInfo): Pick<UseMembershipReturn, 'isActive' | 'membershipType' | 'expiresAt'> {
+function extractState(customerInfo: CustomerInfo): Pick<UseMembershipReturn, 'isActive' | 'membershipType' | 'expiresAt' | 'isTrial'> {
   const entitlement = customerInfo.entitlements.active[MEMBERSHIP_ENTITLEMENT];
-  if (!entitlement) return { isActive: false, membershipType: null, expiresAt: null };
+  if (!entitlement) return { isActive: false, membershipType: null, expiresAt: null, isTrial: false };
   const id = entitlement.productIdentifier;
   const membershipType: MembershipState['type'] = id.includes('lifetime') ? 'lifetime' : id.includes('yearly') ? 'yearly' : 'monthly';
-  return { isActive: true, membershipType, expiresAt: entitlement.expirationDate ?? null };
+  return {
+    isActive: true,
+    membershipType,
+    expiresAt: entitlement.expirationDate ?? null,
+    isTrial: entitlement.periodType === 'trial',
+  };
 }
 
 export default function useMembership(): UseMembershipReturn {
   const [isActive, setIsActive] = useState(false);
   const [membershipType, setMembershipType] = useState<MembershipState['type']>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [isTrial, setIsTrial] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,10 +43,10 @@ export default function useMembership(): UseMembershipReturn {
       setIsActive(state.isActive);
       setMembershipType(state.membershipType);
       setExpiresAt(state.expiresAt);
+      setIsTrial(state.isTrial);
     };
 
     Purchases.addCustomerInfoUpdateListener(listener);
-
     return () => { Purchases.removeCustomerInfoUpdateListener(listener); };
   }, []);
 
@@ -69,5 +76,5 @@ export default function useMembership(): UseMembershipReturn {
     }
   };
 
-  return { isActive, membershipType, expiresAt, purchase, restore, isLoading, error };
+  return { isActive, membershipType, expiresAt, isTrial, purchase, restore, isLoading, error };
 }
