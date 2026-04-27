@@ -81,9 +81,6 @@ export default function AppNavigator() {
             title: t('nav.bookshelf'),
             headerRight: () => (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TouchableOpacity onPress={() => navigation.navigate('Membership')} style={{ paddingHorizontal: 10 }}>
-                  <Ionicons name="diamond-outline" size={22} color={isDark ? '#C4A96A' : '#A0621A'} />
-                </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={{ paddingHorizontal: 14 }}>
                   <Ionicons name="settings-outline" size={22} color={isDark ? '#C4A96A' : '#A0621A'} />
                 </TouchableOpacity>
