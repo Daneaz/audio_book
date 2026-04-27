@@ -210,28 +210,15 @@ describe('ReaderScreen Chapter Jump Bugfix', () => {
       }
     });
 
-    // Wait a short moment but NOT past the 250ms timeout
+    // Wait to confirm the bug is fixed: ch1 should NOT be loaded during scroll restoration.
+    // suppressStartReachedRef stays true until the user manually scrolls, so ch1 preload
+    // is permanently suppressed after a chapter jump (not just for 250ms).
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, 400));
     });
 
-    // At this point, `isRestoringScrollRef` should be true.
-    // The bug was that this viewable items change would trigger `handleStartReached` immediately.
-    // We expect getChapterContent to have only been called once (for the initial load of ch2),
-    // and NOT a second time for pre-loading ch1.
     expect(getChapterContentSpy).toHaveBeenCalledTimes(1);
-    expect(getChapterContentSpy).toHaveBeenCalledWith(expect.any(String), 100, 200); // ch2 coordinates
-    
-    // Now wait past the scroll restoration timeout (250ms + 100ms = 350ms total)
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 350));
-    });
-    
-    // After the timeout, the timeout callback checks if the first viewable item is index 0
-    // and explicitly calls handleStartReachedRef.current?.()
-    // So now we expect getChapterContent to be called for ch1.
-    expect(getChapterContentSpy).toHaveBeenCalledTimes(2);
-    expect(getChapterContentSpy).toHaveBeenLastCalledWith(expect.any(String), 0, 100); // ch1 coordinates
+    expect(getChapterContentSpy).toHaveBeenCalledWith(expect.any(String), 100, 200); // ch2 only
   });
 
   it('should not reload book data after chaptersData changes during a chapter jump', async () => {

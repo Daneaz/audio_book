@@ -6,6 +6,8 @@ jest.mock('expo-file-system/legacy', () => ({
   writeAsStringAsync: jest.fn(),
   makeDirectoryAsync: jest.fn().mockResolvedValue(undefined),
   deleteAsync: jest.fn().mockResolvedValue(undefined),
+  getInfoAsync: jest.fn().mockResolvedValue({ exists: true, isDirectory: false }),
+  EncodingType: { Base64: 'base64', UTF8: 'utf8' },
 }));
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-uuid' }));
