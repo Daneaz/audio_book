@@ -174,6 +174,8 @@ export default function SettingsScreen({ navigation }: any) {
     textSub:     isDark ? '#6A5A44' : '#9A7A5A',
     iconBox:     isDark ? '#2A2520' : '#E8DCC8',
     switchOn:    isDark ? '#C4A96A' : '#2C1A0E',
+    trial:       '#B8860B',
+    success:     isDark ? '#66BB6A' : '#4CAF50',
   }), [isDark]);
 
   const trialDaysLeft = isTrial && expiresAt
@@ -197,11 +199,11 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={[styles.settingsRow, { borderBottomWidth: 0 }]}>
           <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('membership.title')}</Text>
           {isTrial ? (
-            <Text testID="membership-trial-badge" style={[styles.rowValue, { color: '#B8860B', fontWeight: '500' }]}>
+            <Text testID="membership-trial-badge" style={[styles.rowValue, { color: sc.trial, fontWeight: '500' }]}>
               {t('membership.trialActive', { days: trialDaysLeft })}
             </Text>
           ) : isActive ? (
-            <Text style={[styles.rowValue, { color: '#4CAF50', fontWeight: '500' }]}>
+            <Text style={[styles.rowValue, { color: sc.success, fontWeight: '500' }]}>
               {t('membership.subscribed')}
             </Text>
           ) : (
