@@ -7,6 +7,7 @@ export interface MembershipState {
   isActive: boolean;
   type: 'lifetime' | 'monthly' | 'yearly' | null;
   expiresAt: string | null;
+  isTrial: boolean;
 }
 
 type MembershipType = 'lifetime' | 'monthly' | 'yearly';
@@ -74,13 +75,15 @@ class MembershipService {
     const isActive = !!entitlement;
     const type: MembershipType | null = entitlement ? inferType(entitlement.productIdentifier) : null;
     const expiresAt = entitlement?.expirationDate ?? null;
-    await StorageService.storeData(STORAGE_KEYS.MEMBERSHIP, { isActive, type, expiresAt });
+    const isTrial = entitlement?.periodType === 'trial';
+    await StorageService.storeData(STORAGE_KEYS.MEMBERSHIP, { isActive, type, expiresAt, isTrial });
   }
 
   private async _getCachedState(): Promise<MembershipState> {
     const state = await StorageService.getData(STORAGE_KEYS.MEMBERSHIP);
-    if (!state) return { isActive: false, type: null, expiresAt: null };
-    return state as MembershipState;
+    if (!state) return { isActive: false, type: null, expiresAt: null, isTrial: false };
+    const cached = state as MembershipState;
+    return { ...cached, isTrial: cached.isTrial ?? false };
   }
 
   private _isActiveFromCache(state: MembershipState): boolean {
