@@ -55,9 +55,6 @@
         "android.permission.POST_NOTIFICATIONS"
       ]
     },
-    "web": {
-      "favicon": "./assets/icon.png"
-    },
     "updates": {
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/e5dde792-2f6d-43f2-a4b7-64ca9fee5e87"
