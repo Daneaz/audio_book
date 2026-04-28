@@ -18,8 +18,11 @@ function inferType(productIdentifier: string): MembershipType {
   return 'monthly';
 }
 
+const MEMBERSHIP_ENABLED = false;
+
 class MembershipService {
   async initialize(): Promise<void> {
+    if (!MEMBERSHIP_ENABLED) return;
     const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEYS.IOS : REVENUECAT_API_KEYS.ANDROID;
     Purchases.configure({ apiKey });
     try {
@@ -31,6 +34,7 @@ class MembershipService {
   }
 
   async isActive(): Promise<boolean> {
+    if (!MEMBERSHIP_ENABLED) return false;
     try {
       const customerInfo = await Purchases.getCustomerInfo();
       await this._syncCache(customerInfo);
@@ -42,6 +46,7 @@ class MembershipService {
   }
 
   async getProductPrices(productIds: string[]): Promise<Record<string, string>> {
+    if (!MEMBERSHIP_ENABLED) return {};
     const products = await Purchases.getProducts(productIds);
     const map: Record<string, string> = {};
     for (const p of products) {
@@ -51,6 +56,7 @@ class MembershipService {
   }
 
   async purchase(productId: string): Promise<void> {
+    if (!MEMBERSHIP_ENABLED) throw new Error('Membership not available');
     const products = await Purchases.getProducts([productId]);
     if (products.length === 0) throw new Error(`Product not found: ${productId}`);
     const { customerInfo } = await Purchases.purchaseStoreProduct(products[0]);
@@ -58,6 +64,7 @@ class MembershipService {
   }
 
   async restore(): Promise<void> {
+    if (!MEMBERSHIP_ENABLED) return;
     const customerInfo = await Purchases.restorePurchases();
     await this._syncCache(customerInfo);
   }
