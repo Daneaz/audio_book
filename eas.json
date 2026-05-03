@@ -28,7 +28,7 @@
         "ascAppId": "6761668590"
       },
       "android": {
-        "serviceAccountKeyPath": "./google-service-account.json",
+        "serviceAccountKeyPath": "../expo-googleserviceacount.json",
         "track": "internal"
       }
     }
