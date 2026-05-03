@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { LocalTtsProvider } from '../services/tts/LocalTtsProvider';
 import { XfyunTtsProvider } from '../services/tts/XfyunTtsProvider';
 import { TtsOptions, TtsProvider } from '../services/tts/TtsProvider';
@@ -7,29 +7,32 @@ function createProvider(voiceType: string): TtsProvider {
   if (voiceType.startsWith('xfyun:')) {
     return new XfyunTtsProvider(voiceType.split(':')[1]);
   }
-  return new LocalTtsProvider(voiceType === 'default' ? undefined : voiceType);
+  const id = voiceType === 'default' || voiceType === '' ? undefined : voiceType;
+  return new LocalTtsProvider(id);
 }
 
 export default function useTts(voiceType: string) {
-  const providerRef = useRef<TtsProvider | null>(null);
-  const voiceTypeRef = useRef<string | null>(null);
+  const provider = useMemo(() => createProvider(voiceType), [voiceType]);
+  const providerRef = useRef<TtsProvider>(provider);
 
-  if (voiceTypeRef.current !== voiceType) {
-    providerRef.current?.stop().catch(() => {});
-    providerRef.current = createProvider(voiceType);
-    voiceTypeRef.current = voiceType;
-  }
+  useEffect(() => {
+    const prev = providerRef.current;
+    if (prev !== provider) {
+      prev.stop().catch(() => {});
+      providerRef.current = provider;
+    }
+  }, [provider]);
 
   const speak = (text: string, options: TtsOptions = {}) => {
-    providerRef.current!.speak(text, options);
+    provider.speak(text, options);
   };
 
   const prefetch = (text: string) => {
-    providerRef.current!.prefetch(text);
+    provider.prefetch(text);
   };
 
   const stop = async () => {
-    await providerRef.current?.stop();
+    await provider.stop();
   };
 
   return { speak, stop, prefetch };

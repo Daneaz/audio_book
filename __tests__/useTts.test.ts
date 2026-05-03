@@ -73,4 +73,33 @@ describe('useTts', () => {
     });
     expect(mockLocalStop).toHaveBeenCalled();
   });
+
+  it('stops previous provider when voiceType changes', async () => {
+    const { rerender } = renderHook(({ v }) => useTts(v), { initialProps: { v: 'default' } });
+    expect(LocalTtsProvider).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      rerender({ v: 'xfyun:xiaoyan' });
+    });
+
+    expect(mockLocalStop).toHaveBeenCalled();
+    expect(XfyunTtsProvider).toHaveBeenCalledWith('xiaoyan');
+  });
+
+  it('does not rebuild provider when voiceType stays the same', () => {
+    const { rerender } = renderHook(({ v }) => useTts(v), { initialProps: { v: 'xfyun:xiaoyan' } });
+    rerender({ v: 'xfyun:xiaoyan' });
+    expect(XfyunTtsProvider).toHaveBeenCalledTimes(1);
+  });
+
+  it('switches from xfyun to local and stops xfyun provider', async () => {
+    const { rerender } = renderHook(({ v }) => useTts(v), { initialProps: { v: 'xfyun:xiaoyu' } });
+
+    await act(async () => {
+      rerender({ v: 'default' });
+    });
+
+    expect(mockXfyunStop).toHaveBeenCalled();
+    expect(LocalTtsProvider).toHaveBeenCalledWith(undefined);
+  });
 });
