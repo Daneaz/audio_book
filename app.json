@@ -25,11 +25,9 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocalNetworkUsageDescription": "需要访问局域网，以便从电脑传输书籍文件。",
         "NSBonjourServices": [
-          "_http._tcp",
           "_http._tcp"
         ],
         "UIBackgroundModes": [
-          "audio",
           "audio"
         ]
       }
@@ -74,7 +72,8 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3842092557707512~5792917189",
-          "iosAppId": "ca-app-pub-3842092557707512~6818538870"
+          "iosAppId": "ca-app-pub-3842092557707512~6818538870",
+          "userTrackingUsageDescription": "This identifier may be used to show non-personalized ads. You can change this in Settings at any time."
         }
       ],
       "expo-font"

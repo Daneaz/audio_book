@@ -1,181 +1,619 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>InkVoice 墨声 — Terms & Privacy</title>
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;max-width:900px;margin:40px auto;padding:20px;line-height:1.8;color:#222}
-h1,h2{margin-top:2em}
-.lang-toggle{position:fixed;top:20px;right:20px}
-button{padding:6px 10px;margin-left:5px}
-.zh{display:none}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InkVoice 墨声 — Terms & Privacy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+SC:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a1208;
+      --ink-light: #3d2f1a;
+      --paper: #f5f0e8;
+      --paper-warm: #ede5d0;
+      --paper-dark: #d9cdb5;
+      --gold: #b8872a;
+      --red-seal: #8b2020;
+      --muted: #7a6e5f;
+      --border: rgba(26,18,8,0.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: 'EB Garamond', 'Noto Serif SC', serif;
+      font-weight: 400;
+      line-height: 1.9;
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 10% 0%, rgba(184,135,42,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 90% 100%, rgba(139,32,32,0.04) 0%, transparent 60%);
+    }
+
+    /* ── Language Toggle ── */
+    .lang-bar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; justify-content: flex-end;
+      padding: 0.6rem 2rem;
+      background: rgba(245,240,232,0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    .lang-toggle {
+      display: flex; border: 1px solid var(--border);
+      border-radius: 4px; overflow: hidden;
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 0.75rem; letter-spacing: 0.06em;
+    }
+    .lang-btn {
+      padding: 0.35rem 1rem; cursor: pointer;
+      border: none; background: transparent;
+      color: var(--muted); font-family: inherit;
+      font-size: inherit; letter-spacing: inherit;
+      transition: all 0.2s; font-weight: 300;
+    }
+    .lang-btn.active { background: var(--gold); color: #fff; font-weight: 400; }
+    .lang-btn:hover:not(.active) { background: var(--paper-warm); color: var(--ink); }
+
+    body.lang-zh .en { display: none; }
+    body.lang-en .zh { display: none; }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2.5rem; text-align: center;
+      background: linear-gradient(180deg, var(--paper-warm) 0%, transparent 100%);
+    }
+    .brand-mark { display: inline-flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
+    .seal {
+      width: 48px; height: 48px; border: 2px solid var(--red-seal);
+      border-radius: 4px; display: flex; align-items: center;
+      justify-content: center; transform: rotate(-3deg);
+      background: rgba(139,32,32,0.05);
+    }
+    .seal span { font-family: 'Noto Serif SC', serif; font-size: 1.1rem; font-weight: 600; color: var(--red-seal); }
+    .brand-name { text-align: left; }
+    .brand-name h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: var(--ink); line-height: 1; }
+    .brand-name p { font-family: 'Noto Sans SC', sans-serif; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.12em; font-weight: 300; }
+    header h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 500; letter-spacing: 0.06em; color: var(--ink); line-height: 1.3; margin-bottom: 0.5rem; }
+    header h1.zh { font-family: 'Noto Serif SC', serif; letter-spacing: 0.15em; }
+    .header-meta { font-family: 'Noto Sans SC', sans-serif; font-size: 0.8rem; color: var(--muted); letter-spacing: 0.08em; font-weight: 300; }
+    .divider-ornament { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 1.25rem auto; max-width: 300px; }
+    .divider-ornament::before, .divider-ornament::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+    .divider-ornament span { color: var(--gold); }
+
+    /* ── Layout ── */
+    .container { max-width: 820px; margin: 0 auto; padding: 4rem 2rem 6rem; }
+
+    /* ── Preamble ── */
+    .preamble {
+      background: var(--paper-warm); border: 1px solid var(--border);
+      border-left: 3px solid var(--gold); padding: 1.75rem 2rem;
+      margin-bottom: 3rem; font-size: 0.97rem; color: var(--ink-light);
+      line-height: 2; border-radius: 0 4px 4px 0;
+    }
+    .preamble.zh { font-family: 'Noto Serif SC', serif; font-size: 0.92rem; }
+
+    /* ── TOC ── */
+    .toc { background: rgba(255,255,255,0.5); border: 1px solid var(--border); padding: 2rem; margin-bottom: 4rem; border-radius: 4px; }
+    .toc h3 { font-family: 'Noto Sans SC', sans-serif; font-size: 0.8rem; font-weight: 400; letter-spacing: 0.18em; color: var(--muted); margin-bottom: 1.25rem; text-transform: uppercase; }
+    .toc ol { list-style: none; columns: 2; gap: 0.5rem; }
+    @media (max-width: 600px) { .toc ol { columns: 1; } }
+    .toc li { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; font-weight: 300; margin-bottom: 0.5rem; break-inside: avoid; }
+    .toc a { color: var(--ink-light); text-decoration: none; display: flex; align-items: baseline; gap: 0.5rem; transition: color 0.2s; }
+    .toc a:hover { color: var(--gold); }
+    .toc-num { color: var(--gold); font-size: 0.7rem; min-width: 1.4rem; }
+    .toc-chapter { font-family: 'Noto Sans SC', sans-serif; font-size: 0.7rem; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; column-span: all; margin: 1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border); }
+
+    /* ── Chapter divider ── */
+    .chapter-divider {
+      display: flex; align-items: center; gap: 1.5rem;
+      margin: 4.5rem 0 3.5rem; color: var(--muted);
+      font-family: 'Noto Sans SC', sans-serif; font-size: 0.72rem;
+      letter-spacing: 0.22em; text-transform: uppercase;
+    }
+    .chapter-divider::before, .chapter-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Sections ── */
+    section { margin-bottom: 3.5rem; }
+    .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+    .section-num { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--paper-dark); line-height: 1; min-width: 2.5rem; text-align: right; }
+    .section-title { font-size: 1.1rem; font-weight: 500; color: var(--ink); letter-spacing: 0.04em; }
+    .section-title.zh { font-family: 'Noto Serif SC', serif; letter-spacing: 0.08em; }
+    section p { font-size: 0.97rem; color: var(--ink-light); margin-bottom: 1rem; line-height: 2; }
+    section p.zh { font-family: 'Noto Serif SC', serif; font-size: 0.92rem; }
+    section ul, section ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    section li { font-size: 0.95rem; color: var(--ink-light); margin-bottom: 0.5rem; line-height: 1.85; }
+    .zh li { font-family: 'Noto Serif SC', serif; font-size: 0.9rem; }
+    .highlight-box { background: rgba(184,135,42,0.07); border: 1px solid rgba(184,135,42,0.25); border-radius: 4px; padding: 1.25rem 1.5rem; margin: 1rem 0; }
+    .highlight-box p { margin: 0; font-size: 0.92rem; }
+    .warning-box { background: rgba(139,32,32,0.04); border: 1px solid rgba(139,32,32,0.18); border-radius: 4px; padding: 1.25rem 1.5rem; margin: 1rem 0; }
+    .warning-box p { margin: 0; font-size: 0.9rem; color: var(--red-seal); }
+    strong { font-weight: 600; color: var(--ink); }
+
+    /* ── Third-party table ── */
+    .sdk-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; }
+    .sdk-table th { background: var(--paper-warm); color: var(--muted); font-weight: 400; letter-spacing: 0.08em; padding: 0.6rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .sdk-table td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); color: var(--ink-light); vertical-align: top; line-height: 1.7; }
+    .sdk-table tr:last-child td { border-bottom: none; }
+    .sdk-table a { color: var(--gold); text-decoration: none; }
+    .sdk-table a:hover { text-decoration: underline; }
+
+    /* ── Footer ── */
+    footer { border-top: 1px solid var(--border); padding: 3rem 2rem; text-align: center; background: var(--paper-warm); }
+    .footer-seal { width: 56px; height: 56px; border: 2px solid var(--red-seal); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; opacity: 0.6; }
+    .footer-seal span { font-family: 'Noto Serif SC', serif; font-size: 1.2rem; color: var(--red-seal); }
+    footer p { font-family: 'Noto Sans SC', sans-serif; font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; font-weight: 300; line-height: 2; }
+  </style>
 </head>
-<body>
+<body class="lang-en">
 
-<div class="lang-toggle">
-<button onclick="setLang('en')">EN</button>
-<button onclick="setLang('zh')">中文</button>
+<div class="lang-bar">
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="btn-en" onclick="setLang('en')">English</button>
+    <button class="lang-btn" id="btn-zh" onclick="setLang('zh')">中文</button>
+  </div>
 </div>
 
-<!-- ================= ENGLISH ================= -->
+<header>
+  <div class="brand-mark">
+    <div class="seal"><span>墨</span></div>
+    <div class="brand-name">
+      <h2>InkVoice</h2>
+      <p>墨声阅读</p>
+    </div>
+  </div>
+  <h1 class="en">Terms of Service &amp; Privacy Policy</h1>
+  <h1 class="zh">用户协议与隐私政策</h1>
+  <div class="divider-ornament"><span>◆</span></div>
+  <p class="header-meta en">Last updated: May 3, 2026</p>
+  <p class="header-meta zh">最后更新：2026年5月3日</p>
+</header>
 
-<div class="en">
+<div class="container">
 
-<h1>InkVoice — Terms of Service & Privacy Policy</h1>
-<p><strong>Last updated:</strong> May 2, 2026</p>
+  <div class="preamble en">
+    Welcome to <strong>InkVoice</strong> — a local-first reading app with on-device Text-to-Speech. This document covers our Terms of Service and Privacy Policy. Please read it carefully before using the app. By downloading or using InkVoice, you agree to all terms herein.
+  </div>
+  <div class="preamble zh">
+    欢迎使用 <strong>InkVoice 墨声</strong>——一款支持本地 TTS 朗读的本地优先阅读应用。本文件涵盖用户服务协议与隐私政策。请在使用前仔细阅读。下载或使用本应用即视为您同意以下全部条款。
+  </div>
 
-<h2>1. Acceptance of Terms</h2>
-<p>By downloading or using InkVoice, you agree to these Terms and Privacy Policy. If you do not agree, please discontinue use.</p>
+  <nav class="toc en">
+    <h3>Contents</h3>
+    <ol>
+      <li class="toc-chapter">Terms of Service</li>
+      <li><a href="#s1"><span class="toc-num">01.</span>Acceptance of Terms</a></li>
+      <li><a href="#s2"><span class="toc-num">02.</span>Description of Service</a></li>
+      <li><a href="#s3"><span class="toc-num">03.</span>Membership Subscription</a></li>
+      <li><a href="#s4"><span class="toc-num">04.</span>Advertising</a></li>
+      <li><a href="#s5"><span class="toc-num">05.</span>File Import &amp; Wi-Fi Transfer</a></li>
+      <li><a href="#s6"><span class="toc-num">06.</span>Intellectual Property</a></li>
+      <li><a href="#s7"><span class="toc-num">07.</span>Disclaimer &amp; Liability</a></li>
+      <li><a href="#s8"><span class="toc-num">08.</span>Changes &amp; Contact</a></li>
+      <li class="toc-chapter">Privacy Policy</li>
+      <li><a href="#p1"><span class="toc-num">P1.</span>Data We Collect</a></li>
+      <li><a href="#p2"><span class="toc-num">P2.</span>Third-Party SDKs</a></li>
+      <li><a href="#p3"><span class="toc-num">P3.</span>Advertising Identifiers &amp; ATT</a></li>
+      <li><a href="#p4"><span class="toc-num">P4.</span>EU Users &amp; GDPR</a></li>
+      <li><a href="#p5"><span class="toc-num">P5.</span>Data Sharing</a></li>
+      <li><a href="#p6"><span class="toc-num">P6.</span>Data Retention</a></li>
+      <li><a href="#p7"><span class="toc-num">P7.</span>Children's Privacy</a></li>
+      <li><a href="#p8"><span class="toc-num">P8.</span>Your Privacy Rights</a></li>
+    </ol>
+  </nav>
+  <nav class="toc zh">
+    <h3>目录</h3>
+    <ol>
+      <li class="toc-chapter">用户服务协议</li>
+      <li><a href="#s1"><span class="toc-num">01.</span>协议接受</a></li>
+      <li><a href="#s2"><span class="toc-num">02.</span>服务说明</a></li>
+      <li><a href="#s3"><span class="toc-num">03.</span>会员订阅</a></li>
+      <li><a href="#s4"><span class="toc-num">04.</span>广告</a></li>
+      <li><a href="#s5"><span class="toc-num">05.</span>文件导入与 Wi-Fi 传输</a></li>
+      <li><a href="#s6"><span class="toc-num">06.</span>知识产权</a></li>
+      <li><a href="#s7"><span class="toc-num">07.</span>免责声明与责任限制</a></li>
+      <li><a href="#s8"><span class="toc-num">08.</span>协议修改与联系方式</a></li>
+      <li class="toc-chapter">隐私政策</li>
+      <li><a href="#p1"><span class="toc-num">P1.</span>我们收集的数据</a></li>
+      <li><a href="#p2"><span class="toc-num">P2.</span>第三方 SDK</a></li>
+      <li><a href="#p3"><span class="toc-num">P3.</span>广告标识符与 ATT</a></li>
+      <li><a href="#p4"><span class="toc-num">P4.</span>欧盟用户与 GDPR</a></li>
+      <li><a href="#p5"><span class="toc-num">P5.</span>数据共享</a></li>
+      <li><a href="#p6"><span class="toc-num">P6.</span>数据存储与删除</a></li>
+      <li><a href="#p7"><span class="toc-num">P7.</span>儿童隐私</a></li>
+      <li><a href="#p8"><span class="toc-num">P8.</span>您的隐私权利</a></li>
+    </ol>
+  </nav>
 
-<h2>2. Description of Service</h2>
-<p>InkVoice is a local-first reading application with on-device Text-to-Speech (TTS).</p>
-<ul>
-<li>TXT / EPUB reading</li>
-<li>Local file import</li>
-<li>Wi-Fi transfer (local network only)</li>
-<li>On-device TTS (no cloud processing)</li>
-<li>Advertisements (free version)</li>
-<li>Membership subscription (premium features)</li>
-</ul>
+  <!-- ═══════════════ TERMS OF SERVICE ═══════════════ -->
 
-<h2>3. Data Collection</h2>
-<ul>
-<li>No account required</li>
-<li>No personal data collected</li>
-<li>No book, text, or audio content uploaded</li>
-</ul>
+  <div class="chapter-divider en">Terms of Service</div>
+  <div class="chapter-divider zh">用户服务协议</div>
 
-<h2>4. Local Processing</h2>
-<p>All data (books, audio, notes, TTS) is processed and stored locally on your device.</p>
+  <!-- S1 -->
+  <section id="s1">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title en">Acceptance of Terms</span>
+      <span class="section-title zh">协议接受</span>
+    </div>
+    <p class="en">By downloading, installing, or using InkVoice, you agree to these Terms of Service and Privacy Policy. If you do not agree, please stop using the app and uninstall it.</p>
+    <p class="en">These Terms apply to all versions of InkVoice distributed through any platform, including iOS and Android.</p>
+    <p class="zh">下载、安装或使用 InkVoice 墨声，即表示您同意本用户服务协议与隐私政策。如不同意，请停止使用并卸载本应用。</p>
+    <p class="zh">本协议适用于通过任何平台（包括 iOS 和 Android）分发的 InkVoice 墨声所有版本。</p>
+  </section>
 
-<h2>5. Crash & Diagnostics</h2>
-<p>We may collect anonymous crash logs and performance data for stability improvements. This data does not identify you.</p>
+  <!-- S2 -->
+  <section id="s2">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title en">Description of Service</span>
+      <span class="section-title zh">服务说明</span>
+    </div>
+    <p class="en">InkVoice is a local-first reading application. All book content, reading progress, and notes are processed and stored on your device only. Core features include:</p>
+    <ul class="en">
+      <li>TXT and EPUB format reading</li>
+      <li>On-device Text-to-Speech (TTS) — no audio is sent to the cloud</li>
+      <li>Local file import from your device storage</li>
+      <li>Wi-Fi transfer over local network (LAN only)</li>
+      <li>Third-party advertisements (free version)</li>
+      <li>Membership subscription for premium features</li>
+    </ul>
+    <p class="en">We reserve the right to add, modify, or remove features at any time.</p>
+    <p class="zh">InkVoice 墨声是一款本地优先的阅读应用。所有书籍内容、阅读进度和笔记均仅在您的设备上处理和存储。主要功能包括：</p>
+    <ul class="zh">
+      <li>TXT 和 EPUB 格式阅读</li>
+      <li>本地 TTS 朗读——音频不发送至云端</li>
+      <li>从设备存储本地导入文件</li>
+      <li>局域网 Wi-Fi 传输（仅限本地网络）</li>
+      <li>第三方广告（免费版）</li>
+      <li>会员订阅（高级功能）</li>
+    </ul>
+    <p class="zh">我们保留随时增加、修改或删除功能的权利。</p>
+  </section>
 
-<h2>6. Advertising</h2>
-<p>The free version includes third-party ads. Ad providers may collect:</p>
-<ul>
-<li>Device identifiers</li>
-<li>Anonymous usage data</li>
-</ul>
-<p>These are governed by the respective ad provider's privacy policy.</p>
+  <!-- S3 -->
+  <section id="s3">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title en">Membership Subscription</span>
+      <span class="section-title zh">会员订阅</span>
+    </div>
+    <p class="en">InkVoice offers optional membership plans (monthly, yearly, lifetime) that provide an ad-free experience and access to premium features.</p>
+    <div class="highlight-box en">
+      <p><strong>Billing:</strong> Subscriptions are processed through Apple App Store or Google Play. Recurring subscriptions renew automatically unless you cancel at least 24 hours before the renewal date. Subscription management is handled entirely by the respective platform.</p>
+    </div>
+    <p class="en"><strong>Refunds:</strong> All refund requests must be submitted through the App Store or Google Play official refund channel. We do not process refunds directly.</p>
+    <p class="en">We use <strong>RevenueCat</strong> to manage subscription status across platforms. See Section P2 for details on the data RevenueCat processes.</p>
+    <p class="zh">InkVoice 墨声提供可选的会员方案（月度、年度、终身），会员可享受无广告体验及高级功能。</p>
+    <div class="highlight-box zh">
+      <p><strong>计费方式：</strong>订阅通过 Apple App Store 或 Google Play 完成。周期性订阅将自动续费，如需取消请在续费日期至少 24 小时前操作。订阅管理完全由相应平台处理。</p>
+    </div>
+    <p class="zh"><strong>退款：</strong>所有退款申请须通过 App Store 或 Google Play 官方退款渠道提交，我们不直接处理退款。</p>
+    <p class="zh">我们使用 <strong>RevenueCat</strong> 跨平台管理订阅状态。RevenueCat 处理的数据详见 P2 节。</p>
+  </section>
 
-<h2>7. Subscription</h2>
-<p>Subscriptions provide:</p>
-<ul>
-<li>Ad-free experience</li>
-<li>Premium features</li>
-</ul>
-<p>Billing is handled by Apple App Store / Google Play. Subscriptions renew automatically unless canceled.</p>
+  <!-- S4 -->
+  <section id="s4">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title en">Advertising</span>
+      <span class="section-title zh">广告</span>
+    </div>
+    <p class="en">The free version of InkVoice includes advertisements provided by <strong>Google AdMob</strong>, including banner and rewarded video ads. Rewarded ads allow you to temporarily hide the banner ad.</p>
+    <p class="en">Ad content and targeting are managed by Google. We do not control what specific ads are shown. Please refer to Section P3 for how advertising identifiers are handled.</p>
+    <p class="en">Subscribe to a membership plan to remove all advertisements.</p>
+    <p class="zh">免费版 InkVoice 墨声包含由 <strong>Google AdMob</strong> 提供的广告，包括横幅广告和激励视频广告。观看激励视频可临时隐藏横幅广告。</p>
+    <p class="zh">广告内容和定向由 Google 管理，我们不控制具体展示哪些广告。广告标识符的处理方式详见 P3 节。</p>
+    <p class="zh">订阅会员可移除全部广告。</p>
+  </section>
 
-<h2>8. Data Sharing</h2>
-<p>We do NOT:</p>
-<ul>
-<li>Sell user data</li>
-<li>Upload user content</li>
-<li>Share personal data</li>
-</ul>
+  <!-- S5 -->
+  <section id="s5">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <span class="section-title en">File Import &amp; Wi-Fi Transfer</span>
+      <span class="section-title zh">文件导入与 Wi-Fi 传输</span>
+    </div>
+    <p class="en">InkVoice supports importing TXT and EPUB files from your device. All files are stored locally and are never uploaded to any server operated by us.</p>
+    <p class="en">The Wi-Fi transfer feature creates a temporary local server on your device within your LAN to receive files from a computer. This server is only active when you enable it and communicates exclusively within your local network.</p>
+    <div class="warning-box en"><p><strong>Important:</strong> Only import files you have a lawful right to use. You are solely responsible for any copyright issues arising from your imported content. Use Wi-Fi transfer only on trusted networks.</p></div>
+    <p class="zh">InkVoice 墨声支持从设备导入 TXT 和 EPUB 文件。所有文件仅存储在本地，不会上传至我们运营的任何服务器。</p>
+    <p class="zh">Wi-Fi 传输功能会在您的设备上创建一个临时本地服务器，通过局域网从电脑接收文件。该服务器仅在您启用时运行，且仅在本地网络内通信。</p>
+    <div class="warning-box zh"><p><strong>重要：</strong>仅导入您有合法使用权的文件。因导入内容产生的任何版权问题由您自行承担。请仅在受信任的网络环境中使用 Wi-Fi 传输功能。</p></div>
+  </section>
 
-<h2>9. Data Retention</h2>
-<p>All data is stored locally. Uninstalling the app removes all data.</p>
+  <!-- S6 -->
+  <section id="s6">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <span class="section-title en">Intellectual Property</span>
+      <span class="section-title zh">知识产权</span>
+    </div>
+    <p class="en">The InkVoice application — including its UI design, source code, trademarks, and brand identity — is our exclusive property and is protected by applicable intellectual property laws. You may not reverse-engineer, decompile, or copy any part of the app.</p>
+    <p class="en">Books you import remain the property of their respective copyright holders. You are responsible for ensuring you have the right to use any content you import.</p>
+    <p class="zh">InkVoice 墨声应用（包括界面设计、源代码、商标及品牌标识）归我们专有，受适用知识产权法律保护。您不得对应用进行逆向工程、反编译或复制。</p>
+    <p class="zh">您导入的书籍的版权归属于各自著作权人。您有责任确保您有权使用所导入的任何内容。</p>
+  </section>
 
-<h2>10. Children's Privacy</h2>
-<p>This app is not directed to children under 13. We do not knowingly collect children's data.</p>
+  <!-- S7 -->
+  <section id="s7">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <span class="section-title en">Disclaimer &amp; Liability</span>
+      <span class="section-title zh">免责声明与责任限制</span>
+    </div>
+    <p class="en">To the maximum extent permitted by law, the app is provided "as is" without warranties of any kind. We are not liable for:</p>
+    <ul class="en">
+      <li>Data loss caused by device failure, software conflict, or force majeure</li>
+      <li>Network security risks arising from Wi-Fi transfer usage</li>
+      <li>Content, accuracy, or consequences of third-party advertisements</li>
+      <li>Service interruptions of Google AdMob or RevenueCat</li>
+    </ul>
+    <div class="highlight-box en">
+      <p>Our maximum aggregate liability shall not exceed the total membership fees you have actually paid us in the 12 months preceding the claim.</p>
+    </div>
+    <p class="zh">在法律允许的最大范围内，本应用按"现状"提供，不作任何明示或暗示的保证。我们不对以下情况承担责任：</p>
+    <ul class="zh">
+      <li>因设备故障、软件冲突或不可抗力导致的数据丢失</li>
+      <li>使用 Wi-Fi 传输功能产生的网络安全风险</li>
+      <li>第三方广告的内容、准确性或相关后果</li>
+      <li>Google AdMob 或 RevenueCat 的服务中断</li>
+    </ul>
+    <div class="highlight-box zh">
+      <p>我们的最大赔偿责任不超过您在索赔前 12 个月内向我们实际支付的会员费用总额。</p>
+    </div>
+  </section>
 
-<h2>11. User Rights</h2>
-<p>Since no personal data is stored on servers, deleting the app removes all user data.</p>
+  <!-- S8 -->
+  <section id="s8">
+    <div class="section-header">
+      <span class="section-num">08</span>
+      <span class="section-title en">Changes &amp; Contact</span>
+      <span class="section-title zh">协议修改与联系方式</span>
+    </div>
+    <p class="en">We may update these Terms from time to time. Material changes will be communicated via in-app notifications. Continued use after changes constitutes acceptance of the revised Terms.</p>
+    <p class="en">For questions or concerns, please contact us at: <a href="mailto:eugenewwj@gmail.com" style="color:var(--gold);text-decoration:none;">eugenewwj@gmail.com</a></p>
+    <p class="zh">我们可能不时更新本协议。重大变更将通过应用内通知告知。继续使用本应用视为接受修订后的协议。</p>
+    <p class="zh">如有任何疑问，请联系我们：<a href="mailto:eugenewwj@gmail.com" style="color:var(--gold);text-decoration:none;">eugenewwj@gmail.com</a></p>
+  </section>
 
-<h2>12. Intellectual Property</h2>
-<p>The app belongs to InkVoice. Users must only import legally obtained content.</p>
+  <!-- ═══════════════ PRIVACY POLICY ═══════════════ -->
 
-<h2>13. Disclaimer</h2>
-<p>The app is provided "as is". We are not responsible for:</p>
-<ul>
-<li>Data loss due to device issues</li>
-<li>Network risks</li>
-<li>Third-party ads</li>
-</ul>
+  <div class="chapter-divider en">Privacy Policy</div>
+  <div class="chapter-divider zh">隐私政策</div>
 
-<h2>14. Changes</h2>
-<p>We may update this policy. Continued use means acceptance.</p>
+  <!-- P1 -->
+  <section id="p1">
+    <div class="section-header">
+      <span class="section-num">P1</span>
+      <span class="section-title en">Data We Collect</span>
+      <span class="section-title zh">我们收集的数据</span>
+    </div>
+    <p class="en"><strong>We do not directly collect personal data.</strong> No account registration is required. Your books, reading progress, bookmarks, and settings are stored only on your device using local storage and are never transmitted to our servers.</p>
+    <p class="en">However, third-party SDKs integrated into the app (Google AdMob, RevenueCat, Expo) may collect certain data as described in Section P2. The data types collected indirectly through these SDKs include:</p>
+    <ul class="en">
+      <li><strong>Device advertising identifier</strong> (IDFA on iOS, GAID on Android) — collected by Google AdMob for ad delivery</li>
+      <li><strong>Anonymous app user ID</strong> — generated by RevenueCat to manage subscription state; not linked to your real identity</li>
+      <li><strong>Purchase and subscription history</strong> — processed by RevenueCat via App Store / Google Play</li>
+      <li><strong>Device type, OS version, app version</strong> — used by RevenueCat and Expo for compatibility and update delivery</li>
+      <li><strong>Anonymous ad interaction data</strong> (impressions, clicks) — collected by Google AdMob</li>
+    </ul>
 
-<h2>15. Contact</h2>
-<p>Email: eugenewwj@gmail.com</p>
+    <p class="zh"><strong>我们不直接收集个人数据。</strong>无需注册账号。您的书籍、阅读进度、书签和设置仅通过本地存储保存在您的设备上，不会传输至我们的服务器。</p>
+    <p class="zh">但应用集成的第三方 SDK（Google AdMob、RevenueCat、Expo）可能按 P2 节所述收集特定数据。通过这些 SDK 间接收集的数据类型包括：</p>
+    <ul class="zh">
+      <li><strong>设备广告标识符</strong>（iOS 上的 IDFA、Android 上的 GAID）——由 Google AdMob 用于广告投放</li>
+      <li><strong>匿名应用用户 ID</strong>——由 RevenueCat 生成用于管理订阅状态，不与您的真实身份关联</li>
+      <li><strong>购买和订阅历史</strong>——由 RevenueCat 通过 App Store / Google Play 处理</li>
+      <li><strong>设备型号、系统版本、应用版本</strong>——由 RevenueCat 和 Expo 用于兼容性检测和更新推送</li>
+      <li><strong>匿名广告交互数据</strong>（展示次数、点击）——由 Google AdMob 收集</li>
+    </ul>
+  </section>
+
+  <!-- P2 -->
+  <section id="p2">
+    <div class="section-header">
+      <span class="section-num">P2</span>
+      <span class="section-title en">Third-Party SDKs</span>
+      <span class="section-title zh">第三方 SDK</span>
+    </div>
+    <p class="en">InkVoice integrates the following third-party SDKs. Each operates under its own privacy policy.</p>
+
+    <table class="sdk-table en">
+      <thead>
+        <tr>
+          <th>SDK</th>
+          <th>Purpose</th>
+          <th>Data Collected</th>
+          <th>Privacy Policy</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Google AdMob</strong></td>
+          <td>Ad delivery (banner &amp; rewarded video)</td>
+          <td>Advertising ID (IDFA/GAID), IP address, device info, ad interaction data</td>
+          <td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></td>
+        </tr>
+        <tr>
+          <td><strong>RevenueCat</strong></td>
+          <td>Subscription &amp; in-app purchase management</td>
+          <td>Anonymous app user ID, device type &amp; OS, purchase history from App Store / Google Play</td>
+          <td><a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">revenuecat.com/privacy</a></td>
+        </tr>
+        <tr>
+          <td><strong>Expo Updates</strong></td>
+          <td>Over-the-air app updates</td>
+          <td>App version, platform (iOS/Android), OS version — used solely to deliver updates</td>
+          <td><a href="https://expo.dev/privacy" target="_blank" rel="noopener">expo.dev/privacy</a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="zh">InkVoice 墨声集成了以下第三方 SDK，各 SDK 按其自身隐私政策运作。</p>
+
+    <table class="sdk-table zh">
+      <thead>
+        <tr>
+          <th>SDK</th>
+          <th>用途</th>
+          <th>收集的数据</th>
+          <th>隐私政策</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Google AdMob</strong></td>
+          <td>广告投放（横幅与激励视频）</td>
+          <td>广告标识符（IDFA/GAID）、IP 地址、设备信息、广告交互数据</td>
+          <td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></td>
+        </tr>
+        <tr>
+          <td><strong>RevenueCat</strong></td>
+          <td>订阅与应用内购管理</td>
+          <td>匿名应用用户 ID、设备型号与系统版本、来自 App Store / Google Play 的购买历史</td>
+          <td><a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">revenuecat.com/privacy</a></td>
+        </tr>
+        <tr>
+          <td><strong>Expo Updates</strong></td>
+          <td>应用 OTA 热更新</td>
+          <td>应用版本、平台（iOS/Android）、系统版本——仅用于推送更新</td>
+          <td><a href="https://expo.dev/privacy" target="_blank" rel="noopener">expo.dev/privacy</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- P3 -->
+  <section id="p3">
+    <div class="section-header">
+      <span class="section-num">P3</span>
+      <span class="section-title en">Advertising Identifiers &amp; ATT</span>
+      <span class="section-title zh">广告标识符与 ATT</span>
+    </div>
+    <p class="en">InkVoice serves <strong>non-personalized ads only</strong>. We have configured Google AdMob to request non-personalized advertisements, which limits data collection compared to personalized ad serving.</p>
+    <p class="en"><strong>iOS — App Tracking Transparency (ATT):</strong> On iOS 14.5 and later, Apple requires apps to request permission before accessing the IDFA (Identifier for Advertisers). If the app presents an ATT prompt, you may choose to allow or deny tracking. Regardless of your choice, InkVoice will continue to show non-personalized ads.</p>
+    <p class="en"><strong>Android:</strong> Google Advertising ID (GAID) may be used by AdMob for non-personalized ad delivery. You can reset or opt out of your GAID in Android device settings under Google &gt; Ads.</p>
+
+    <p class="zh">InkVoice 墨声<strong>仅投放非个性化广告</strong>。我们已将 Google AdMob 配置为请求非个性化广告，与个性化广告相比，数据收集更为有限。</p>
+    <p class="zh"><strong>iOS——App Tracking Transparency（ATT）：</strong>在 iOS 14.5 及以上系统中，Apple 要求应用在访问 IDFA（广告主标识符）前须获得用户许可。若应用弹出 ATT 授权提示，您可选择允许或拒绝。无论您的选择如何，InkVoice 墨声都将继续展示非个性化广告。</p>
+    <p class="zh"><strong>Android：</strong>Google 广告 ID（GAID）可能被 AdMob 用于非个性化广告投放。您可在 Android 设备设置的"Google &gt; 广告"中重置或选择退出 GAID。</p>
+  </section>
+
+  <!-- P4 -->
+  <section id="p4">
+    <div class="section-header">
+      <span class="section-num">P4</span>
+      <span class="section-title en">EU Users &amp; GDPR</span>
+      <span class="section-title zh">欧盟用户与 GDPR</span>
+    </div>
+    <p class="en">If you are located in the European Economic Area (EEA), United Kingdom, or Switzerland, the following applies:</p>
+    <ul class="en">
+      <li>We process data on the legal basis of <strong>legitimate interests</strong> (for non-personalized advertising and subscription management) and <strong>contractual necessity</strong> (for delivering the subscription service you purchased).</li>
+      <li>Google AdMob is configured to comply with GDPR requirements. For EEA users, InkVoice may display a consent prompt via Google's User Messaging Platform (UMP) before serving ads.</li>
+      <li>You have the right to access, rectify, erase, or restrict processing of any personal data held by our third-party partners. Please contact those partners directly using the links in Section P2.</li>
+      <li>You may withdraw consent at any time by adjusting your device's privacy settings or by contacting us.</li>
+    </ul>
+
+    <p class="zh">如果您位于欧洲经济区（EEA）、英国或瑞士，以下条款适用：</p>
+    <ul class="zh">
+      <li>我们处理数据的法律依据为<strong>合法利益</strong>（用于非个性化广告和订阅管理）及<strong>合同必要性</strong>（用于提供您购买的订阅服务）。</li>
+      <li>Google AdMob 已配置为遵守 GDPR 要求。对于 EEA 用户，InkVoice 墨声可能在展示广告前通过 Google 用户消息平台（UMP）显示同意提示。</li>
+      <li>您有权访问、更正、删除或限制处理第三方合作伙伴持有的任何个人数据。请使用 P2 节中的链接直接联系相应合作伙伴。</li>
+      <li>您可随时通过调整设备隐私设置或联系我们来撤回同意。</li>
+    </ul>
+  </section>
+
+  <!-- P5 -->
+  <section id="p5">
+    <div class="section-header">
+      <span class="section-num">P5</span>
+      <span class="section-title en">Data Sharing</span>
+      <span class="section-title zh">数据共享</span>
+    </div>
+    <p class="en">We do not sell, rent, or trade your personal data. Data flows to third parties only as described in Section P2 (AdMob, RevenueCat, Expo), and solely for the purposes stated.</p>
+    <p class="en">We may disclose information if required by law, regulation, or valid legal process.</p>
+    <p class="zh">我们不出售、出租或交易您的个人数据。数据仅按 P2 节所述流向第三方（AdMob、RevenueCat、Expo），且仅用于所述目的。</p>
+    <p class="zh">若法律、法规或有效法律程序要求，我们可能会披露相关信息。</p>
+  </section>
+
+  <!-- P6 -->
+  <section id="p6">
+    <div class="section-header">
+      <span class="section-num">P6</span>
+      <span class="section-title en">Data Retention</span>
+      <span class="section-title zh">数据存储与删除</span>
+    </div>
+    <p class="en">All data stored by InkVoice (books, progress, settings) resides on your device. Uninstalling the app permanently removes all local data.</p>
+    <p class="en">Data held by third-party SDKs (AdMob, RevenueCat, Expo) is retained according to each provider's own data retention policy. To request deletion of data held by these providers, please contact them directly.</p>
+    <p class="zh">InkVoice 墨声存储的所有数据（书籍、进度、设置）均保存在您的设备上。卸载应用将永久删除所有本地数据。</p>
+    <p class="zh">第三方 SDK（AdMob、RevenueCat、Expo）持有的数据按各提供商自身的数据保留政策处理。如需删除这些提供商持有的数据，请直接联系他们。</p>
+  </section>
+
+  <!-- P7 -->
+  <section id="p7">
+    <div class="section-header">
+      <span class="section-num">P7</span>
+      <span class="section-title en">Children's Privacy</span>
+      <span class="section-title zh">儿童隐私</span>
+    </div>
+    <p class="en">InkVoice is not directed to children under 13 (or under 16 in the EEA). We do not knowingly collect personal information from children under these ages. If you believe a child has provided personal information through the app, please contact us and we will take steps to address it.</p>
+    <p class="en">Note: Google AdMob's ad serving is not configured for child-directed content (COPPA). If this app is used by children, please contact us so we can apply appropriate restrictions.</p>
+    <p class="zh">InkVoice 墨声不面向 13 岁以下（在 EEA 地区为 16 岁以下）的儿童。我们不会有意收集上述年龄以下儿童的个人信息。如果您认为儿童通过本应用提供了个人信息，请联系我们，我们将采取相应措施。</p>
+    <p class="zh">注意：Google AdMob 的广告投放未针对儿童内容进行配置（COPPA）。如本应用被儿童使用，请联系我们以便应用相应限制。</p>
+  </section>
+
+  <!-- P8 -->
+  <section id="p8">
+    <div class="section-header">
+      <span class="section-num">P8</span>
+      <span class="section-title en">Your Privacy Rights</span>
+      <span class="section-title zh">您的隐私权利</span>
+    </div>
+    <p class="en">Depending on your location, you may have the following rights regarding your personal data:</p>
+    <ul class="en">
+      <li><strong>Access &amp; portability:</strong> Request a copy of your data from our third-party partners (see Section P2 for links)</li>
+      <li><strong>Deletion:</strong> Uninstall the app to remove all local data; contact third-party partners for data they hold</li>
+      <li><strong>Opt-out of advertising:</strong> Deny ATT permission on iOS, or opt out of personalized ads in Android settings</li>
+      <li><strong>CCPA (California):</strong> We do not sell personal information. California residents may contact us to exercise CCPA rights</li>
+    </ul>
+    <p class="en">To exercise any of these rights or for general privacy inquiries, contact us at <a href="mailto:eugenewwj@gmail.com" style="color:var(--gold);text-decoration:none;">eugenewwj@gmail.com</a>.</p>
+
+    <p class="zh">根据您所在地区，您可能对个人数据拥有以下权利：</p>
+    <ul class="zh">
+      <li><strong>访问与携带权：</strong>向第三方合作伙伴申请获取您的数据副本（链接见 P2 节）</li>
+      <li><strong>删除权：</strong>卸载应用可删除所有本地数据；如需删除第三方合作伙伴持有的数据，请直接联系他们</li>
+      <li><strong>退出广告追踪：</strong>在 iOS 上拒绝 ATT 权限，或在 Android 设置中选择退出个性化广告</li>
+      <li><strong>CCPA（加利福尼亚州）：</strong>我们不出售个人信息。加州居民可联系我们行使 CCPA 权利</li>
+    </ul>
+    <p class="zh">如需行使上述任何权利或有其他隐私问题，请联系我们：<a href="mailto:eugenewwj@gmail.com" style="color:var(--gold);text-decoration:none;">eugenewwj@gmail.com</a></p>
+  </section>
 
 </div>
 
-<!-- ================= 中文 ================= -->
-
-<div class="zh">
-
-<h1>InkVoice 墨声 — 用户协议与隐私政策</h1>
-<p><strong>最后更新：</strong>2026年5月2日</p>
-
-<h2>1. 协议接受</h2>
-<p>使用本应用即表示您同意本协议及隐私政策。</p>
-
-<h2>2. 服务说明</h2>
-<ul>
-<li>TXT / EPUB 阅读</li>
-<li>本地导入</li>
-<li>局域网 Wi-Fi 传输</li>
-<li>本地 TTS（无云端）</li>
-<li>广告（免费版）</li>
-<li>会员订阅（高级功能）</li>
-</ul>
-
-<h2>3. 数据收集</h2>
-<ul>
-<li>无需账号</li>
-<li>不收集个人信息</li>
-<li>不上传文本或音频</li>
-</ul>
-
-<h2>4. 本地处理</h2>
-<p>所有数据仅存储在设备本地。</p>
-
-<h2>5. 崩溃数据</h2>
-<p>仅收集匿名崩溃信息用于优化。</p>
-
-<h2>6. 广告</h2>
-<p>免费版包含广告，第三方可能收集设备标识符。</p>
-
-<h2>7. 会员订阅</h2>
-<p>会员提供去广告及高级功能，通过应用商店订阅并自动续费。</p>
-
-<h2>8. 数据共享</h2>
-<p>我们不会出售或共享用户数据。</p>
-
-<h2>9. 数据存储</h2>
-<p>卸载应用即可删除全部数据。</p>
-
-<h2>10. 儿童隐私</h2>
-<p>不面向13岁以下儿童。</p>
-
-<h2>11. 用户权利</h2>
-<p>删除应用即可删除所有数据。</p>
-
-<h2>12. 知识产权</h2>
-<p>应用归开发者所有，用户需合法使用内容。</p>
-
-<h2>13. 免责声明</h2>
-<p>应用按现状提供，不对设备或网络问题负责。</p>
-
-<h2>14. 协议修改</h2>
-<p>继续使用视为接受更新。</p>
-
-<h2>15. 联系方式</h2>
-<p>邮箱：eugenewwj@gmail.com</p>
-
-</div>
+<footer>
+  <div class="footer-seal"><span>墨</span></div>
+  <p class="en">InkVoice · Terms of Service &amp; Privacy Policy · Last updated May 3, 2026</p>
+  <p class="zh">InkVoice 墨声 · 用户协议与隐私政策 · 最后更新：2026年5月3日</p>
+  <p style="margin-top:1rem;opacity:0.6;font-family:'Noto Sans SC',sans-serif;font-size:0.75rem;">© 2026 InkVoice. All rights reserved.</p>
+</footer>
 
 <script>
-function setLang(lang){
-document.querySelector('.en').style.display = lang==='en'?'block':'none';
-document.querySelector('.zh').style.display = lang==='zh'?'block':'none';
-}
+  function setLang(lang) {
+    document.body.className = 'lang-' + lang;
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  }
+  (function () {
+    const pref = navigator.language || '';
+    if (pref.startsWith('zh')) setLang('zh');
+  })();
 </script>
-
 </body>
 </html>
