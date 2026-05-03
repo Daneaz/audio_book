@@ -11,7 +11,8 @@ import ChapterService from '../services/ChapterService';
 import StorageService from '../services/StorageService';
 import { STORAGE_KEYS } from '../utils/constants';
 import { Book, Chapter, ReadingProgress, RichTextBlock } from '../types';
-import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, splitIntoSubClauses } from '../utils/textUtils';
+import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, splitIntoSubClauses, estimateCharWidthFactor } from '../utils/textUtils';
+import { splitChapterIntoPages } from '../utils/paginationUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex } from '../utils/readingProgress';
 import { VoiceEntry, mergeWithInstalledVoices } from '../utils/voiceUtils';
@@ -46,8 +47,6 @@ interface HighlightFragment {
   highlighted: boolean;
 }
 
-const PAGE_BREAK_REGEX = /[\n。！？；!?;]/;
-const PAGE_BREAK_SEARCH_RANGE = 120;
 const VERTICAL_CONTENT_PADDING_TOP = 40; // contentContainerStyle.paddingVertical
 const CHAPTER_MARGIN_BOTTOM = 40; // styles.chapterContainer.marginBottom
 const TAP_MOVE_THRESHOLD = 10;
@@ -96,62 +95,6 @@ function getVoiceDisplayLabel(
   return languageLabel ? `${name}${locale === 'en' ? ` (${languageLabel})` : `（${languageLabel}）`}` : name;
 }
 
-function splitChapterIntoPages(content: string, charsPerLine: number, linesPerPage: number): string[] {
-  const normalized = content.replace(/\r\n/g, '\n');
-  if (!normalized.trim()) return [''];
-  if (charsPerLine <= 0 || linesPerPage <= 0) return [normalized];
-
-  const pages: string[] = [];
-  let pos = 0;
-
-  while (pos < normalized.length) {
-    let lineCount = 0;
-    let lineChars = 0;
-    let i = pos;
-
-    for (; i < normalized.length; i++) {
-      const char = normalized[i];
-
-      if (char === '\n') {
-        lineCount++;
-        lineChars = 0;
-        if (lineCount >= linesPerPage) {
-          i++;
-          break;
-        }
-      } else {
-        lineChars++;
-        if (lineChars > charsPerLine) {
-          lineCount++;
-          lineChars = 1;
-          if (lineCount >= linesPerPage) {
-            break;
-          }
-        }
-      }
-    }
-
-    if (i >= normalized.length) {
-      pages.push(normalized.slice(pos));
-      break;
-    }
-
-    const searchStart = Math.max(pos, i - PAGE_BREAK_SEARCH_RANGE);
-    let breakAt = -1;
-    for (let j = i - 1; j >= searchStart; j--) {
-      if (PAGE_BREAK_REGEX.test(normalized[j])) {
-        breakAt = j + 1;
-        break;
-      }
-    }
-
-    const pageEnd = breakAt > pos ? breakAt : i;
-    pages.push(normalized.slice(pos, pageEnd));
-    pos = pageEnd;
-  }
-
-  return pages.length > 0 ? pages : [''];
-}
 
 function getHighlightedFragments(
   content: string,
@@ -1594,7 +1537,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const horizontalBottomPadding = insets.bottom + 18;
   const horizontalContentHeight = Math.max(window.height - horizontalTopPadding - horizontalBottomPadding, horizontalLineHeight);
   const charsPerLine = Math.max(Math.floor(horizontalContentWidth / (debouncedFontSize * 1.05)), 1);
-  const linesPerPage = Math.max(Math.floor(horizontalContentHeight / horizontalLineHeight), 1);
+  const linesPerPage = Math.max(Math.floor(horizontalContentHeight / horizontalLineHeight) - 1, 1);
   const speechTimerRatio = speechTimerMinutes / 120;
   const speechTimerThumbOffset = speechTimerRatio * speechTimerWidth;
   const sortedVoices = useMemo(() => {
@@ -1675,7 +1618,9 @@ export default function ReaderScreen({ route, navigation }: any) {
 
     const pages = chaptersData.flatMap((chapterData) => {
       const displayContent = normalizeDisplayParagraphSpacing(chapterData.content);
-      const splitPages = splitChapterIntoPages(displayContent, charsPerLine, linesPerPage);
+      const charWidthFactor = estimateCharWidthFactor(chapterData.content);
+      const adjustedCharsPerLine = Math.max(Math.floor(charsPerLine * (1.05 / charWidthFactor)), 1);
+      const splitPages = splitChapterIntoPages(displayContent, adjustedCharsPerLine, linesPerPage);
       let cumOffset = 0;
       return splitPages.map((pageContent, index) => {
         const charStart = cumOffset;

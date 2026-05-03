@@ -140,3 +140,14 @@ export function splitIntoSubClauses(sentence: string, minChineseChars: number = 
 export function normalizeDisplayParagraphSpacing(content: string): string {
   return content.replace(/\r\n/g, '\n');
 }
+
+export function estimateCharWidthFactor(text: string): number {
+  const sample = text.slice(0, 200);
+  if (!sample.length) return 1.05;
+  let ascii = 0;
+  for (let i = 0; i < sample.length; i++) {
+    if (sample.charCodeAt(i) < 256) ascii++;
+  }
+  const r = ascii / sample.length;
+  return r * 0.55 + (1 - r) * 1.05;
+}

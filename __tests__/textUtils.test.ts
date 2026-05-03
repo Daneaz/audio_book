@@ -1,4 +1,4 @@
-import { parseSentences, sanitizeSentenceForSpeech, splitIntoSubClauses } from '../src/utils/textUtils';
+import { parseSentences, sanitizeSentenceForSpeech, splitIntoSubClauses, estimateCharWidthFactor } from '../src/utils/textUtils';
 
 describe('parseSentences', () => {
   it('merges a trailing backtick into the previous sentence', () => {
@@ -67,5 +67,27 @@ describe('splitIntoSubClauses', () => {
   it('无法分割时不返回空数组', () => {
     const result = splitIntoSubClauses('好。');
     expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+describe('estimateCharWidthFactor', () => {
+  it('returns ~1.05 for pure Chinese text', () => {
+    const factor = estimateCharWidthFactor('一二三四五六七八九十一二三四五六七八九十');
+    expect(factor).toBeCloseTo(1.05, 1);
+  });
+
+  it('returns ~0.55 for pure ASCII English text', () => {
+    const factor = estimateCharWidthFactor('The quick brown fox jumps over the lazy dog.');
+    expect(factor).toBeCloseTo(0.55, 1);
+  });
+
+  it('returns a value between 0.55 and 1.05 for mixed content', () => {
+    const factor = estimateCharWidthFactor('Hello 世界 World 你好');
+    expect(factor).toBeGreaterThan(0.55);
+    expect(factor).toBeLessThan(1.05);
+  });
+
+  it('returns 1.05 for empty string', () => {
+    expect(estimateCharWidthFactor('')).toBe(1.05);
   });
 });
