@@ -25,6 +25,7 @@ export class XfyunTtsProvider implements TtsProvider {
   }
 
   private async _speakAsync(text: string, options: TtsOptions): Promise<void> {
+    await this.stop();
     const cachePath = await this._getCachePath(text);
     const info = await FileSystem.getInfoAsync(cachePath);
     if (!info.exists) {
@@ -44,17 +45,23 @@ export class XfyunTtsProvider implements TtsProvider {
     await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false });
     const { sound } = await Audio.Sound.createAsync({ uri: path });
     this.currentSound = sound;
-    if (options.rate && options.rate !== 1.0) {
-      await sound.setRateAsync(options.rate, true);
-    }
-    sound.setOnPlaybackStatusUpdate(status => {
-      if (status.isLoaded && status.didJustFinish) {
-        sound.unloadAsync().catch(() => {});
-        this.currentSound = null;
-        options.onDone?.();
+    try {
+      if (options.rate && options.rate !== 1.0) {
+        await sound.setRateAsync(options.rate, true);
       }
-    });
-    await sound.playAsync();
+      sound.setOnPlaybackStatusUpdate(status => {
+        if (status.isLoaded && status.didJustFinish && !status.isPlaying) {
+          sound.unloadAsync().catch(() => {});
+          this.currentSound = null;
+          options.onDone?.();
+        }
+      });
+      await sound.playAsync();
+    } catch (e) {
+      await sound.unloadAsync().catch(() => {});
+      this.currentSound = null;
+      throw e;
+    }
   }
 
   async prefetch(text: string): Promise<void> {
