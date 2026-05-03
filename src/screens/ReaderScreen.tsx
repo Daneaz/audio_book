@@ -11,13 +11,16 @@ import ChapterService from '../services/ChapterService';
 import StorageService from '../services/StorageService';
 import { STORAGE_KEYS } from '../utils/constants';
 import { Book, Chapter, ReadingProgress, RichTextBlock } from '../types';
-import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, splitIntoSubClauses, estimateCharWidthFactor } from '../utils/textUtils';
+import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, estimateCharWidthFactor } from '../utils/textUtils';
 import { splitChapterIntoPages } from '../utils/paginationUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex } from '../utils/readingProgress';
-import { VoiceEntry, mergeWithInstalledVoices } from '../utils/voiceUtils';
+import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices } from '../utils/voiceUtils';
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useSettings from '../hooks/useSettings';
+import useTts from '../hooks/useTts';
+import { LocalTtsProvider } from '../services/tts/LocalTtsProvider';
+import { XfyunTtsProvider } from '../services/tts/XfyunTtsProvider';
 import useI18n from '../i18n';
 import { TranslationKey } from '../i18n/translations';
 import { useFocusEffect } from '@react-navigation/native';
@@ -457,6 +460,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   const speakSessionRef = useRef(0);
 
   const { settings, updateSettings } = useSettings();
+  const tts = useTts(settings.voiceType);
+  const previewProviderRef = useRef<LocalTtsProvider | XfyunTtsProvider | null>(null);
   const { t, language } = useI18n();
 
   const [debouncedFontSize, setDebouncedFontSize] = useState(settings.fontSize);
@@ -561,7 +566,7 @@ export default function ReaderScreen({ route, navigation }: any) {
             quality: (v.quality === 'Premium' ? 'Premium' : v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced' | 'Premium',
             installed: true,
           }));
-        setVoices(normalized);
+        setVoices(prependXfyunVoices(normalized));
       }
     } finally {
       if (!voicesCancelledRef.current) setVoicesLoading(false);
@@ -1245,7 +1250,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const stopSpeech = () => {
-    Speech.stop();
+    tts.stop();
     pausedPositionRef.current = null;
     MusicControl.resetNowPlaying();
     setIsSpeaking(false);
@@ -1259,7 +1264,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const pauseSpeech = () => {
-    Speech.stop();
+    tts.stop();
     const pausedChapterId = currentSpeakingChapterId;
     const pausedSentenceIndex = currentSentenceIndex;
     if (pausedChapterId !== null) {
@@ -1363,40 +1368,29 @@ export default function ReaderScreen({ route, navigation }: any) {
     setCurrentSpeakingChapterId(cId);
     setCurrentSentenceIndex(sIndex);
 
-    const subclauses = splitIntoSubClauses(sentence);
+    // Prefetch next 2 sentences in background (no-op for local TTS)
+    for (const offset of [1, 2]) {
+      const nextIdx = sIndex + offset;
+      if (nextIdx < chData.sentences.length) {
+        const nextText = prepareSentenceForTts(chData.sentences[nextIdx].text, 'offline');
+        if (nextText) tts.prefetch(nextText);
+      }
+    }
 
-    const playSubClause = (idx: number) => {
-      if (!isSpeakingRef.current || speakSessionRef.current !== session) return;
-      if (idx >= subclauses.length) {
+    tts.speak(sentence, {
+      language: 'zh-CN',
+      rate: settingsRef.current.speechRate,
+      onDone: () => {
         setTimeout(() => {
           if (isSpeakingRef.current && speakSessionRef.current === session) speakSentence(cId, sIndex + 1);
         }, 50);
-        return;
-      }
-      Speech.speak(subclauses[idx], {
-        language: 'zh-CN',
-        rate: settingsRef.current.speechRate,
-        voice: settingsRef.current.voiceType === 'default' ? undefined : settingsRef.current.voiceType,
-        onDone: () => {
-          if (idx < subclauses.length - 1) {
-            setTimeout(() => {
-              if (isSpeakingRef.current && speakSessionRef.current === session) playSubClause(idx + 1);
-            }, 150);
-          } else {
-            setTimeout(() => {
-              if (isSpeakingRef.current && speakSessionRef.current === session) speakSentence(cId, sIndex + 1);
-            }, 50);
-          }
-        },
-        onStopped: () => { },
-        onError: (e) => {
-          console.error('Speech error', e);
-          stopSpeech();
-        },
-      });
-    };
-
-    playSubClause(0);
+      },
+      onStopped: () => {},
+      onError: (e) => {
+        console.error('Speech error', e);
+        stopSpeech();
+      },
+    });
   };
 
   // Effects for timer
@@ -1465,27 +1459,29 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const previewVoice = async (voiceId: string, voiceLanguage?: string) => {
-    // If we are already speaking, do not interrupt to preview.
-    // The new voice will naturally take effect on the next sentence.
-    if (isSpeakingRef.current) {
-      return;
-    }
+    if (isSpeakingRef.current) return;
 
     const normalizedLanguage = (voiceLanguage || '').toLowerCase();
     const previewText = normalizedLanguage.startsWith('zh') ? t('settings.voicePreviewZh') : t('settings.voicePreviewEn');
     const speechLanguage = normalizedLanguage.startsWith('zh') ? 'zh-CN' : 'en-US';
 
-    Speech.stop();
+    if (previewProviderRef.current) {
+      await previewProviderRef.current.stop();
+    }
+
+    const provider = voiceId.startsWith('xfyun:')
+      ? new XfyunTtsProvider(voiceId.split(':')[1])
+      : new LocalTtsProvider(voiceId === 'default' ? undefined : voiceId);
+
+    previewProviderRef.current = provider;
     setPreviewingVoiceId(voiceId);
 
-    Speech.speak(previewText, {
+    provider.speak(previewText, {
       language: speechLanguage,
       rate: settings.speechRate,
-      voice: voiceId === 'default' ? undefined : voiceId,
-      useApplicationAudioSession: false,
-      onDone: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
-      onStopped: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
-      onError: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
+      onDone: () => setPreviewingVoiceId(current => current === voiceId ? null : current),
+      onStopped: () => setPreviewingVoiceId(current => current === voiceId ? null : current),
+      onError: () => setPreviewingVoiceId(current => current === voiceId ? null : current),
     });
   };
 
@@ -1717,7 +1713,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     loadBookData();
     return () => {
       saveCurrentProgressRef.current();
-      Speech.stop();
+      tts.stop();
       stopAutoFlip();
       if (scrollToIndexRetryTimerRef.current) {
         clearTimeout(scrollToIndexRetryTimerRef.current);
@@ -2315,7 +2311,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                 const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
                 if (chData && currentSentenceIndex > 0) {
                   speakSessionRef.current++;
-                  Speech.stop();
+                  tts.stop();
                   speakSentence(chData.chapter.id, currentSentenceIndex - 1);
                 }
               }}
@@ -2340,7 +2336,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                 const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
                 if (chData && currentSentenceIndex < chData.sentences.length - 1) {
                   speakSessionRef.current++;
-                  Speech.stop();
+                  tts.stop();
                   speakSentence(chData.chapter.id, currentSentenceIndex + 1);
                 }
               }}
