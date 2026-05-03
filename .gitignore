@@ -57,3 +57,6 @@ screenshots/
 # superpower
 .superpowers/
 
+# git worktrees
+.worktrees/
+
