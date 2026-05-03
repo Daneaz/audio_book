@@ -37,6 +37,8 @@ export const MEMBERSHIP_PRODUCT_IDS = {
 
 export const MEMBERSHIP_ENTITLEMENT = 'InkVoice Pro';
 
-export const XFYUN_APPID = 'MOCK_APPID';
-export const XFYUN_API_KEY = 'MOCK_API_KEY';
-export const XFYUN_API_SECRET = 'MOCK_API_SECRET';
+export const XFYUN_KEYS = {
+  APP_ID: 'MOCK_APPID',
+  API_KEY: 'MOCK_API_KEY',
+  API_SECRET: 'MOCK_API_SECRET',
+};

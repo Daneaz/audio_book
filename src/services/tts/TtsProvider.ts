@@ -8,6 +8,6 @@ export interface TtsOptions {
 
 export interface TtsProvider {
   speak(text: string, options: TtsOptions): void;
-  prefetch(text: string): void;
+  prefetch(text: string): Promise<void>;
   stop(): Promise<void>;
 }
