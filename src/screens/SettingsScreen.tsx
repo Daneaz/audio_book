@@ -44,16 +44,20 @@ export default function SettingsScreen({ navigation }: any) {
 
   const checkCacheSize = useCallback(async () => {
     const info = await FileSystem.getInfoAsync(XFYUN_CACHE_DIR, { size: true });
-    setXfyunCacheSize(info.exists ? ((info as any).size ?? 0) : 0);
+    setXfyunCacheSize(info.exists && 'size' in info ? (info.size ?? 0) : 0);
   }, [XFYUN_CACHE_DIR]);
 
   useEffect(() => { checkCacheSize(); }, [checkCacheSize]);
 
   const clearXfyunCache = async () => {
-    const size = xfyunCacheSize;
-    await FileSystem.deleteAsync(XFYUN_CACHE_DIR, { idempotent: true });
-    setXfyunCacheSize(0);
-    Alert.alert(t('settings.xfyunCacheCleared'), formatBytes(size));
+    try {
+      const size = xfyunCacheSize;
+      await FileSystem.deleteAsync(XFYUN_CACHE_DIR, { idempotent: true });
+      setXfyunCacheSize(0);
+      Alert.alert(t('settings.xfyunCacheCleared'), formatBytes(size));
+    } catch (e) {
+      Alert.alert('Error', 'Failed to clear cache');
+    }
   };
 
   const loadVoices = useCallback(async () => {
@@ -108,6 +112,8 @@ export default function SettingsScreen({ navigation }: any) {
       cancelledRef.current = true;
       Speech.stop();
       sub.remove();
+      previewProviderRef.current?.stop().catch(() => {});
+      previewProviderRef.current = null;
     };
   }, [loadVoices]);
 
