@@ -58,6 +58,20 @@ jest.mock('expo-speech', () => ({
   speak: jest.fn(),
 }));
 
+jest.mock('../src/services/tts/XfyunTtsProvider', () => ({
+  XfyunTtsProvider: jest.fn().mockImplementation(() => ({
+    speak: jest.fn(),
+    stop: jest.fn().mockResolvedValue(undefined),
+    prefetch: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+jest.mock('expo-file-system', () => ({
+  cacheDirectory: 'file:///cache/',
+  getInfoAsync: jest.fn().mockResolvedValue({ exists: false }),
+  deleteAsync: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('expo-updates', () => ({
   channel: 'production',
   runtimeVersion: '1.0.0',

@@ -146,6 +146,31 @@ jest.mock('../src/hooks/useSettings', () => ({
   }),
 }));
 
+jest.mock('../src/hooks/useTts', () => ({
+  __esModule: true,
+  default: () => ({
+    speak: jest.fn(),
+    stop: jest.fn().mockResolvedValue(undefined),
+    prefetch: jest.fn(),
+  }),
+}));
+
+jest.mock('../src/services/tts/XfyunTtsProvider', () => ({
+  XfyunTtsProvider: jest.fn().mockImplementation(() => ({
+    speak: jest.fn(),
+    stop: jest.fn().mockResolvedValue(undefined),
+    prefetch: jest.fn(),
+  })),
+}));
+
+jest.mock('../src/services/tts/LocalTtsProvider', () => ({
+  LocalTtsProvider: jest.fn().mockImplementation(() => ({
+    speak: jest.fn(),
+    stop: jest.fn().mockResolvedValue(undefined),
+    prefetch: jest.fn(),
+  })),
+}));
+
 jest.mock('../src/i18n', () => ({
   __esModule: true,
   default: () => ({
