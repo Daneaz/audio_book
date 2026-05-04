@@ -1,15 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, Platform, AppState } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, Platform, AppState, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useSettings from '../hooks/useSettings';
 import * as Speech from 'expo-speech';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
-import { VoiceEntry, mergeWithInstalledVoices } from '../utils/voiceUtils';
+import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices } from '../utils/voiceUtils';
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useI18n from '../i18n';
 import useMembership from '../hooks/useMembership';
+import * as FileSystem from 'expo-file-system';
+import { LocalTtsProvider } from '../services/tts/LocalTtsProvider';
+import { XfyunTtsProvider } from '../services/tts/XfyunTtsProvider';
 
 const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
   'Daniel',
@@ -30,6 +33,28 @@ export default function SettingsScreen({ navigation }: any) {
   const [showFonts, setShowFonts] = useState(false);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
   const cancelledRef = useRef(false);
+  const XFYUN_CACHE_DIR = `${FileSystem.cacheDirectory}xfyun_tts/`;
+  const [xfyunCacheSize, setXfyunCacheSize] = useState(0);
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const checkCacheSize = useCallback(async () => {
+    const info = await FileSystem.getInfoAsync(XFYUN_CACHE_DIR, { size: true });
+    setXfyunCacheSize(info.exists ? ((info as any).size ?? 0) : 0);
+  }, [XFYUN_CACHE_DIR]);
+
+  useEffect(() => { checkCacheSize(); }, [checkCacheSize]);
+
+  const clearXfyunCache = async () => {
+    const size = xfyunCacheSize;
+    await FileSystem.deleteAsync(XFYUN_CACHE_DIR, { idempotent: true });
+    setXfyunCacheSize(0);
+    Alert.alert(t('settings.xfyunCacheCleared'), formatBytes(size));
+  };
 
   const loadVoices = useCallback(async () => {
     setVoicesLoading(true);
@@ -66,7 +91,7 @@ export default function SettingsScreen({ navigation }: any) {
             quality: (v.quality === 'Premium' ? 'Premium' : v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced' | 'Premium',
             installed: true,
           }));
-        setVoices(normalized);
+        setVoices(prependXfyunVoices(normalized));
       }
     } finally {
       if (!cancelledRef.current) setVoicesLoading(false);
@@ -90,22 +115,30 @@ export default function SettingsScreen({ navigation }: any) {
     promptThenOpenSystemSettings(t('settings.voiceHintIos'), t('common.cancel'), t('common.ok'));
   }, [t]);
 
+  const previewProviderRef = useRef<LocalTtsProvider | XfyunTtsProvider | null>(null);
+
   const previewVoice = async (voiceId: string, voiceLanguage?: string) => {
     const normalizedLanguage = (voiceLanguage || '').toLowerCase();
     const previewText = normalizedLanguage.startsWith('zh') ? t('settings.voicePreviewZh') : t('settings.voicePreviewEn');
     const speechLanguage = normalizedLanguage.startsWith('zh') ? 'zh-CN' : 'en-US';
 
-    Speech.stop();
+    if (previewProviderRef.current) {
+      await previewProviderRef.current.stop();
+    }
+
+    const provider = voiceId.startsWith('xfyun:')
+      ? new XfyunTtsProvider(voiceId.split(':')[1])
+      : new LocalTtsProvider(voiceId === 'default' ? undefined : voiceId);
+
+    previewProviderRef.current = provider;
     setPreviewingVoiceId(voiceId);
 
-    Speech.speak(previewText, {
+    provider.speak(previewText, {
       language: speechLanguage,
       rate: settings.speechRate,
-      voice: voiceId === 'default' ? undefined : voiceId,
-      useApplicationAudioSession: false,
-      onDone: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
-      onStopped: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
-      onError: () => setPreviewingVoiceId((current) => (current === voiceId ? null : current)),
+      onDone: () => setPreviewingVoiceId(current => current === voiceId ? null : current),
+      onStopped: () => setPreviewingVoiceId(current => current === voiceId ? null : current),
+      onError: () => setPreviewingVoiceId(current => current === voiceId ? null : current),
     });
   };
 
@@ -147,6 +180,7 @@ export default function SettingsScreen({ navigation }: any) {
     if (!selectedVoice || selectedVoice === 'default') return t('common.default');
     const v = voices.find((x) => x.identifier === selectedVoice);
     if (!v) return selectedVoice;
+    if (v.identifier.startsWith('xfyun:')) return `${v.name} · ${t('voice.cloud')}`;
     const qualityLabel = v.quality === 'Premium' ? ` · ${t('voice.qualityPremium')}` : v.quality === 'Enhanced' ? ` · ${t('voice.qualityEnhanced')}` : '';
     return `${v.name}${qualityLabel}`;
   }, [selectedVoice, t, voices]);
@@ -472,6 +506,22 @@ export default function SettingsScreen({ navigation }: any) {
             )}
           </View>
         )}
+
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+
+        <TouchableOpacity
+          onPress={clearXfyunCache}
+          disabled={xfyunCacheSize === 0}
+          style={styles.settingsRow}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.rowLabel, { color: xfyunCacheSize === 0 ? sc.textSub : sc.textPrimary }]}>
+            {t('settings.clearXfyunCache')}
+          </Text>
+          <Text style={[styles.rowValue, { color: sc.textSub }]}>
+            {xfyunCacheSize > 0 ? formatBytes(xfyunCacheSize) : t('settings.xfyunCacheEmpty')}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* ===== 关于 ===== */}

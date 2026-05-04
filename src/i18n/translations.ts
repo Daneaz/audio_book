@@ -145,7 +145,11 @@ export type TranslationKey =
   | 'membership.manageSubscription'
   | 'membership.subscribed'
   | 'membership.upgrade'
-  | 'membership.buyNow';
+  | 'membership.buyNow'
+  | 'voice.cloud'
+  | 'settings.clearXfyunCache'
+  | 'settings.xfyunCacheEmpty'
+  | 'settings.xfyunCacheCleared';
 
 type TranslationMap = Record<TranslationKey, string>;
 
@@ -298,6 +302,10 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.subscribed': '已订阅',
     'membership.upgrade': '升级',
     'membership.buyNow': '立即购买',
+    'voice.cloud': '云端',
+    'settings.clearXfyunCache': '清除讯飞语音缓存',
+    'settings.xfyunCacheEmpty': '无缓存',
+    'settings.xfyunCacheCleared': '已释放',
   },
   en: {
     'common.loading': 'Loading...',
@@ -447,5 +455,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.subscribed': 'Subscribed',
     'membership.upgrade': 'Upgrade',
     'membership.buyNow': 'Buy Now',
+    'voice.cloud': 'Cloud',
+    'settings.clearXfyunCache': 'Clear iFlyTek Cache',
+    'settings.xfyunCacheEmpty': 'No cache',
+    'settings.xfyunCacheCleared': 'Freed',
   },
 };
