@@ -78,6 +78,7 @@ export class XfyunTtsProvider implements TtsProvider {
   }
 
   async stop(): Promise<void> {
+    await this.fallback.stop();
     if (this.currentSound) {
       await this.currentSound.stopAsync().catch(() => {});
       await this.currentSound.unloadAsync().catch(() => {});

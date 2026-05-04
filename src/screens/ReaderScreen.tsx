@@ -1160,6 +1160,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const startSpeech = (duration: number | null = timerDuration, hidePanel: boolean = true) => {
+    speakSessionRef.current++;
     console.log('Starting speech with duration:', duration);
     setIsSpeaking(true);
     isSpeakingRef.current = true;
@@ -1250,6 +1251,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   const stopSpeech = () => {
+    speakSessionRef.current++;
     tts.stop();
     pausedPositionRef.current = null;
     MusicControl.resetNowPlaying();
@@ -1420,6 +1422,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   useEffect(() => {
     return () => {
       stopSpeech();
+      previewProviderRef.current?.stop().catch(() => {});
+      previewProviderRef.current = null;
     };
   }, []);
 
