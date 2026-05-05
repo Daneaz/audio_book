@@ -13,6 +13,7 @@ import useMembership from '../hooks/useMembership';
 import * as FileSystem from 'expo-file-system/legacy';
 import { LocalTtsProvider } from '../services/tts/LocalTtsProvider';
 import { XfyunTtsProvider } from '../services/tts/XfyunTtsProvider';
+import { VoicePickerModal } from '../components/VoicePickerModal';
 
 const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
   'Daniel',
@@ -29,7 +30,7 @@ export default function SettingsScreen({ navigation }: any) {
   const { t, language } = useI18n();
   const [voicesLoading, setVoicesLoading] = useState(false);
   const [voices, setVoices] = useState<VoiceEntry[]>([]);
-  const [showVoices, setShowVoices] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showFonts, setShowFonts] = useState(false);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
   const cancelledRef = useRef(false);
@@ -164,24 +165,8 @@ export default function SettingsScreen({ navigation }: any) {
     });
   };
 
-  const sortedVoices = useMemo(() => {
-    const zh: VoiceEntry[] = [];
-    const other: VoiceEntry[] = [];
-    for (const v of voices) {
-      if ((v.language || '').toLowerCase().startsWith('zh')) zh.push(v);
-      else other.push(v);
-    }
-    const sortByLabel = (a: VoiceEntry, b: VoiceEntry) => {
-      const la = `${a.quality === 'Default' ? '0' : '1'} ${a.name} ${a.language} ${a.identifier}`.toLowerCase();
-      const lb = `${b.quality === 'Default' ? '0' : '1'} ${b.name} ${b.language} ${b.identifier}`.toLowerCase();
-      return la.localeCompare(lb);
-    };
-    zh.sort(sortByLabel);
-    other.sort(sortByLabel);
-    return [...zh, ...other];
-  }, [voices]);
-
   const selectedVoice = settings.voiceType;
+  const voiceDefaultLang = language === 'zh' ? 'zh-CN' : 'en-US';
   const settingsFontOptions = useMemo(
     () => FONT_PRESET_OPTIONS.filter((option) => option.id !== 'system'),
     []
@@ -240,6 +225,7 @@ export default function SettingsScreen({ navigation }: any) {
   if (loading) return <View style={[styles.container, { backgroundColor: sc.bg }]}><Text style={{color: sc.textPrimary}}>{t('common.loading')}</Text></View>;
 
   return (
+    <>
     <ScrollView
       style={{ flex: 1, backgroundColor: sc.bg }}
       contentContainerStyle={[styles.container, { backgroundColor: sc.bg }]}
@@ -473,60 +459,15 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
 
         {/* 音色 */}
-        <TouchableOpacity onPress={() => setShowVoices((v) => !v)} style={styles.settingsRow} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => setShowVoiceModal(true)} style={styles.settingsRow} activeOpacity={0.7}>
           <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.voice')}</Text>
-          <Text style={[styles.rowValue, { color: sc.textSub }]} numberOfLines={1}>
-            {voicesLoading ? t('common.loading') : selectedVoiceLabel}
-          </Text>
-        </TouchableOpacity>
-
-        {showVoices && (
-          <View style={[styles.expandedList, { borderTopColor: sc.border }]}>
-            {voicesLoading ? (
-              <ActivityIndicator color={sc.accent} style={{ paddingVertical: 12 }} />
-            ) : (
-              <>
-                {[{ identifier: 'default', name: t('common.default'), language: language === 'zh' ? 'zh-CN' : 'en-US', quality: 'Default' as const, installed: true }, ...sortedVoices.slice(0, 60)].map((v, idx, arr) => {
-                  const isDefault = v.identifier === 'default';
-                  const selected = selectedVoice === v.identifier || (isDefault && (!selectedVoice || selectedVoice === 'default'));
-                  const notInstalled = !isDefault && !v.installed;
-                  return (
-                    <TouchableOpacity
-                      key={v.identifier}
-                      onPress={() => {
-                        if (notInstalled) { openVoiceSettings(); return; }
-                        previewVoice(v.identifier, v.language).then(() => updateSettings({ voiceType: v.identifier }));
-                      }}
-                      style={[styles.listItem, { borderBottomColor: sc.border },
-                        selected && { backgroundColor: sc.accentBg },
-                        notInstalled && { opacity: 0.5 },
-                        idx === arr.length - 1 && { borderBottomWidth: 0 },
-                      ]}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                        <Text style={[styles.listItemLabel, { color: selected ? sc.accent : sc.textPrimary }]} numberOfLines={1}>{v.name} ({v.language})</Text>
-                        {!isDefault && v.quality !== 'Default' && (
-                          <View style={{ backgroundColor: sc.accentBg, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
-                            <Text style={{ fontSize: 10, color: sc.accent }}>
-                              {v.quality === 'Cloud' ? t('voice.cloud') : v.quality === 'Premium' ? t('voice.qualityPremium') : t('voice.qualityEnhanced')}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        {previewingVoiceId === v.identifier && <ActivityIndicator size="small" color={sc.accent} />}
-                        {notInstalled
-                          ? <Ionicons name="cloud-download-outline" size={18} color={sc.textSub} />
-                          : selected && <Text style={[styles.listItemCheck, { color: sc.accent }]}>✓</Text>
-                        }
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </>
-            )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.rowValue, { color: sc.textSub }]} numberOfLines={1}>
+              {voicesLoading ? t('common.loading') : selectedVoiceLabel}
+            </Text>
+            <Ionicons name="chevron-forward" size={14} color={sc.textSub} />
           </View>
-        )}
+        </TouchableOpacity>
 
         <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
 
@@ -566,6 +507,23 @@ export default function SettingsScreen({ navigation }: any) {
         </View>
       </View>
     </ScrollView>
+    <VoicePickerModal
+      visible={showVoiceModal}
+      onClose={() => setShowVoiceModal(false)}
+      voices={voices}
+      selectedVoice={selectedVoice ?? 'default'}
+      previewingVoiceId={previewingVoiceId}
+      onVoiceTap={(id, lang) => {
+        updateSettings({ voiceType: id });
+        setShowVoiceModal(false);
+        previewVoice(id, lang);
+      }}
+      defaultLang={voiceDefaultLang}
+      t={t}
+      colors={{ bg: sc.bg, surface: sc.surface, border: sc.border, accent: sc.accent, accentBg: sc.accentBg, textPrimary: sc.textPrimary, textSub: sc.textSub }}
+      onNotInstalledTap={openVoiceSettings}
+    />
+    </>
   );
 }
 

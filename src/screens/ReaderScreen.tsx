@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, ScrollView, useColorScheme, FlatListProps, AppState, Modal, Animated as RNAnimated } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, useColorScheme, FlatListProps, AppState, Modal, Animated as RNAnimated } from 'react-native';
 import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import { splitChapterIntoPages } from '../utils/paginationUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex } from '../utils/readingProgress';
 import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices, isXfyunVoice } from '../utils/voiceUtils';
+import { VoicePickerModal } from '../components/VoicePickerModal';
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useSettings from '../hooks/useSettings';
 import useTts from '../hooks/useTts';
@@ -1552,22 +1553,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   const linesPerPage = Math.max(Math.floor(horizontalContentHeight / horizontalLineHeight) - 1, 1);
   const speechTimerRatio = speechTimerMinutes / 120;
   const speechTimerThumbOffset = speechTimerRatio * speechTimerWidth;
-  const sortedVoices = useMemo(() => {
-    const zh: VoiceEntry[] = [];
-    const other: VoiceEntry[] = [];
-    for (const v of voices) {
-      if ((v.language || '').toLowerCase().startsWith('zh')) zh.push(v);
-      else other.push(v);
-    }
-    const sortByLabel = (a: VoiceEntry, b: VoiceEntry) => {
-      const la = `${a.quality === 'Default' ? '0' : '1'} ${a.name} ${a.language} ${a.identifier}`.toLowerCase();
-      const lb = `${b.quality === 'Default' ? '0' : '1'} ${b.name} ${b.language} ${b.identifier}`.toLowerCase();
-      return la.localeCompare(lb);
-    };
-    zh.sort(sortByLabel);
-    other.sort(sortByLabel);
-    return [...zh, ...other];
-  }, [voices]);
   const selectedVoiceLabel = useMemo(() => {
     if (!settings.voiceType || settings.voiceType === 'default') return t('common.default');
     const matchedVoice = voices.find((voice) => voice.identifier === settings.voiceType);
@@ -2394,75 +2379,23 @@ export default function ReaderScreen({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          {/* 全屏音色选择面板 */}
-          {isTtsVoicePickerVisible && (
-            <View style={[styles.ttsVoicePicker, { backgroundColor: readerColors.surface, borderColor: readerColors.border }]}>
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {(() => {
-                  const isDefaultSelected = settings.voiceType === 'default';
-                  return (
-                    <TouchableOpacity
-                      onPress={() => {
-                        updateSettings({ voiceType: 'default' });
-                        setIsTtsVoicePickerVisible(false);
-                        previewVoice('default', 'zh-CN');
-                      }}
-                      style={[
-                        styles.ttsVoiceOption,
-                        isDefaultSelected && { backgroundColor: readerColors.accentBg },
-                      ]}
-                    >
-                      {isDefaultSelected && <View style={[styles.ttsVoiceOptionBar, { backgroundColor: readerColors.accent }]} />}
-                      <Text style={[styles.ttsVoiceOptionText, { color: isDefaultSelected ? readerColors.accent : readerColors.textPrimary }]}>
-                        {previewingVoiceId === 'default' ? t('common.loading') : t('common.default')}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })()}
-                {sortedVoices.slice(0, 40).map((voice, index) => {
-                  const selected = settings.voiceType === voice.identifier;
-                  const label = getVoiceDisplayLabel(voice, voice.identifier, t, language);
-                  const isInstalled = voice.installed !== false;
-                  return (
-                    <TouchableOpacity
-                      key={voice.identifier}
-                      onPress={() => {
-                        if (!isInstalled) { openVoiceSettings(); return; }
-                        updateSettings({ voiceType: voice.identifier });
-                        setIsTtsVoicePickerVisible(false);
-                        previewVoice(voice.identifier, voice.language);
-                      }}
-                      style={[
-                        styles.ttsVoiceOption,
-                        selected && { backgroundColor: readerColors.accentBg },
-                        !isInstalled && { opacity: 0.45 },
-                        { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: readerColors.border },
-                      ]}
-                    >
-                      {selected && <View style={[styles.ttsVoiceOptionBar, { backgroundColor: readerColors.accent }]} />}
-                      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                        <Text
-                          style={[styles.ttsVoiceOptionText, { color: selected ? readerColors.accent : readerColors.textPrimary, flexShrink: 1 }]}
-                          numberOfLines={1}
-                        >
-                          {previewingVoiceId === voice.identifier ? t('common.loading') : label}
-                        </Text>
-                        {voice.quality !== 'Default' && (
-                          <Text style={[styles.ttsVoiceQualityBadge, { color: selected ? readerColors.accent : readerColors.textSub, borderColor: selected ? readerColors.accentBorder : readerColors.border }]}>
-                            {voice.quality === 'Cloud' ? t('voice.cloud') : voice.quality === 'Premium' ? t('voice.qualityPremium') : t('voice.qualityEnhanced')}
-                          </Text>
-                        )}
-                      </View>
-                      {!isInstalled && (
-                        <Ionicons name="cloud-download-outline" size={14} color={readerColors.textSub} style={{ marginLeft: 4 }} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
         </View>
+        <VoicePickerModal
+          visible={isTtsVoicePickerVisible}
+          onClose={() => setIsTtsVoicePickerVisible(false)}
+          voices={voices}
+          selectedVoice={settings.voiceType ?? 'default'}
+          previewingVoiceId={previewingVoiceId}
+          onVoiceTap={(id, lang) => {
+            updateSettings({ voiceType: id });
+            setIsTtsVoicePickerVisible(false);
+            previewVoice(id, lang);
+          }}
+          defaultLang="zh-CN"
+          t={t}
+          colors={{ bg: readerColors.bg, surface: readerColors.surface, border: readerColors.border, accent: readerColors.accent, accentBg: readerColors.accentBg, textPrimary: readerColors.textPrimary, textSub: readerColors.textSub }}
+          onNotInstalledTap={openVoiceSettings}
+        />
       </Modal>
       <AdBanner
         visible={showAd && !isMenuVisible}

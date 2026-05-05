@@ -185,7 +185,7 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.autoFlipInterval': '自动翻页间隔 (秒)',
     'settings.voiceReading': '语音朗读',
     'settings.speechRate': '语速',
-    'settings.voice': '声音',
+    'settings.voice': '音色',
     'settings.voicePreviewHint': '选择后会自动试听',
     'settings.voicePreviewZh': '这是一段中文语音试听。',
     'settings.voicePreviewEn': 'This is a short English voice preview.',
