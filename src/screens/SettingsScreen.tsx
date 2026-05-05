@@ -65,7 +65,7 @@ export default function SettingsScreen({ navigation }: any) {
 
   useEffect(() => { checkCacheSize(); }, [checkCacheSize]);
 
-  const clearXfyunCache = async () => {
+  const clearVoiceCache = async () => {
     try {
       const size = xfyunCacheSize;
       await FileSystem.deleteAsync(XFYUN_CACHE_DIR, { idempotent: true });
@@ -531,13 +531,13 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
 
         <TouchableOpacity
-          onPress={clearXfyunCache}
+          onPress={clearVoiceCache}
           disabled={xfyunCacheSize === 0}
           style={styles.settingsRow}
           activeOpacity={0.7}
         >
           <Text style={[styles.rowLabel, { color: xfyunCacheSize === 0 ? sc.textSub : sc.textPrimary }]}>
-            {t('settings.clearXfyunCache')}
+            {t('settings.clearVoiceCache')}
           </Text>
           <Text style={[styles.rowValue, { color: sc.textSub }]}>
             {xfyunCacheSize > 0 ? formatBytes(xfyunCacheSize) : t('settings.xfyunCacheEmpty')}
