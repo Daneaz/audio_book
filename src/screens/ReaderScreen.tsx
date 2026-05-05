@@ -435,6 +435,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   const stopSpeechRef = useRef<() => void>(() => { });
   const pauseSpeechRef = useRef<() => void>(() => { });
   const resumeSpeechRef = useRef<() => void>(() => { });
+  const speakSentenceRef = useRef<(cId: string, sIdx: number) => void>(() => { });
+  const prevVoiceTypeRef = useRef<string>('');
   const pausedPositionRef = useRef<{ chapterId: string; sentenceIndex: number } | null>(null);
   const [currentSpeakingChapterId, setCurrentSpeakingChapterId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
@@ -1312,7 +1314,17 @@ export default function ReaderScreen({ route, navigation }: any) {
     stopSpeechRef.current = stopSpeech;
     pauseSpeechRef.current = pauseSpeech;
     resumeSpeechRef.current = resumeSpeech;
+    speakSentenceRef.current = speakSentence;
   });
+
+  useEffect(() => {
+    if (prevVoiceTypeRef.current === settings.voiceType) return;
+    prevVoiceTypeRef.current = settings.voiceType;
+    if (isSpeakingRef.current && currentSpeakingChapterId !== null) {
+      speakSessionRef.current++;
+      speakSentenceRef.current(currentSpeakingChapterId, currentSentenceIndex);
+    }
+  }, [settings.voiceType, currentSpeakingChapterId, currentSentenceIndex]);
 
   useEffect(() => {
     // @ts-ignore
@@ -1561,6 +1573,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     const matchedVoice = voices.find((voice) => voice.identifier === settings.voiceType);
     if (!matchedVoice) return settings.voiceType;
     const base = getVoiceDisplayLabel(matchedVoice, settings.voiceType, t, language);
+    if (matchedVoice.identifier.startsWith('xfyun:')) return `${base} · ${t('voice.cloud')}`;
     return matchedVoice.quality === 'Premium' ? `${base} · ${t('voice.qualityPremium')}` : matchedVoice.quality === 'Enhanced' ? `${base} · ${t('voice.qualityEnhanced')}` : base;
   }, [language, settings.voiceType, t, voices]);
   const fontOptionMeta = useMemo(
@@ -2435,9 +2448,9 @@ export default function ReaderScreen({ route, navigation }: any) {
                         >
                           {previewingVoiceId === voice.identifier ? t('common.loading') : label}
                         </Text>
-                        {voice.quality !== 'Default' && (
+                        {(voice.identifier.startsWith('xfyun:') || voice.quality !== 'Default') && (
                           <Text style={[styles.ttsVoiceQualityBadge, { color: selected ? readerColors.accent : readerColors.textSub, borderColor: selected ? readerColors.accentBorder : readerColors.border }]}>
-                            {voice.quality === 'Premium' ? t('voice.qualityPremium') : t('voice.qualityEnhanced')}
+                            {voice.identifier.startsWith('xfyun:') ? t('voice.cloud') : voice.quality === 'Premium' ? t('voice.qualityPremium') : t('voice.qualityEnhanced')}
                           </Text>
                         )}
                       </View>

@@ -4,16 +4,20 @@ import { TtsOptions, TtsProvider } from './TtsProvider';
 import { splitIntoSubClauses } from '../../utils/textUtils';
 
 export class LocalTtsProvider implements TtsProvider {
+  private _stopped = false;
+
   constructor(private readonly voiceIdentifier: string | undefined) {}
 
   speak(text: string, options: TtsOptions = {}): void {
+    this._stopped = false;
     const subclauses = splitIntoSubClauses(text);
     this._playSubclause(subclauses, 0, options);
   }
 
   private _playSubclause(subclauses: string[], idx: number, options: TtsOptions): void {
+    if (this._stopped) return;
     if (idx >= subclauses.length) {
-      setTimeout(() => options.onDone?.(), 50);
+      setTimeout(() => { if (!this._stopped) options.onDone?.(); }, 50);
       return;
     }
     Speech.speak(subclauses[idx], {
@@ -22,10 +26,11 @@ export class LocalTtsProvider implements TtsProvider {
       voice: this.voiceIdentifier,
       ...(Platform.OS === 'ios' && { useApplicationAudioSession: false }),
       onDone: () => {
+        if (this._stopped) return;
         if (idx < subclauses.length - 1) {
-          setTimeout(() => this._playSubclause(subclauses, idx + 1, options), 150);
+          setTimeout(() => { if (!this._stopped) this._playSubclause(subclauses, idx + 1, options); }, 150);
         } else {
-          setTimeout(() => options.onDone?.(), 50);
+          setTimeout(() => { if (!this._stopped) options.onDone?.(); }, 50);
         }
       },
       onStopped: () => options.onStopped?.(),
@@ -36,6 +41,7 @@ export class LocalTtsProvider implements TtsProvider {
   async prefetch(_text: string): Promise<void> {}
 
   async stop(): Promise<void> {
+    this._stopped = true;
     await Speech.stop();
   }
 }

@@ -3,7 +3,10 @@
     "name": "墨声",
     "slug": "inkvoice",
     "version": "1.0.0",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -76,7 +79,8 @@
           "userTrackingUsageDescription": "This identifier may be used to show non-personalized ads. You can change this in Settings at any time."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-audio"
     ]
   }
 }
