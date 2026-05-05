@@ -7,9 +7,15 @@ export interface VoiceEntry {
 }
 
 const XFYUN_VOICES: VoiceEntry[] = [
-  { identifier: 'xfyun:xiaoyan', name: '晓燕', language: 'zh-CN', quality: 'Cloud', installed: true },
-  { identifier: 'xfyun:xiaoyu', name: '晓宇', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'xiaoyan', name: '晓燕', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'xiaoyu', name: '晓宇', language: 'zh-CN', quality: 'Cloud', installed: true },
 ];
+
+const XFYUN_VOICE_IDS = new Set(XFYUN_VOICES.map(v => v.identifier));
+
+export function isXfyunVoice(identifier: string): boolean {
+  return XFYUN_VOICE_IDS.has(identifier);
+}
 
 const KNOWN_IOS_ZH_VOICES: Omit<VoiceEntry, 'installed'>[] = [
   { identifier: 'com.apple.voice.premium.zh-TW.Meijia', name: '美佳', language: 'zh-TW', quality: 'Premium' },

@@ -6,7 +6,7 @@ import * as Speech from 'expo-speech';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
-import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices } from '../utils/voiceUtils';
+import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices, isXfyunVoice } from '../utils/voiceUtils';
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useI18n from '../i18n';
 import useMembership from '../hooks/useMembership';
@@ -148,8 +148,8 @@ export default function SettingsScreen({ navigation }: any) {
       await previewProviderRef.current.stop();
     }
 
-    const provider = voiceId.startsWith('xfyun:')
-      ? new XfyunTtsProvider(voiceId.split(':')[1])
+    const provider = isXfyunVoice(voiceId)
+      ? new XfyunTtsProvider(voiceId)
       : new LocalTtsProvider(voiceId === 'default' ? undefined : voiceId);
 
     previewProviderRef.current = provider;

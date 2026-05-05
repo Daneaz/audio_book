@@ -41,7 +41,7 @@ export class XfyunTtsProvider implements TtsProvider {
     const cachePath = await this._getCachePath(text);
     const info = await FileSystem.getInfoAsync(cachePath);
     if (!info.exists) {
-      await this._synthesizeAndCache(text, cachePath, options.rate ?? 1.0);
+      await this._synthesizeAndCache(text, cachePath);
     }
     if (this._gen !== gen) return;
     await this._playFile(cachePath, options);
@@ -71,7 +71,7 @@ export class XfyunTtsProvider implements TtsProvider {
     return `wss://${host}${path}?authorization=${encodeURIComponent(authorization)}&date=${encodeURIComponent(date)}&host=${host}`;
   }
 
-  private async _synthesizeAndCache(text: string, cachePath: string, rate: number): Promise<void> {
+  private async _synthesizeAndCache(text: string, cachePath: string): Promise<void> {
     if (isMock) {
       throw new Error('iFlyTek credentials not configured — using local TTS');
     }
@@ -93,7 +93,7 @@ export class XfyunTtsProvider implements TtsProvider {
             aue: 'lame',
             auf: 'audio/L16;rate=16000',
             vcn: this.voiceId,
-            speed: Math.min(100, Math.max(0, Math.round((rate / 2) * 100))),
+            speed: 50,
             volume: 50,
             pitch: 50,
             bgs: 0,
@@ -165,7 +165,7 @@ export class XfyunTtsProvider implements TtsProvider {
     const cachePath = await this._getCachePath(text);
     const info = await FileSystem.getInfoAsync(cachePath);
     if (!info.exists) {
-      await this._synthesizeAndCache(text, cachePath, 1.0);
+      await this._synthesizeAndCache(text, cachePath);
     }
   }
 

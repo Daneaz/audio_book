@@ -15,7 +15,7 @@ import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplay
 import { splitChapterIntoPages } from '../utils/paginationUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
 import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex } from '../utils/readingProgress';
-import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices } from '../utils/voiceUtils';
+import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices, isXfyunVoice } from '../utils/voiceUtils';
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useSettings from '../hooks/useSettings';
 import useTts from '../hooks/useTts';
@@ -1485,8 +1485,8 @@ export default function ReaderScreen({ route, navigation }: any) {
       await previewProviderRef.current.stop();
     }
 
-    const provider = voiceId.startsWith('xfyun:')
-      ? new XfyunTtsProvider(voiceId.split(':')[1])
+    const provider = isXfyunVoice(voiceId)
+      ? new XfyunTtsProvider(voiceId)
       : new LocalTtsProvider(voiceId === 'default' ? undefined : voiceId);
 
     previewProviderRef.current = provider;

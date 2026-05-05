@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef } from 'react';
 import { LocalTtsProvider } from '../services/tts/LocalTtsProvider';
 import { XfyunTtsProvider } from '../services/tts/XfyunTtsProvider';
 import { TtsOptions, TtsProvider } from '../services/tts/TtsProvider';
+import { isXfyunVoice } from '../utils/voiceUtils';
 
 function createProvider(voiceType: string): TtsProvider {
-  if (voiceType.startsWith('xfyun:')) {
-    return new XfyunTtsProvider(voiceType.split(':')[1]);
+  if (isXfyunVoice(voiceType)) {
+    return new XfyunTtsProvider(voiceType);
   }
   const id = voiceType === 'default' || voiceType === '' ? undefined : voiceType;
   return new LocalTtsProvider(id);
