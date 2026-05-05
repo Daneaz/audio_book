@@ -7,9 +7,17 @@ export interface VoiceEntry {
 }
 
 const XFYUN_VOICES: VoiceEntry[] = [
-  { identifier: 'xiaoyan', name: '晓燕', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'x4_yezi', name: '小露', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'x4_xiaoyan', name: '小燕', language: 'zh-CN', quality: 'Cloud', installed: true },
   { identifier: 'xiaoyu', name: '晓宇', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'aisjiuxu', name: '许久', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'aisxping', name: '小萍', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'aisjinger', name: '小婧', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'aisbabyxu', name: '许小宝', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'x4_xiaoxi', name: '水哥', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'x4_lingbosong', name: '聆伯松 ', language: 'zh-CN', quality: 'Cloud', installed: true },
 ];
+
 
 const XFYUN_VOICE_IDS = new Set(XFYUN_VOICES.map(v => v.identifier));
 

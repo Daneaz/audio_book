@@ -91,7 +91,7 @@ export class XfyunTtsProvider implements TtsProvider {
           common: { app_id: XFYUN_KEYS.APP_ID },
           business: {
             aue: 'lame',
-            auf: 'audio/L16;rate=16000',
+            auf: 'audio/L16;rate=48000',
             vcn: this.voiceId,
             speed: 50,
             volume: 50,
@@ -134,7 +134,17 @@ export class XfyunTtsProvider implements TtsProvider {
       };
     });
 
-    await FileSystem.writeAsStringAsync(cachePath, chunks.join(''), {
+    const byteArrays = chunks.map(chunk => {
+      const bin = atob(chunk);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    });
+    const total = byteArrays.reduce((s, a) => s + a.length, 0);
+    const merged = new Uint8Array(total);
+    let offset = 0;
+    for (const arr of byteArrays) { merged.set(arr, offset); offset += arr.length; }
+    await FileSystem.writeAsStringAsync(cachePath, _uint8ToBase64(merged), {
       encoding: FileSystem.EncodingType.Base64,
     });
   }
