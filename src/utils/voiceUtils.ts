@@ -2,13 +2,13 @@ export interface VoiceEntry {
   identifier: string;
   name: string;
   language: string;
-  quality: 'Default' | 'Enhanced' | 'Premium';
+  quality: 'Default' | 'Enhanced' | 'Premium' | 'Cloud';
   installed: boolean;
 }
 
 const XFYUN_VOICES: VoiceEntry[] = [
-  { identifier: 'xfyun:xiaoyan', name: '晓燕', language: 'zh-CN', quality: 'Premium', installed: true },
-  { identifier: 'xfyun:xiaoyu', name: '晓宇', language: 'zh-CN', quality: 'Premium', installed: true },
+  { identifier: 'xfyun:xiaoyan', name: '晓燕', language: 'zh-CN', quality: 'Cloud', installed: true },
+  { identifier: 'xfyun:xiaoyu', name: '晓宇', language: 'zh-CN', quality: 'Cloud', installed: true },
 ];
 
 const KNOWN_IOS_ZH_VOICES: Omit<VoiceEntry, 'installed'>[] = [

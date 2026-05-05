@@ -92,7 +92,7 @@ export default function SettingsScreen({ navigation }: any) {
             identifier: v.identifier,
             name: v.name || v.identifier,
             language: v.language || '',
-            quality: (v.quality === 'Premium' ? 'Premium' : v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced' | 'Premium',
+            quality: (v.quality === 'Premium' ? 'Premium' : v.quality === 'Enhanced' ? 'Enhanced' : 'Default') as 'Default' | 'Enhanced' | 'Premium' | 'Cloud',
             installed: true,
           }));
         setVoices(prependXfyunVoices(normalized));
@@ -186,8 +186,7 @@ export default function SettingsScreen({ navigation }: any) {
     if (!selectedVoice || selectedVoice === 'default') return t('common.default');
     const v = voices.find((x) => x.identifier === selectedVoice);
     if (!v) return selectedVoice;
-    if (v.identifier.startsWith('xfyun:')) return `${v.name} · ${t('voice.cloud')}`;
-    const qualityLabel = v.quality === 'Premium' ? ` · ${t('voice.qualityPremium')}` : v.quality === 'Enhanced' ? ` · ${t('voice.qualityEnhanced')}` : '';
+    const qualityLabel = v.quality === 'Cloud' ? ` · ${t('voice.cloud')}` : v.quality === 'Premium' ? ` · ${t('voice.qualityPremium')}` : v.quality === 'Enhanced' ? ` · ${t('voice.qualityEnhanced')}` : '';
     return `${v.name}${qualityLabel}`;
   }, [selectedVoice, t, voices]);
   const fontOptionMeta = useMemo(
@@ -490,10 +489,10 @@ export default function SettingsScreen({ navigation }: any) {
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
                         <Text style={[styles.listItemLabel, { color: selected ? sc.accent : sc.textPrimary }]} numberOfLines={1}>{v.name} ({v.language})</Text>
-                        {!isDefault && (v.identifier.startsWith('xfyun:') || v.quality !== 'Default') && (
+                        {!isDefault && v.quality !== 'Default' && (
                           <View style={{ backgroundColor: sc.accentBg, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
                             <Text style={{ fontSize: 10, color: sc.accent }}>
-                              {v.identifier.startsWith('xfyun:') ? t('voice.cloud') : v.quality === 'Premium' ? t('voice.qualityPremium') : t('voice.qualityEnhanced')}
+                              {v.quality === 'Cloud' ? t('voice.cloud') : v.quality === 'Premium' ? t('voice.qualityPremium') : t('voice.qualityEnhanced')}
                             </Text>
                           </View>
                         )}
