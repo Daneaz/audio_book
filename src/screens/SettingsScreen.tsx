@@ -10,7 +10,7 @@ import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices } from '../uti
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
 import useI18n from '../i18n';
 import useMembership from '../hooks/useMembership';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { LocalTtsProvider } from '../services/tts/LocalTtsProvider';
 import { XfyunTtsProvider } from '../services/tts/XfyunTtsProvider';
 
@@ -43,8 +43,24 @@ export default function SettingsScreen({ navigation }: any) {
   };
 
   const checkCacheSize = useCallback(async () => {
-    const info = await FileSystem.getInfoAsync(XFYUN_CACHE_DIR, { size: true });
-    setXfyunCacheSize(info.exists && 'size' in info ? (info.size ?? 0) : 0);
+    const calcDirSize = async (dir: string): Promise<number> => {
+      const info = await FileSystem.getInfoAsync(dir);
+      if (!info.exists) return 0;
+      const entries = await FileSystem.readDirectoryAsync(dir);
+      let total = 0;
+      for (const entry of entries) {
+        const entryPath = `${dir}${entry}`;
+        const entryInfo = await FileSystem.getInfoAsync(entryPath, { size: true });
+        if (!entryInfo.exists) continue;
+        if (entryInfo.isDirectory) {
+          total += await calcDirSize(`${entryPath}/`);
+        } else if ('size' in entryInfo) {
+          total += entryInfo.size ?? 0;
+        }
+      }
+      return total;
+    };
+    setXfyunCacheSize(await calcDirSize(XFYUN_CACHE_DIR));
   }, [XFYUN_CACHE_DIR]);
 
   useEffect(() => { checkCacheSize(); }, [checkCacheSize]);
