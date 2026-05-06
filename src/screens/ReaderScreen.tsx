@@ -26,6 +26,7 @@ import useI18n from '../i18n';
 import { TranslationKey } from '../i18n/translations';
 import { useFocusEffect } from '@react-navigation/native';
 import AdBanner, { AD_BANNER_HEIGHT } from '../components/AdBanner';
+import { useCloudVoiceAccess } from '../hooks/useCloudVoiceAccess';
 import EpubBlock from '../components/EpubBlock';
 import AdService from '../services/AdService';
 
@@ -463,6 +464,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const speakSessionRef = useRef(0);
 
   const { settings, updateSettings } = useSettings();
+  const { requestAccess } = useCloudVoiceAccess();
   const tts = useTts(settings.voiceType);
   const previewProviderRef = useRef<LocalTtsProvider | XfyunTtsProvider | null>(null);
   const { t, language } = useI18n();
@@ -2387,9 +2389,14 @@ export default function ReaderScreen({ route, navigation }: any) {
           selectedVoice={settings.voiceType ?? 'default'}
           previewingVoiceId={previewingVoiceId}
           onVoiceTap={(id, lang) => {
-            updateSettings({ voiceType: id });
-            setIsTtsVoicePickerVisible(false);
-            previewVoice(id, lang);
+            requestAccess(id, lang, {
+              onGranted: (grantedId, grantedLang) => {
+                updateSettings({ voiceType: grantedId });
+                setIsTtsVoicePickerVisible(false);
+                previewVoice(grantedId, grantedLang);
+              },
+              onBeforeAd: () => setIsTtsVoicePickerVisible(false),
+            });
           }}
           defaultLang="zh-CN"
           t={t}

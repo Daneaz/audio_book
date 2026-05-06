@@ -14,6 +14,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { LocalTtsProvider } from '../services/tts/LocalTtsProvider';
 import { XfyunTtsProvider } from '../services/tts/XfyunTtsProvider';
 import { VoicePickerModal } from '../components/VoicePickerModal';
+import { useCloudVoiceAccess } from '../hooks/useCloudVoiceAccess';
 
 const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
   'Daniel',
@@ -26,6 +27,7 @@ const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
 
 export default function SettingsScreen({ navigation }: any) {
   const { settings, updateSettings, loading } = useSettings();
+  const { requestAccess } = useCloudVoiceAccess();
   const { isActive, isTrial, expiresAt } = useMembership();
   const { t, language } = useI18n();
   const [voicesLoading, setVoicesLoading] = useState(false);
@@ -514,9 +516,14 @@ export default function SettingsScreen({ navigation }: any) {
       selectedVoice={selectedVoice ?? 'default'}
       previewingVoiceId={previewingVoiceId}
       onVoiceTap={(id, lang) => {
-        updateSettings({ voiceType: id });
-        setShowVoiceModal(false);
-        previewVoice(id, lang);
+        requestAccess(id, lang, {
+          onGranted: (grantedId, grantedLang) => {
+            updateSettings({ voiceType: grantedId });
+            setShowVoiceModal(false);
+            previewVoice(grantedId, grantedLang);
+          },
+          onBeforeAd: () => setShowVoiceModal(false),
+        });
       }}
       defaultLang={voiceDefaultLang}
       t={t}

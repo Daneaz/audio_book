@@ -81,6 +81,10 @@ jest.mock('expo-constants', () => ({
   default: { expoConfig: { version: '1.0.0' } },
 }));
 
+jest.mock('../src/hooks/useCloudVoiceAccess', () => ({
+  useCloudVoiceAccess: () => ({ requestAccess: jest.fn() }),
+}));
+
 jest.mock('../src/hooks/useMembership');
 const mockUseMembership = useMembershipHook as jest.MockedFunction<typeof useMembershipHook>;
 
