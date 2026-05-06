@@ -29,12 +29,6 @@ jest.mock('expo-audio', () => ({
   setAudioModeAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('expo-file-system', () => ({
-  cacheDirectory: 'file://cache/',
-  getInfoAsync: jest.fn().mockResolvedValue({ exists: false }),
-  makeDirectoryAsync: jest.fn().mockResolvedValue(undefined),
-}));
-
 jest.mock('expo-file-system/legacy', () => ({
   cacheDirectory: 'file://cache/',
   getInfoAsync: jest.fn().mockResolvedValue({ exists: false }),
@@ -116,6 +110,19 @@ describe('XfyunTtsProvider', () => {
       await new Promise(r => setTimeout(r, 30));
 
       expect(getInfoAsync).toHaveBeenCalled();
+    });
+
+    it('prefetch silently skips when access is denied', async () => {
+      const AdService = jest.requireMock('../src/services/AdService');
+      (AdService.default.isCloudVoiceUnlocked as jest.Mock).mockResolvedValue(false);
+
+      const { getInfoAsync } = jest.requireMock('expo-file-system/legacy');
+      getInfoAsync.mockClear();
+
+      const provider = new XfyunTtsProvider('x4_yezi');
+      await provider.prefetch('你好');
+
+      expect(getInfoAsync).not.toHaveBeenCalled();
     });
   });
 });

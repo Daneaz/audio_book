@@ -177,6 +177,8 @@ export class XfyunTtsProvider implements TtsProvider {
   }
 
   private async _prefetchAsync(text: string): Promise<void> {
+    const hasAccess = await AdService.isCloudVoiceUnlocked();
+    if (!hasAccess) return;
     const cachePath = await this._getCachePath(text);
     const info = await FileSystem.getInfoAsync(cachePath);
     if (!info.exists) {
