@@ -84,6 +84,50 @@ describe('AdService', () => {
     });
   });
 
+  describe('isCloudVoiceUnlocked', () => {
+    it('returns true when user is a member', async () => {
+      (MembershipService.isActive as jest.Mock).mockResolvedValue(true);
+      expect(await AdService.isCloudVoiceUnlocked()).toBe(true);
+    });
+
+    it('returns true when cloudVoiceUnlockedUntil is in the future', async () => {
+      (MembershipService.isActive as jest.Mock).mockResolvedValue(false);
+      const future = new Date(Date.now() + 20 * 60 * 1000).toISOString();
+      (StorageService.getData as jest.Mock).mockResolvedValue({ cloudVoiceUnlockedUntil: future });
+      expect(await AdService.isCloudVoiceUnlocked()).toBe(true);
+    });
+
+    it('returns false when cloudVoiceUnlockedUntil has expired', async () => {
+      (MembershipService.isActive as jest.Mock).mockResolvedValue(false);
+      const past = new Date(Date.now() - 1000).toISOString();
+      (StorageService.getData as jest.Mock).mockResolvedValue({ cloudVoiceUnlockedUntil: past });
+      expect(await AdService.isCloudVoiceUnlocked()).toBe(false);
+    });
+
+    it('returns false for non-member with no ad state', async () => {
+      (MembershipService.isActive as jest.Mock).mockResolvedValue(false);
+      (StorageService.getData as jest.Mock).mockResolvedValue(null);
+      expect(await AdService.isCloudVoiceUnlocked()).toBe(false);
+    });
+  });
+
+  describe('unlockCloudVoice', () => {
+    it('writes cloudVoiceUnlockedUntil ~30 minutes from now, preserving existing state', async () => {
+      const existingState = { bannerHiddenUntil: 'some-time' };
+      (StorageService.getData as jest.Mock).mockResolvedValue(existingState);
+      (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
+
+      await AdService.unlockCloudVoice();
+
+      const call = (StorageService.storeData as jest.Mock).mock.calls[0];
+      expect(call[0]).toBe(STORAGE_KEYS.AD_STATE);
+      expect(call[1].bannerHiddenUntil).toBe('some-time');
+      const writtenTime = new Date(call[1].cloudVoiceUnlockedUntil).getTime();
+      const expectedTime = Date.now() + 30 * 60 * 1000;
+      expect(Math.abs(writtenTime - expectedTime)).toBeLessThan(1000);
+    });
+  });
+
   describe('showRewardedAd', () => {
     function makeMockRewardedAd() {
       const listeners: Record<string, ((...args: any[]) => void)[]> = {};
