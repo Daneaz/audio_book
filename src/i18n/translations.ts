@@ -149,7 +149,10 @@ export type TranslationKey =
   | 'voice.cloud'
   | 'settings.clearVoiceCache'
   | 'settings.xfyunCacheEmpty'
-  | 'settings.xfyunCacheCleared';
+  | 'settings.xfyunCacheCleared'
+  | 'voice.cloudAdTitle'
+  | 'voice.cloudAdMessage'
+  | 'voice.cloudAdConfirm';
 
 type TranslationMap = Record<TranslationKey, string>;
 
@@ -306,6 +309,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.clearVoiceCache': '清除语音缓存',
     'settings.xfyunCacheEmpty': '无缓存',
     'settings.xfyunCacheCleared': '已释放',
+    'voice.cloudAdTitle': '云端音色',
+    'voice.cloudAdMessage': '观看一个广告，即可免费使用云端音色 30 分钟。会员可永久畅用。',
+    'voice.cloudAdConfirm': '观看广告',
   },
   en: {
     'common.loading': 'Loading...',
@@ -459,5 +465,8 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.clearVoiceCache': 'Clear Voice Cache',
     'settings.xfyunCacheEmpty': 'No cache',
     'settings.xfyunCacheCleared': 'Freed',
+    'voice.cloudAdTitle': 'Cloud Voice',
+    'voice.cloudAdMessage': 'Watch a short ad to use cloud voices free for 30 minutes. Members enjoy unlimited access.',
+    'voice.cloudAdConfirm': 'Watch Ad',
   },
 };
