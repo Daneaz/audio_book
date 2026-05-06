@@ -42,11 +42,11 @@ export function useCloudVoiceAccess() {
               opts.onBeforeAd?.();
               try {
                 await AdService.showRewardedAd();
-                await AdService.unlockCloudVoice();
-                opts.onGranted(voiceId, lang);
               } catch {
-                // 用户未看完广告，静默失败
+                return;
               }
+              await AdService.unlockCloudVoice();
+              opts.onGranted(voiceId, lang);
             },
           },
         ]
