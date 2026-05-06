@@ -31,7 +31,9 @@ export class XfyunTtsProvider implements TtsProvider {
     const gen = ++this._gen;
     this._speakAsync(text, options, gen).catch(e => {
       if (this._gen !== gen) return;
-      console.warn('XfyunTtsProvider: falling back to local TTS:', e.message);
+      if (e.message !== 'cloud voice access expired') {
+        console.warn('XfyunTtsProvider: falling back to local TTS:', e.message);
+      }
       this.fallback.speak(text, options);
     });
   }

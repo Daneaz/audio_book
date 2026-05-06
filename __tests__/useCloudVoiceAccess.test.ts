@@ -118,4 +118,22 @@ describe('useCloudVoiceAccess', () => {
     expect(AdService.unlockCloudVoice).not.toHaveBeenCalled();
     expect(onGranted).not.toHaveBeenCalled();
   });
+
+  it('does not show ad or call onGranted when user taps cancel', async () => {
+    (AdService.isCloudVoiceUnlocked as jest.Mock).mockResolvedValue(false);
+    let alertButtons: any[] = [];
+    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, btns) => {
+      alertButtons = btns ?? [];
+    });
+    const { result } = renderHook(() => useCloudVoiceAccess());
+    const onGranted = jest.fn();
+
+    await act(async () => {
+      result.current.requestAccess('x4_yezi', 'zh-CN', { onGranted });
+    });
+
+    expect(alertButtons[0].style).toBe('cancel');
+    expect(AdService.showRewardedAd).not.toHaveBeenCalled();
+    expect(onGranted).not.toHaveBeenCalled();
+  });
 });
