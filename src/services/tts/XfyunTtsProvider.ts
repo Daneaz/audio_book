@@ -6,6 +6,7 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { TtsOptions, TtsProvider } from './TtsProvider';
 import { LocalTtsProvider } from './LocalTtsProvider';
 import { XFYUN_KEYS } from '../../utils/constants';
+import AdService from '../../services/AdService';
 
 const isMock = XFYUN_KEYS.APP_ID === 'MOCK_APPID';
 
@@ -38,6 +39,10 @@ export class XfyunTtsProvider implements TtsProvider {
   private async _speakAsync(text: string, options: TtsOptions, gen: number): Promise<void> {
     await this._stopCurrentPlayer();
     if (this._gen !== gen) return;
+    const hasAccess = await AdService.isCloudVoiceUnlocked();
+    if (!hasAccess) {
+      throw new Error('cloud voice access expired');
+    }
     const cachePath = await this._getCachePath(text);
     const info = await FileSystem.getInfoAsync(cachePath);
     if (!info.exists) {
