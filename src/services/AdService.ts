@@ -3,7 +3,7 @@ import StorageService from './StorageService';
 import MembershipService from './MembershipService';
 import { AD_UNIT_IDS, STORAGE_KEYS } from '../utils/constants';
 
-const BANNER_HIDDEN_DURATION_MS = 1 * 60 * 1000;
+const BANNER_HIDDEN_DURATION_MS = 30 * 60 * 1000;
 const CLOUD_VOICE_UNLOCK_DURATION_MS = 30 * 60 * 1000;
 
 export interface AdState {

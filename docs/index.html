@@ -609,10 +609,17 @@
     document.getElementById('btn-en').classList.toggle('active', lang === 'en');
     document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    const url = new URL(location.href);
+    url.searchParams.set('lang', lang);
+    history.replaceState(null, '', url);
   }
   (function () {
-    const pref = navigator.language || '';
-    if (pref.startsWith('zh')) setLang('zh');
+    const param = new URLSearchParams(location.search).get('lang');
+    if (param === 'en' || param === 'zh') {
+      setLang(param);
+    } else if ((navigator.language || '').startsWith('zh')) {
+      setLang('zh');
+    }
   })();
 </script>
 </body>
