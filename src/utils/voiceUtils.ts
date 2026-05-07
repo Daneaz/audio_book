@@ -73,7 +73,6 @@ export function mergeWithInstalledVoices(
   }));
 
   for (const v of installed) {
-    console.log('Installed voice:', v.identifier, v.name, v.language, v.quality);
     if (knownIds.has(v.identifier)) continue;
     if ((v.identifier || '').toLowerCase().includes('eloquence')) continue;
     if ((v.identifier || '').toLowerCase().includes('synthesis')) continue;
