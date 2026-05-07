@@ -130,14 +130,19 @@ export type TranslationKey =
   | 'membership.restoreFailed'
   | 'membership.restoreFailedMsg'
   | 'membership.planMonthlyLabel'
+  | 'membership.planQuarterlyLabel'
+  | 'membership.planQuarterlySub'
   | 'membership.planMonthlySub'
   | 'membership.planYearlyLabel'
   | 'membership.planYearlySub'
   | 'membership.planLifetimeLabel'
   | 'membership.planLifetimeSub'
   | 'membership.perMonth'
+  | 'membership.perQuarter'
   | 'membership.perYear'
+  | 'membership.lifeTime'
   | 'membership.benefitNoAds'
+  | 'membership.benefitVoices'
   | 'membership.benefitMoreSoon'
   | 'membership.freeTrial'
   | 'membership.trialBadge'
@@ -290,13 +295,18 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.restoreFailedMsg': '未找到可恢复的购买记录',
     'membership.planMonthlyLabel': '月度会员',
     'membership.planMonthlySub': '按月订阅',
+    'membership.planQuarterlyLabel': '季度会员',
+    'membership.planQuarterlySub': '按季度订阅',
     'membership.planYearlyLabel': '年度会员',
     'membership.planYearlySub': '按年订阅，更划算',
     'membership.planLifetimeLabel': '永久会员',
     'membership.planLifetimeSub': '一次买断，终身有效',
     'membership.perMonth': '/月',
+    'membership.perQuarter': '/季度',
     'membership.perYear': '/年',
-    'membership.benefitNoAds': '去除全部广告',
+    'membership.lifeTime': '/永久',
+    'membership.benefitNoAds': '无广告阅读体验',
+    'membership.benefitVoices': '高质量音色',
     'membership.benefitMoreSoon': '更多权益即将推出...',
     'membership.freeTrial': '免费试用 14 天',
     'membership.trialBadge': '前 14 天免费',
@@ -445,14 +455,19 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.restoreFailed': 'Restore Failed',
     'membership.restoreFailedMsg': 'No purchases found to restore',
     'membership.planMonthlyLabel': 'Monthly',
+    'membership.planQuarterlyLabel': 'Quarterly',
+    'membership.planQuarterlySub': 'Billed every quarterly',
     'membership.planMonthlySub': 'Billed monthly',
     'membership.planYearlyLabel': 'Yearly',
     'membership.planYearlySub': 'Billed annually, best value',
     'membership.planLifetimeLabel': 'Lifetime',
     'membership.planLifetimeSub': 'One-time purchase, forever',
     'membership.perMonth': '/mo',
+    'membership.perQuarter': '/quarter',
     'membership.perYear': '/yr',
+    'membership.lifeTime': '/lifetime',
     'membership.benefitNoAds': 'Remove all ads',
+    'membership.benefitVoices': 'High-quality voices',
     'membership.benefitMoreSoon': 'More benefits coming soon...',
     'membership.freeTrial': 'Try Free for 14 Days',
     'membership.trialBadge': 'First 14 days free',

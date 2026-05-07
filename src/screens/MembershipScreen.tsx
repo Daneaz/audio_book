@@ -6,17 +6,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import useMembership from '../hooks/useMembership';
-import MembershipService from '../services/MembershipService';
-import { MEMBERSHIP_PRODUCT_IDS } from '../utils/constants';
+import MembershipService, { AvailablePackage } from '../services/MembershipService';
 import useI18n from '../i18n';
 
-type PlanId = typeof MEMBERSHIP_PRODUCT_IDS[keyof typeof MEMBERSHIP_PRODUCT_IDS];
-
-const ALL_PRODUCT_IDS = Object.values(MEMBERSHIP_PRODUCT_IDS);
-
 export default function MembershipScreen({ navigation }: any) {
-  const [selectedPlan, setSelectedPlan] = useState<PlanId>(MEMBERSHIP_PRODUCT_IDS.YEARLY);
-  const [productPrices, setProductPrices] = useState<Record<string, string>>({});
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const [packages, setPackages] = useState<AvailablePackage[]>([]);
+  const [isLoadingPackages, setIsLoadingPackages] = useState(true);
   const { purchase, restore, isLoading, isTrial, expiresAt } = useMembership();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
@@ -24,29 +20,56 @@ export default function MembershipScreen({ navigation }: any) {
   const { t } = useI18n();
 
   useEffect(() => {
-    MembershipService.getProductPrices(ALL_PRODUCT_IDS).then(setProductPrices).catch(() => {});
+    MembershipService.getAvailablePackages()
+      .then(pkgs => {
+        console.log('Available packages:', pkgs);
+        setPackages(pkgs);
+        const preferred = pkgs.find(p => p.packageType === 'ANNUAL') ?? pkgs[0];
+        if (preferred) setSelectedPlan(preferred.productId);
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingPackages(false));
   }, []);
 
-  function planPrice(id: PlanId): string {
-    const raw = productPrices[id];
-    if (!raw) return '--';
-    if (id === MEMBERSHIP_PRODUCT_IDS.MONTHLY) return raw + t('membership.perMonth');
-    if (id === MEMBERSHIP_PRODUCT_IDS.YEARLY) return raw + t('membership.perYear');
-    return raw;
+  function planLabel(pkg: AvailablePackage): string {
+    switch (pkg.packageType) {
+      case 'MONTHLY':  return t('membership.planMonthlyLabel');
+      case 'THREE_MONTH':  return t('membership.planQuarterlyLabel');
+      case 'ANNUAL':   return t('membership.planYearlyLabel');
+      case 'LIFETIME': return t('membership.planLifetimeLabel');
+      default:         return pkg.productId;
+    }
   }
 
-  function planSublabel(id: PlanId, baseSublabel: string): string {
-    if (id === MEMBERSHIP_PRODUCT_IDS.MONTHLY || id === MEMBERSHIP_PRODUCT_IDS.YEARLY) {
-      return `${baseSublabel}  ·  ${t('membership.trialBadge')}`;
+  function planSublabelText(pkg: AvailablePackage): string {
+    let base: string;
+    switch (pkg.packageType) {
+      case 'MONTHLY':  base = t('membership.planMonthlySub'); break;
+      case 'THREE_MONTH':  base = t('membership.planQuarterlySub'); break;
+      case 'ANNUAL':   base = t('membership.planYearlySub'); break;
+      case 'LIFETIME': base = t('membership.planLifetimeSub'); break;
+      default:         base = '';
     }
-    return baseSublabel;
+    return pkg.hasIntroOffer ? `${base}  ·  ${t('membership.trialBadge')}` : base;
   }
+
+  function planPrice(pkg: AvailablePackage): string {
+    switch (pkg.packageType) {
+      case 'MONTHLY': return pkg.priceString + t('membership.perMonth');
+      case 'THREE_MONTH': return pkg.priceString + t('membership.perQuarter');
+      case 'ANNUAL':  return pkg.priceString + t('membership.perYear');
+      case 'LIFETIME': return pkg.priceString;
+      default:        return pkg.priceString;
+    }
+  }
+
+  const selectedPackage = packages.find(p => p.productId === selectedPlan);
 
   const trialDaysLeft = isTrial && expiresAt
     ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))
     : 0;
 
-  const isTrialEligible = selectedPlan !== MEMBERSHIP_PRODUCT_IDS.LIFETIME;
+  const isTrialEligible = selectedPackage?.hasIntroOffer ?? false;
 
   function buttonLabel(): string {
     if (isTrial) return t('membership.manageSubscription');
@@ -54,13 +77,7 @@ export default function MembershipScreen({ navigation }: any) {
     return t('membership.buyNow');
   }
 
-  const PLANS: { id: PlanId; label: string; baseSublabel: string }[] = [
-    { id: MEMBERSHIP_PRODUCT_IDS.MONTHLY, label: t('membership.planMonthlyLabel'), baseSublabel: t('membership.planMonthlySub') },
-    { id: MEMBERSHIP_PRODUCT_IDS.YEARLY, label: t('membership.planYearlyLabel'), baseSublabel: t('membership.planYearlySub') },
-    { id: MEMBERSHIP_PRODUCT_IDS.LIFETIME, label: t('membership.planLifetimeLabel'), baseSublabel: t('membership.planLifetimeSub') },
-  ];
-
-  const BENEFITS = [t('membership.benefitNoAds'), t('membership.benefitMoreSoon')];
+  const BENEFITS = [t('membership.benefitNoAds'), t('membership.benefitVoices')];
 
   const colors = {
     bg:      isDark ? '#0E0C0A' : '#FAF7F0',
@@ -129,28 +146,29 @@ export default function MembershipScreen({ navigation }: any) {
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24, marginBottom: 12 }]}>{t('membership.choosePlan')}</Text>
-        {PLANS.map(plan => {
-          const isSelected = selectedPlan === plan.id;
-          return (
-            <TouchableOpacity
-              key={plan.id}
-              style={[
-                styles.planCard,
-                { backgroundColor: colors.surface, borderColor: isSelected ? colors.accent : colors.border },
-              ]}
-              onPress={() => setSelectedPlan(plan.id)}
-            >
-              <View style={styles.planInfo}>
-                <Text style={[styles.planLabel, { color: colors.text }]}>{plan.label}</Text>
-                <Text style={[styles.planSublabel, { color: colors.subText }]}>
-                  {planSublabel(plan.id, plan.baseSublabel)}
-                </Text>
-              </View>
-              <Text style={[styles.planPrice, { color: colors.accent }]}>{planPrice(plan.id)}</Text>
-              {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.accent} style={styles.planCheck} />}
-            </TouchableOpacity>
-          );
-        })}
+        {isLoadingPackages
+          ? <ActivityIndicator color={colors.accent} style={{ marginVertical: 24 }} />
+          : packages.map(pkg => {
+            const isSelected = selectedPlan === pkg.productId;
+            return (
+              <TouchableOpacity
+                key={pkg.productId}
+                style={[
+                  styles.planCard,
+                  { backgroundColor: colors.surface, borderColor: isSelected ? colors.accent : colors.border },
+                ]}
+                onPress={() => setSelectedPlan(pkg.productId)}
+              >
+                <View style={styles.planInfo}>
+                  <Text style={[styles.planLabel, { color: colors.text }]}>{planLabel(pkg)}</Text>
+                  <Text style={[styles.planSublabel, { color: colors.subText }]}>{planSublabelText(pkg)}</Text>
+                </View>
+                <Text style={[styles.planPrice, { color: colors.accent }]}>{planPrice(pkg)}</Text>
+                {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.accent} style={styles.planCheck} />}
+              </TouchableOpacity>
+            );
+          })
+        }
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16, borderTopColor: colors.border }]}>

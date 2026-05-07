@@ -30,6 +30,7 @@ jest.mock('react-native-purchases', () => ({
     configure: jest.fn(),
     getCustomerInfo: jest.fn(),
     getProducts: jest.fn(),
+    getOfferings: jest.fn(),
     purchaseStoreProduct: jest.fn(),
     restorePurchases: jest.fn(),
     addCustomerInfoUpdateListener: jest.fn(),
@@ -273,29 +274,35 @@ describe('MembershipService', () => {
     });
   });
 
-  describe('getProductPrices', () => {
-    it('returns price map for multiple products', async () => {
-      (Purchases.getProducts as jest.Mock).mockResolvedValue([
-        { identifier: 'monthly', priceString: '$2.99' },
-        { identifier: 'yearly', priceString: '$19.99' },
-        { identifier: 'lifetime', priceString: '$49.99' },
+  describe('getAvailablePackages', () => {
+    function makeOfferings(packages: any[]) {
+      return { current: { availablePackages: packages } };
+    }
+
+    it('returns mapped packages from current offering', async () => {
+      (Purchases.getOfferings as jest.Mock).mockResolvedValue(makeOfferings([
+        { product: { identifier: 'monthly', priceString: '$2.99', introPrice: { price: 0 } }, packageType: 'MONTHLY' },
+        { product: { identifier: 'yearly', priceString: '$19.99', introPrice: { price: 0 } }, packageType: 'ANNUAL' },
+        { product: { identifier: 'lifetime', priceString: '$49.99', introPrice: null }, packageType: 'LIFETIME' },
+      ]));
+      const result = await MembershipService.getAvailablePackages();
+      expect(result).toEqual([
+        { productId: 'monthly', packageType: 'MONTHLY', priceString: '$2.99', hasIntroOffer: true },
+        { productId: 'yearly', packageType: 'ANNUAL', priceString: '$19.99', hasIntroOffer: true },
+        { productId: 'lifetime', packageType: 'LIFETIME', priceString: '$49.99', hasIntroOffer: false },
       ]);
-      const result = await MembershipService.getProductPrices(['monthly', 'yearly', 'lifetime']);
-      expect(result).toEqual({ monthly: '$2.99', yearly: '$19.99', lifetime: '$49.99' });
     });
 
-    it('returns empty object when product list is empty', async () => {
-      (Purchases.getProducts as jest.Mock).mockResolvedValue([]);
-      const result = await MembershipService.getProductPrices([]);
-      expect(result).toEqual({});
+    it('returns empty array when current offering is null', async () => {
+      (Purchases.getOfferings as jest.Mock).mockResolvedValue({ current: null });
+      const result = await MembershipService.getAvailablePackages();
+      expect(result).toEqual([]);
     });
 
-    it('returns single product price', async () => {
-      (Purchases.getProducts as jest.Mock).mockResolvedValue([
-        { identifier: 'monthly', priceString: '$2.99' },
-      ]);
-      const result = await MembershipService.getProductPrices(['monthly']);
-      expect(result).toEqual({ monthly: '$2.99' });
+    it('returns empty array when availablePackages is empty', async () => {
+      (Purchases.getOfferings as jest.Mock).mockResolvedValue(makeOfferings([]));
+      const result = await MembershipService.getAvailablePackages();
+      expect(result).toEqual([]);
     });
   });
 });

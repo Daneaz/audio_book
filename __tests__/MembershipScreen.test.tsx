@@ -35,6 +35,7 @@ jest.mock('react-native-purchases', () => ({
     getCustomerInfo: jest.fn(),
     purchaseStoreProduct: jest.fn(),
     getProducts: jest.fn(),
+    getOfferings: jest.fn(),
     restorePurchases: jest.fn(),
   },
 }));
@@ -44,8 +45,14 @@ const mockUseMembership = useMembershipHook as jest.MockedFunction<typeof useMem
 
 jest.mock('../src/services/MembershipService', () => ({
   __esModule: true,
-  default: { getProductPrices: jest.fn() },
+  default: { getAvailablePackages: jest.fn() },
 }));
+
+const MOCK_PACKAGES = [
+  { productId: 'monthly', packageType: 'MONTHLY', priceString: '$2.99', hasIntroOffer: true },
+  { productId: 'yearly', packageType: 'ANNUAL', priceString: '$19.99', hasIntroOffer: true },
+  { productId: 'lifetime', packageType: 'LIFETIME', priceString: '$49.99', hasIntroOffer: false },
+];
 
 const makeDefaultHookState = (overrides = {}) => ({
   isActive: false,
@@ -67,7 +74,7 @@ describe('MembershipScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseMembership.mockReturnValue(makeDefaultHookState());
-    (MembershipService.getProductPrices as jest.Mock).mockResolvedValue({});
+    (MembershipService.getAvailablePackages as jest.Mock).mockResolvedValue(MOCK_PACKAGES);
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as any);
   });
@@ -77,25 +84,22 @@ describe('MembershipScreen', () => {
   });
 
   describe('渲染', () => {
-    it('renders all three plan options', () => {
-      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
-      expect(getByText('membership.planMonthlyLabel')).toBeTruthy();
-      expect(getByText('membership.planYearlyLabel')).toBeTruthy();
-      expect(getByText('membership.planLifetimeLabel')).toBeTruthy();
+    it('renders all three plan options from RevenueCat', async () => {
+      const { findByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      await findByText('membership.planMonthlyLabel');
+      await findByText('membership.planYearlyLabel');
+      await findByText('membership.planLifetimeLabel');
     });
 
-    it('shows -- for all plan prices when not yet loaded', () => {
-      (MembershipService.getProductPrices as jest.Mock).mockReturnValue(new Promise(() => {}));
-      const { getAllByText } = render(<MembershipScreen navigation={makeNavigation()} />);
-      expect(getAllByText('--').length).toBeGreaterThanOrEqual(3);
+    it('shows ActivityIndicator while packages are loading', () => {
+      (MembershipService.getAvailablePackages as jest.Mock).mockReturnValue(new Promise(() => {}));
+      const { queryByText, UNSAFE_getByType } = render(<MembershipScreen navigation={makeNavigation()} />);
+      expect(queryByText('membership.planMonthlyLabel')).toBeNull();
+      const { ActivityIndicator } = require('react-native');
+      expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
     });
 
-    it('shows price with suffix after prices load', async () => {
-      (MembershipService.getProductPrices as jest.Mock).mockResolvedValue({
-        monthly: '$2.99',
-        yearly: '$19.99',
-        lifetime: '$49.99',
-      });
+    it('shows price with suffix after packages load', async () => {
       const { findByText } = render(<MembershipScreen navigation={makeNavigation()} />);
       await findByText('$2.99membership.perMonth');
       await findByText('$19.99membership.perYear');
@@ -107,9 +111,10 @@ describe('MembershipScreen', () => {
     it('default selection is yearly — subscribe button calls purchase with yearly', async () => {
       const purchase = jest.fn().mockResolvedValue(undefined);
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
-      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      const { findByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
+      const btn = await findByText('membership.freeTrial');
+      await act(async () => { fireEvent.press(btn); });
 
       expect(purchase).toHaveBeenCalledWith('yearly');
     });
@@ -117,10 +122,11 @@ describe('MembershipScreen', () => {
     it('tapping monthly plan then subscribe calls purchase with monthly', async () => {
       const purchase = jest.fn().mockResolvedValue(undefined);
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
-      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      const { findByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      fireEvent.press(getByText('membership.planMonthlyLabel'));
-      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
+      fireEvent.press(await findByText('membership.planMonthlyLabel'));
+      const btn = await findByText('membership.freeTrial');
+      await act(async () => { fireEvent.press(btn); });
 
       expect(purchase).toHaveBeenCalledWith('monthly');
     });
@@ -128,19 +134,21 @@ describe('MembershipScreen', () => {
     it('tapping lifetime plan shows buyNow button and calls purchase with lifetime', async () => {
       const purchase = jest.fn().mockResolvedValue(undefined);
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
-      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      const { findByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      fireEvent.press(getByText('membership.planLifetimeLabel'));
-      await act(async () => { fireEvent.press(getByText('membership.buyNow')); });
+      fireEvent.press(await findByText('membership.planLifetimeLabel'));
+      const btn = await findByText('membership.buyNow');
+      await act(async () => { fireEvent.press(btn); });
 
       expect(purchase).toHaveBeenCalledWith('lifetime');
     });
   });
 
   describe('购买按钮状态', () => {
-    it('hides subscribe text and shows loading when isLoading is true', () => {
+    it('hides subscribe text and shows loading when isLoading is true', async () => {
       mockUseMembership.mockReturnValue(makeDefaultHookState({ isLoading: true }));
-      const { queryByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      const { queryByText, findByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      await findByText('membership.planYearlyLabel');
       expect(queryByText('membership.freeTrial')).toBeNull();
       expect(queryByText('membership.buyNow')).toBeNull();
     });
@@ -151,9 +159,10 @@ describe('MembershipScreen', () => {
       const purchase = jest.fn().mockResolvedValue(undefined);
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
       const navigation = makeNavigation();
-      const { getByText } = render(<MembershipScreen navigation={navigation} />);
+      const { findByText } = render(<MembershipScreen navigation={navigation} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
+      const btn = await findByText('membership.freeTrial');
+      await act(async () => { fireEvent.press(btn); });
 
       expect(navigation.goBack).toHaveBeenCalledTimes(1);
     });
@@ -162,9 +171,10 @@ describe('MembershipScreen', () => {
       const cancelError = Object.assign(new Error('cancelled'), { userCancelled: true });
       const purchase = jest.fn().mockRejectedValue(cancelError);
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
-      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      const { findByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
+      const btn = await findByText('membership.freeTrial');
+      await act(async () => { fireEvent.press(btn); });
 
       expect(Alert.alert).not.toHaveBeenCalled();
     });
@@ -173,9 +183,10 @@ describe('MembershipScreen', () => {
       const cancelError = new Error('User cancelled the purchase');
       const purchase = jest.fn().mockRejectedValue(cancelError);
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
-      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      const { findByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
+      const btn = await findByText('membership.freeTrial');
+      await act(async () => { fireEvent.press(btn); });
 
       expect(Alert.alert).not.toHaveBeenCalled();
     });
@@ -184,9 +195,10 @@ describe('MembershipScreen', () => {
       const paymentError = new Error('Payment method declined');
       const purchase = jest.fn().mockRejectedValue(paymentError);
       mockUseMembership.mockReturnValue(makeDefaultHookState({ purchase }));
-      const { getByText } = render(<MembershipScreen navigation={makeNavigation()} />);
+      const { findByText } = render(<MembershipScreen navigation={makeNavigation()} />);
 
-      await act(async () => { fireEvent.press(getByText('membership.freeTrial')); });
+      const btn = await findByText('membership.freeTrial');
+      await act(async () => { fireEvent.press(btn); });
 
       expect(Alert.alert).toHaveBeenCalledWith(
         'membership.purchaseFailed',
@@ -244,7 +256,7 @@ describe('MembershipScreen', () => {
   });
 
   describe('试用状态', () => {
-    it('shows trial banner when isTrial is true', () => {
+    it('shows trial banner when isTrial is true', async () => {
       const expiresAt = new Date(Date.now() + 86400000 * 10).toISOString();
       mockUseMembership.mockReturnValue(
         makeDefaultHookState({ isActive: true, isTrial: true, expiresAt })

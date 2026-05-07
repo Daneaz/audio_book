@@ -3,6 +3,13 @@ import { Platform } from 'react-native';
 import StorageService from './StorageService';
 import { STORAGE_KEYS, REVENUECAT_API_KEYS, MEMBERSHIP_ENTITLEMENT } from '../utils/constants';
 
+export interface AvailablePackage {
+  productId: string;
+  packageType: string;
+  priceString: string;
+  hasIntroOffer: boolean;
+}
+
 export interface MembershipState {
   isActive: boolean;
   type: 'lifetime' | 'monthly' | 'yearly' | null;
@@ -41,13 +48,18 @@ class MembershipService {
     }
   }
 
-  async getProductPrices(productIds: string[]): Promise<Record<string, string>> {
-    const products = await Purchases.getProducts(productIds);
-    const map: Record<string, string> = {};
-    for (const p of products) {
-      map[p.identifier] = p.priceString;
-    }
-    return map;
+  async getAvailablePackages(): Promise<AvailablePackage[]> {
+    const ORDER: Record<string, number> = { MONTHLY: 0, THREE_MONTH: 1, ANNUAL: 2, LIFETIME: 3 };
+    const offerings = await Purchases.getOfferings();
+    if (!offerings.current) return [];
+    return offerings.current.availablePackages
+      .map(pkg => ({
+        productId: pkg.product.identifier,
+        packageType: pkg.packageType,
+        priceString: pkg.product.priceString,
+        hasIntroOffer: !!pkg.product.introPrice,
+      }))
+      .sort((a, b) => (ORDER[a.packageType] ?? 99) - (ORDER[b.packageType] ?? 99));
   }
 
   async purchase(productId: string): Promise<void> {
