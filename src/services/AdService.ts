@@ -3,8 +3,8 @@ import StorageService from './StorageService';
 import MembershipService from './MembershipService';
 import { AD_UNIT_IDS, STORAGE_KEYS } from '../utils/constants';
 
-const BANNER_HIDDEN_DURATION_MS = 30 * 60 * 1000;
-const CLOUD_VOICE_UNLOCK_DURATION_MS = 30 * 60 * 1000;
+const BANNER_HIDDEN_DURATION_MS = __DEV__ ? 1 *60 * 1000 : 30 * 60 * 1000;
+const CLOUD_VOICE_UNLOCK_DURATION_MS = __DEV__ ? 1 *60 * 1000 : 30 * 60 * 1000;
 
 export interface AdState {
   bannerHiddenUntil?: string | null;
@@ -52,8 +52,7 @@ class AdService {
   }
 
   private async _runRewardedAd(): Promise<void> {
-    const unitId = __DEV__ ? TestIds.REWARDED : AD_UNIT_IDS.REWARDED;
-    const rewardedAd = RewardedAd.createForAdRequest(unitId, {
+    const rewardedAd = RewardedAd.createForAdRequest(AD_UNIT_IDS.REWARDED, {
       requestNonPersonalizedAdsOnly: true,
     });
 

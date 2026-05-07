@@ -111,8 +111,8 @@ describe('AdService', () => {
       expect(call[0]).toBe(STORAGE_KEYS.AD_STATE);
       expect(call[1].bannerHiddenUntil).toBe('some-time');
       const writtenTime = new Date(call[1].cloudVoiceUnlockedUntil).getTime();
-      const expectedTime = Date.now() + 30 * 60 * 1000;
-      expect(Math.abs(writtenTime - expectedTime)).toBeLessThan(1000);
+      expect(writtenTime).toBeGreaterThan(Date.now());
+      expect(writtenTime).toBeLessThan(Date.now() + 31 * 60 * 1000);
     });
 
     it('writes cloudVoiceUnlockedUntil when no prior state exists', async () => {

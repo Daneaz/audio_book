@@ -43,9 +43,14 @@ describe('useTts', () => {
   });
 
   it('creates XfyunTtsProvider with voiceId for xfyun voice', () => {
-    renderHook(() => useTts('xfyun:xiaoyan'));
-    expect(XfyunTtsProvider).toHaveBeenCalledWith('xiaoyan');
+    renderHook(() => useTts('x4_xiaoyan'));
+    expect(XfyunTtsProvider).toHaveBeenCalledWith('x4_xiaoyan', 'default');
     expect(LocalTtsProvider).not.toHaveBeenCalled();
+  });
+
+  it('passes backup voice to XfyunTtsProvider', () => {
+    renderHook(() => useTts('x4_yezi', 'com.apple.voice.premium.zh-CN.Lili'));
+    expect(XfyunTtsProvider).toHaveBeenCalledWith('x4_yezi', 'com.apple.voice.premium.zh-CN.Lili');
   });
 
   it('routes speak() to LocalTtsProvider for local voice', () => {
@@ -55,13 +60,13 @@ describe('useTts', () => {
   });
 
   it('routes speak() to XfyunTtsProvider for xfyun voice', () => {
-    const { result } = renderHook(() => useTts('xfyun:xiaoyu'));
+    const { result } = renderHook(() => useTts('xiaoyu'));
     act(() => result.current.speak('你好', {}));
     expect(mockXfyunSpeak).toHaveBeenCalledWith('你好', {});
   });
 
   it('routes prefetch() to correct provider', () => {
-    const { result } = renderHook(() => useTts('xfyun:xiaoyan'));
+    const { result } = renderHook(() => useTts('x4_xiaoyan'));
     act(() => result.current.prefetch('预取'));
     expect(mockXfyunPrefetch).toHaveBeenCalledWith('预取');
   });
@@ -79,21 +84,21 @@ describe('useTts', () => {
     expect(LocalTtsProvider).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      rerender({ v: 'xfyun:xiaoyan' });
+      rerender({ v: 'x4_xiaoyan' });
     });
 
     expect(mockLocalStop).toHaveBeenCalled();
-    expect(XfyunTtsProvider).toHaveBeenCalledWith('xiaoyan');
+    expect(XfyunTtsProvider).toHaveBeenCalledWith('x4_xiaoyan', 'default');
   });
 
   it('does not rebuild provider when voiceType stays the same', () => {
-    const { rerender } = renderHook(({ v }) => useTts(v), { initialProps: { v: 'xfyun:xiaoyan' } });
-    rerender({ v: 'xfyun:xiaoyan' });
+    const { rerender } = renderHook(({ v }) => useTts(v), { initialProps: { v: 'x4_xiaoyan' } });
+    rerender({ v: 'x4_xiaoyan' });
     expect(XfyunTtsProvider).toHaveBeenCalledTimes(1);
   });
 
   it('switches from xfyun to local and stops xfyun provider', async () => {
-    const { rerender } = renderHook(({ v }) => useTts(v), { initialProps: { v: 'xfyun:xiaoyu' } });
+    const { rerender } = renderHook(({ v }) => useTts(v), { initialProps: { v: 'xiaoyu' } });
 
     await act(async () => {
       rerender({ v: 'default' });

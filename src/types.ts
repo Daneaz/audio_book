@@ -55,5 +55,6 @@ export interface UserSettings {
   flipInterval: number;
   speechRate: number;
   voiceType: string;
+  backupVoice: string;
   keepScreenAwake: boolean;
 }

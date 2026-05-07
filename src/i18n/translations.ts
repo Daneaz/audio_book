@@ -30,6 +30,8 @@ export type TranslationKey =
   | 'settings.voiceReading'
   | 'settings.speechRate'
   | 'settings.voice'
+  | 'settings.primaryVoice'
+  | 'settings.backupVoice'
   | 'settings.voicePreviewHint'
   | 'settings.voicePreviewZh'
   | 'settings.voicePreviewEn'
@@ -194,6 +196,8 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.voiceReading': '语音朗读',
     'settings.speechRate': '语速',
     'settings.voice': '音色',
+    'settings.primaryVoice': '主音色',
+    'settings.backupVoice': '备音色',
     'settings.voicePreviewHint': '选择后会自动试听',
     'settings.voicePreviewZh': '这是一段中文语音试听。',
     'settings.voicePreviewEn': 'This is a short English voice preview.',
@@ -355,6 +359,8 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.voiceReading': 'Speech',
     'settings.speechRate': 'Speech Rate',
     'settings.voice': 'Voice',
+    'settings.primaryVoice': 'Primary Voice',
+    'settings.backupVoice': 'Backup Voice',
     'settings.voicePreviewHint': 'Selecting a voice will play a preview',
     'settings.voicePreviewZh': 'This is a short Chinese voice preview.',
     'settings.voicePreviewEn': 'This is a short English voice preview.',

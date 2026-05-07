@@ -4,6 +4,7 @@ export interface TtsOptions {
   onDone?: () => void;
   onStopped?: () => void;
   onError?: (e: Error) => void;
+  onFallback?: () => void;
 }
 
 export interface TtsProvider {

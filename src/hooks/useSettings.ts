@@ -18,7 +18,8 @@ const DEFAULT_SETTINGS: UserSettings = {
   autoFlip: false,
   flipInterval: 30,
   speechRate: 1.0,
-  voiceType: 'default',
+  voiceType: 'x4_yezi',
+  backupVoice: 'default',
   keepScreenAwake: true,
 };
 
@@ -45,7 +46,13 @@ export default function useSettings() {
     const data = await StorageService.getData(STORAGE_KEYS.USER_SETTINGS);
     if (data) {
       const normalizedFontPreset = VALID_FONT_PRESETS.includes(data.fontPreset) ? data.fontPreset : DEFAULT_SETTINGS.fontPreset;
-      setSettings({ ...DEFAULT_SETTINGS, ...data, fontPreset: normalizedFontPreset, autoFlip: false });
+      let merged = { ...DEFAULT_SETTINGS, ...data, fontPreset: normalizedFontPreset, autoFlip: false };
+      if (data.backupVoice === undefined) {
+        merged.backupVoice = data.voiceType ?? DEFAULT_SETTINGS.backupVoice;
+        merged.voiceType = DEFAULT_SETTINGS.voiceType;
+        await StorageService.storeData(STORAGE_KEYS.USER_SETTINGS, merged);
+      }
+      setSettings(merged);
     }
     setLoading(false);
   };

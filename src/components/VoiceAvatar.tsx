@@ -1,5 +1,7 @@
 import React from 'react';
+import { Image } from 'react-native';
 import Svg, { Circle, Ellipse, Path, Rect, ClipPath, Defs, G } from 'react-native-svg';
+import { getVoiceAvatar } from '../utils/voiceUtils';
 
 const HAIR_COLORS  = ['#1A0F0A', '#3D1C02', '#7B3F00', '#A0522D', '#B8860B', '#4A3728', '#5C4033'];
 const SKIN_TONES   = ['#FDDCBA', '#F5C89A', '#D4956A', '#C68642', '#9B6437'];
@@ -24,6 +26,16 @@ interface Props {
 }
 
 export function VoiceAvatar({ gender, seed, size = 38 }: Props) {
+  const pngSource = getVoiceAvatar(seed, gender);
+  if (pngSource) {
+    return (
+      <Image
+        source={pngSource}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        resizeMode="cover"
+      />
+    );
+  }
   const h = hash(seed);
   const hair  = pick(HAIR_COLORS,  h);
   const skin  = pick(SKIN_TONES,   h >> 3);

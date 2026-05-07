@@ -4,16 +4,16 @@ import { XfyunTtsProvider } from '../services/tts/XfyunTtsProvider';
 import { TtsOptions, TtsProvider } from '../services/tts/TtsProvider';
 import { isXfyunVoice } from '../utils/voiceUtils';
 
-function createProvider(voiceType: string): TtsProvider {
+function createProvider(voiceType: string, backupVoice: string): TtsProvider {
   if (isXfyunVoice(voiceType)) {
-    return new XfyunTtsProvider(voiceType);
+    return new XfyunTtsProvider(voiceType, backupVoice);
   }
   const id = voiceType === 'default' || voiceType === '' ? undefined : voiceType;
   return new LocalTtsProvider(id);
 }
 
-export default function useTts(voiceType: string) {
-  const provider = useMemo(() => createProvider(voiceType), [voiceType]);
+export default function useTts(voiceType: string, backupVoice: string = 'default') {
+  const provider = useMemo(() => createProvider(voiceType, backupVoice), [voiceType, backupVoice]);
   const providerRef = useRef<TtsProvider>(provider);
 
   useEffect(() => {

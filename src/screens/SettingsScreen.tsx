@@ -33,6 +33,7 @@ export default function SettingsScreen({ navigation }: any) {
   const [voicesLoading, setVoicesLoading] = useState(false);
   const [voices, setVoices] = useState<VoiceEntry[]>([]);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showBackupVoiceModal, setShowBackupVoiceModal] = useState(false);
   const [showFonts, setShowFonts] = useState(false);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
   const cancelledRef = useRef(false);
@@ -168,6 +169,7 @@ export default function SettingsScreen({ navigation }: any) {
   };
 
   const selectedVoice = settings.voiceType;
+  const selectedBackupVoice = settings.backupVoice ?? 'default';
   const voiceDefaultLang = language === 'zh' ? 'zh-CN' : 'en-US';
   const settingsFontOptions = useMemo(
     () => FONT_PRESET_OPTIONS.filter((option) => option.id !== 'system'),
@@ -185,13 +187,15 @@ export default function SettingsScreen({ navigation }: any) {
     },
     [settings.fontPreset, t]
   );
-  const selectedVoiceLabel = useMemo(() => {
-    if (!selectedVoice || selectedVoice === 'default') return t('common.default');
-    const v = voices.find((x) => x.identifier === selectedVoice);
-    if (!v) return selectedVoice;
+  const getVoiceLabel = (voiceId: string | undefined) => {
+    if (!voiceId || voiceId === 'default') return t('common.default');
+    const v = voices.find((x) => x.identifier === voiceId);
+    if (!v) return voiceId;
     const qualityLabel = v.quality === 'Cloud' ? ` · ${t('voice.cloud')}` : v.quality === 'Premium' ? ` · ${t('voice.qualityPremium')}` : v.quality === 'Enhanced' ? ` · ${t('voice.qualityEnhanced')}` : '';
     return `${v.name}${qualityLabel}`;
-  }, [selectedVoice, t, voices]);
+  };
+  const selectedVoiceLabel = useMemo(() => getVoiceLabel(selectedVoice), [selectedVoice, t, voices]);
+  const selectedBackupVoiceLabel = useMemo(() => getVoiceLabel(selectedBackupVoice), [selectedBackupVoice, t, voices]);
   const fontOptionMeta = useMemo(
     () => ({
       hei: { label: t('settings.fontHei'), description: t('settings.fontHeiDesc') },
@@ -460,12 +464,25 @@ export default function SettingsScreen({ navigation }: any) {
 
         <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
 
-        {/* 音色 */}
+        {/* 主音色 */}
         <TouchableOpacity onPress={() => setShowVoiceModal(true)} style={styles.settingsRow} activeOpacity={0.7}>
-          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.voice')}</Text>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.primaryVoice')}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={[styles.rowValue, { color: sc.textSub }]} numberOfLines={1}>
               {voicesLoading ? t('common.loading') : selectedVoiceLabel}
+            </Text>
+            <Ionicons name="chevron-forward" size={14} color={sc.textSub} />
+          </View>
+        </TouchableOpacity>
+
+        <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
+
+        {/* 备音色 */}
+        <TouchableOpacity onPress={() => setShowBackupVoiceModal(true)} style={styles.settingsRow} activeOpacity={0.7}>
+          <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.backupVoice')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.rowValue, { color: sc.textSub }]} numberOfLines={1}>
+              {voicesLoading ? t('common.loading') : selectedBackupVoiceLabel}
             </Text>
             <Ionicons name="chevron-forward" size={14} color={sc.textSub} />
           </View>
@@ -526,6 +543,23 @@ export default function SettingsScreen({ navigation }: any) {
       }}
       defaultLang={voiceDefaultLang}
       t={t}
+      title={t('settings.primaryVoice')}
+      colors={{ bg: sc.bg, surface: sc.surface, border: sc.border, accent: sc.accent, accentBg: sc.accentBg, textPrimary: sc.textPrimary, textSub: sc.textSub }}
+      onNotInstalledTap={openVoiceSettings}
+    />
+    <VoicePickerModal
+      visible={showBackupVoiceModal}
+      onClose={() => setShowBackupVoiceModal(false)}
+      voices={voices}
+      selectedVoice={selectedBackupVoice}
+      previewingVoiceId={previewingVoiceId}
+      onVoiceTap={(id, lang) => {
+        updateSettings({ backupVoice: id });
+        previewVoice(id, lang);
+      }}
+      defaultLang={voiceDefaultLang}
+      t={t}
+      title={t('settings.backupVoice')}
       colors={{ bg: sc.bg, surface: sc.surface, border: sc.border, accent: sc.accent, accentBg: sc.accentBg, textPrimary: sc.textPrimary, textSub: sc.textSub }}
       onNotInstalledTap={openVoiceSettings}
     />

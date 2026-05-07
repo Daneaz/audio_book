@@ -45,7 +45,7 @@ jest.mock('../src/hooks/useSettings', () => ({
     settings: {
       theme: 'system', language: 'zh', fontSize: 18, lineSpacing: 1.8,
       fontPreset: 'hei', readingMode: 'scroll', autoFlipInterval: 5,
-      speechRate: 1.0, voiceType: 'default',
+      speechRate: 1.0, voiceType: 'x4_yezi', backupVoice: 'default',
     },
     updateSettings: jest.fn(),
     loading: false,
@@ -66,9 +66,10 @@ jest.mock('../src/services/tts/XfyunTtsProvider', () => ({
   })),
 }));
 
-jest.mock('expo-file-system', () => ({
+jest.mock('expo-file-system/legacy', () => ({
   cacheDirectory: 'file:///cache/',
   getInfoAsync: jest.fn().mockResolvedValue({ exists: false }),
+  readDirectoryAsync: jest.fn().mockResolvedValue([]),
   deleteAsync: jest.fn().mockResolvedValue(undefined),
 }));
 

@@ -6,6 +6,7 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { TtsOptions, TtsProvider } from './TtsProvider';
 import { LocalTtsProvider } from './LocalTtsProvider';
 import { XFYUN_KEYS } from '../../utils/constants';
+import { isXfyunVoice } from '../../utils/voiceUtils';
 import AdService from '../../services/AdService';
 
 const isMock = XFYUN_KEYS.APP_ID === 'MOCK_APPID';
@@ -22,9 +23,12 @@ export class XfyunTtsProvider implements TtsProvider {
   private currentSound: AudioPlayer | null = null;
   private _gen = 0;
 
-  constructor(voiceId: string) {
+  constructor(voiceId: string, backupVoiceId: string = 'default') {
     this.voiceId = voiceId;
-    this.fallback = new LocalTtsProvider(undefined);
+    const localId = (isXfyunVoice(backupVoiceId) || backupVoiceId === 'default' || backupVoiceId === '')
+      ? undefined
+      : backupVoiceId;
+    this.fallback = new LocalTtsProvider(localId);
   }
 
   speak(text: string, options: TtsOptions = {}): void {
@@ -34,6 +38,7 @@ export class XfyunTtsProvider implements TtsProvider {
       if (e.message !== 'cloud voice access expired') {
         console.warn('XfyunTtsProvider: falling back to local TTS:', e.message);
       }
+      options.onFallback?.();
       this.fallback.speak(text, options);
     });
   }

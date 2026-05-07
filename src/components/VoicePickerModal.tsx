@@ -38,16 +38,29 @@ interface Props {
   t: (key: TranslationKey) => string;
   colors: PickerColors;
   onNotInstalledTap: () => void;
+  title?: string;
 }
 
 type GroupItem = { type: 'header'; label: string } | { type: 'voice'; voice: VoiceEntry };
 
+const ZH_CLOUD_PIN = ['x4_yezi', 'x4_xiaoyan'];
+const ZH_PREMIUM_PIN = [
+  'com.apple.voice.premium.zh-CN.Yue',
+  'com.apple.voice.premium.zh-CN.Yun',
+  'com.apple.voice.premium.zh-CN.Lilian',
+  'com.apple.voice.premium.zh-CN.Lili',
+  'com.apple.voice.premium.zh-TW.Meijia',
+];
+
+function pinFirst(voices: VoiceEntry[], pinOrder: string[]): VoiceEntry[] {
+  const pinSet = new Set(pinOrder);
+  const byId = new Map(voices.map(v => [v.identifier, v]));
+  const pinned = pinOrder.flatMap(id => { const v = byId.get(id); return v ? [v] : []; });
+  const rest = voices.filter(v => !pinSet.has(v.identifier)).sort((a, b) => a.name.localeCompare(b.name));
+  return [...pinned, ...rest];
+}
+
 function buildGroups(voices: VoiceEntry[], t: (k: TranslationKey) => string): GroupItem[] {
-  const qualityOrder = { Cloud: 0, Premium: 1, Enhanced: 2, Default: 3 } as const;
-  const sort = (a: VoiceEntry, b: VoiceEntry) => {
-    const d = (qualityOrder[a.quality] ?? 4) - (qualityOrder[b.quality] ?? 4);
-    return d !== 0 ? d : a.name.localeCompare(b.name);
-  };
   const zh: VoiceEntry[] = [], yue: VoiceEntry[] = [], en: VoiceEntry[] = [];
   for (const v of voices) {
     const l = (v.language || '').toLowerCase();
@@ -55,16 +68,27 @@ function buildGroups(voices: VoiceEntry[], t: (k: TranslationKey) => string): Gr
     else if (l.startsWith('zh')) zh.push(v);
     else if (l.startsWith('en')) en.push(v);
   }
-  zh.sort(sort); yue.sort(sort); en.sort(sort);
+  const alpha = (a: VoiceEntry, b: VoiceEntry) => a.name.localeCompare(b.name);
+
+  const zh_cloud   = pinFirst(zh.filter(v => v.quality === 'Cloud'), ZH_CLOUD_PIN);
+  const zh_premium = pinFirst(zh.filter(v => v.quality === 'Premium'), ZH_PREMIUM_PIN);
+  const zh_default = zh.filter(v => v.quality !== 'Cloud' && v.quality !== 'Premium').sort(alpha);
+  const en_premium = en.filter(v => v.quality === 'Premium').sort(alpha);
+  const en_default = en.filter(v => v.quality !== 'Premium').sort(alpha);
+
   const items: GroupItem[] = [];
   const add = (label: string, arr: VoiceEntry[]) => {
     if (!arr.length) return;
     items.push({ type: 'header', label });
     arr.forEach(v => items.push({ type: 'voice', voice: v }));
   };
-  add(t('voice.chinese'), zh);
-  add(t('voice.cantonese'), yue);
-  add(t('voice.english'), en);
+
+  add(`${t('voice.chinese')} · ${t('voice.cloud')}`, zh_cloud);
+  add(`${t('voice.chinese')} · ${t('voice.qualityPremium')}`, zh_premium);
+  add(`${t('voice.chinese')} · ${t('common.default')}`, zh_default);
+  add(t('voice.cantonese'), yue.sort(alpha));
+  add(`${t('voice.english')} · ${t('voice.qualityPremium')}`, en_premium);
+  add(`${t('voice.english')} · ${t('common.default')}`, en_default);
   return items;
 }
 
@@ -146,7 +170,7 @@ function VoiceCard({ voice, selected, previewing, onTap, colors, t }: {
 
 export function VoicePickerModal({
   visible, onClose, voices, selectedVoice, previewingVoiceId,
-  onVoiceTap, defaultLang, t, colors, onNotInstalledTap,
+  onVoiceTap, defaultLang, t, colors, onNotInstalledTap, title,
 }: Props) {
   const groups = useMemo(() => buildGroups(voices, t), [voices, t]);
   const isDefaultSelected = !selectedVoice || selectedVoice === 'default';
@@ -201,7 +225,7 @@ export function VoicePickerModal({
         <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
         <View style={[styles.sheetHeader, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.sheetTitle, { color: colors.textPrimary }]}>{t('settings.voice')}</Text>
+          <Text style={[styles.sheetTitle, { color: colors.textPrimary }]}>{title ?? t('settings.voice')}</Text>
           <Pressable onPress={onClose} hitSlop={12}>
             <Ionicons name="close" size={22} color={colors.textSub} />
           </Pressable>

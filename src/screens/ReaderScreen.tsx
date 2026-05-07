@@ -434,6 +434,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   // Speech state
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isTtsFallback, setIsTtsFallback] = useState(false);
   const isSpeakingRef = useRef(false);
   const startSpeechRef = useRef<() => void>(() => { });
   const stopSpeechRef = useRef<() => void>(() => { });
@@ -467,7 +468,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   const { settings, updateSettings } = useSettings();
   const { requestAccess } = useCloudVoiceAccess();
-  const tts = useTts(settings.voiceType);
+  const tts = useTts(settings.voiceType, settings.backupVoice ?? 'default');
   const previewProviderRef = useRef<LocalTtsProvider | XfyunTtsProvider | null>(null);
   const { t, language } = useI18n();
 
@@ -1195,6 +1196,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     console.log('Starting speech with duration:', duration);
     setIsSpeaking(true);
     isSpeakingRef.current = true;
+    setIsTtsFallback(false);
 
     setTimerDuration(duration);
     if (duration !== null) {
@@ -1288,6 +1290,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     MusicControl.resetNowPlaying();
     setIsSpeaking(false);
     isSpeakingRef.current = false;
+    setIsTtsFallback(false);
     setTimerDuration(null);
     setTimerRemaining(null);
     if (speechTimerRef.current) {
@@ -1321,6 +1324,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const resumeSpeech = () => {
     const savedPos = pausedPositionRef.current;
     pausedPositionRef.current = null;
+    setIsTtsFallback(false);
     if (savedPos) {
       setIsSpeaking(true);
       isSpeakingRef.current = true;
@@ -1433,6 +1437,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         console.error('Speech error', e);
         stopSpeech();
       },
+      onFallback: () => setIsTtsFallback(true),
     });
   };
 
@@ -1582,12 +1587,14 @@ export default function ReaderScreen({ route, navigation }: any) {
   const speechTimerRatio = speechTimerMinutes / 120;
   const speechTimerThumbOffset = speechTimerRatio * speechTimerWidth;
   const selectedVoiceLabel = useMemo(() => {
-    if (!settings.voiceType || settings.voiceType === 'default') return t('common.default');
-    const matchedVoice = voices.find((voice) => voice.identifier === settings.voiceType);
-    if (!matchedVoice) return settings.voiceType;
-    const base = getVoiceDisplayLabel(matchedVoice, settings.voiceType, t, language);
+    const displayVoiceId = isTtsFallback ? (settings.backupVoice ?? 'default') : settings.voiceType;
+    if (!displayVoiceId || displayVoiceId === 'default') return t('common.default');
+    if (isTtsFallback && isXfyunVoice(displayVoiceId)) return t('common.default');
+    const matchedVoice = voices.find((voice) => voice.identifier === displayVoiceId);
+    if (!matchedVoice) return displayVoiceId;
+    const base = getVoiceDisplayLabel(matchedVoice, displayVoiceId, t, language);
     return matchedVoice.quality === 'Cloud' ? `${base} · ${t('voice.cloud')}` : matchedVoice.quality === 'Premium' ? `${base} · ${t('voice.qualityPremium')}` : matchedVoice.quality === 'Enhanced' ? `${base} · ${t('voice.qualityEnhanced')}` : base;
-  }, [language, settings.voiceType, t, voices]);
+  }, [language, settings.voiceType, settings.backupVoice, isTtsFallback, t, voices]);
   const fontOptionMeta = useMemo(
     () => ({
       system: { label: t('settings.fontSystemDefault') },
@@ -1753,6 +1760,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   useEffect(() => {
     const unsubscribeBeforeRemove = navigation.addListener('beforeRemove', () => {
+      stopSpeechRef.current();
       saveCurrentProgressRef.current();
     });
 
