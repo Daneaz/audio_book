@@ -1,19 +1,13 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Crypto from 'expo-crypto';
 import { AudioPlayer, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
-import { hmac } from '@noble/hashes/hmac.js';
-import { sha256 } from '@noble/hashes/sha2.js';
 import { TtsOptions, TtsProvider } from './TtsProvider';
 import { LocalTtsProvider } from './LocalTtsProvider';
-import { XFYUN_KEYS } from '../../utils/constants';
+import { XFYUN_PROXY } from '../../utils/constants';
 import { isXfyunVoice } from '../../utils/voiceUtils';
 import AdService from '../../services/AdService';
 
-const isMock = XFYUN_KEYS.APP_ID === 'MOCK_APPID';
-
-function _uint8ToBase64(bytes: Uint8Array): string {
-  return btoa(Array.from(bytes).map(b => String.fromCharCode(b)).join(''));
-}
+const isProxyConfigured = XFYUN_PROXY.URL.length > 0;
 
 // ----------------------------------------------------------------
 
@@ -68,95 +62,34 @@ export class XfyunTtsProvider implements TtsProvider {
     }
   }
 
-  private _buildWsUrl(): string {
-    const host = 'tts-api.xfyun.cn';
-    const path = '/v2/tts';
-    const date = new Date().toUTCString();
-    const signatureOrigin = `host: ${host}\ndate: ${date}\nGET ${path} HTTP/1.1`;
-
-    const enc = new TextEncoder();
-    const sig = _uint8ToBase64(hmac(sha256, enc.encode(XFYUN_KEYS.API_SECRET), enc.encode(signatureOrigin)));
-    const authorization = btoa(
-      `api_key="${XFYUN_KEYS.API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${sig}"`,
-    );
-
-    return `wss://${host}${path}?authorization=${encodeURIComponent(authorization)}&date=${encodeURIComponent(date)}&host=${host}`;
-  }
-
   private async _synthesizeAndCache(text: string, cachePath: string): Promise<void> {
-    if (isMock) {
-      throw new Error('iFlyTek credentials not configured — using local TTS');
+    if (!isProxyConfigured) {
+      throw new Error('iFlyTek proxy not configured — using local TTS');
     }
 
-    const wsUrl = this._buildWsUrl();
-    const chunks: string[] = [];
-
-    await new Promise<void>((resolve, reject) => {
-      const ws = new WebSocket(wsUrl);
-      let settled = false;
-      const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
-
-      ws.onopen = () => {
-        const bytes = new TextEncoder().encode(text);
-        const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
-        ws.send(JSON.stringify({
-          common: { app_id: XFYUN_KEYS.APP_ID },
-          business: {
-            aue: 'lame',
-            auf: 'audio/L16;rate=48000',
-            vcn: this.voiceId,
-            speed: 50,
-            volume: 50,
-            pitch: 50,
-            bgs: 0,
-            tte: 'UTF8',
-          },
-          data: { status: 2, text: btoa(binary) },
-        }));
-      };
-
-      ws.onmessage = (event: MessageEvent) => {
-        try {
-          const resp = JSON.parse(event.data as string);
-          if (resp.code !== 0) {
-            ws.close();
-            settle(() => reject(new Error(`iFlyTek error ${resp.code}: ${resp.message}`)));
-            return;
-          }
-          if (resp.data?.audio) chunks.push(resp.data.audio);
-          if (resp.data?.status === 2) {
-            ws.close();
-            settle(() => resolve());
-          }
-        } catch (e) {
-          ws.close();
-          settle(() => reject(e));
-        }
-      };
-
-      ws.onerror = (e: Event) => {
-        console.warn('XfyunTtsProvider WS onerror', e);
-        settle(() => reject(new Error('iFlyTek WebSocket error')));
-      };
-      ws.onclose = (e: CloseEvent) => {
-        if (e.code !== 1000) {
-          console.warn('XfyunTtsProvider WS onclose', e.code, e.reason);
-          settle(() => reject(new Error(`WebSocket closed: ${e.code} ${e.reason}`)));
-        }
-      };
+    const response = await fetch(`${XFYUN_PROXY.URL.replace(/\/+$/, '')}/tts`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(XFYUN_PROXY.TOKEN ? { 'x-app-token': XFYUN_PROXY.TOKEN } : {}),
+      },
+      body: JSON.stringify({
+        text,
+        voiceId: this.voiceId,
+        speed: 50,
+      }),
     });
 
-    const byteArrays = chunks.map(chunk => {
-      const bin = atob(chunk);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      return bytes;
-    });
-    const total = byteArrays.reduce((s, a) => s + a.length, 0);
-    const merged = new Uint8Array(total);
-    let offset = 0;
-    for (const arr of byteArrays) { merged.set(arr, offset); offset += arr.length; }
-    await FileSystem.writeAsStringAsync(cachePath, _uint8ToBase64(merged), {
+    if (!response.ok) {
+      throw new Error(`iFlyTek proxy error ${response.status}`);
+    }
+
+    const result = await response.json();
+    if (!result?.audioBase64 || typeof result.audioBase64 !== 'string') {
+      throw new Error('iFlyTek proxy returned invalid audio');
+    }
+
+    await FileSystem.writeAsStringAsync(cachePath, result.audioBase64, {
       encoding: FileSystem.EncodingType.Base64,
     });
   }
@@ -179,7 +112,7 @@ export class XfyunTtsProvider implements TtsProvider {
   }
 
   async prefetch(text: string): Promise<void> {
-    if (isMock) return;
+    if (!isProxyConfigured) return;
     await this._prefetchAsync(text).catch(() => {});
   }
 

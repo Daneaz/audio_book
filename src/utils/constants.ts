@@ -31,8 +31,7 @@ export const MEMBERSHIP_PRODUCT_IDS = {
 
 export const MEMBERSHIP_ENTITLEMENT = 'InkVoice Pro';
 
-export const XFYUN_KEYS = {
-    APP_ID: process.env.EXPO_PUBLIC_XFYUN_APP_ID ?? 'MOCK_APPID',                                        
-    API_KEY: process.env.EXPO_PUBLIC_XFYUN_API_KEY ?? 'MOCK_API_KEY',                                  
-    API_SECRET: process.env.EXPO_PUBLIC_XFYUN_API_SECRET ?? 'MOCK_API_SECRET',     
+export const XFYUN_PROXY = {
+  URL: process.env.EXPO_PUBLIC_XFYUN_PROXY_URL ?? '',
+  TOKEN: process.env.EXPO_PUBLIC_XFYUN_PROXY_TOKEN ?? '',
 };

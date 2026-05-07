@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "inkvoice-xfyun-tts-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-07",
+  "secrets": {
+    "required": [
+      "XFYUN_APP_ID",
+      "XFYUN_API_KEY",
+      "XFYUN_API_SECRET",
+      "APP_PROXY_TOKEN"
+    ]
+  }
+}

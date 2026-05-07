@@ -33,6 +33,7 @@ jest.mock('expo-file-system/legacy', () => ({
   cacheDirectory: 'file://cache/',
   getInfoAsync: jest.fn().mockResolvedValue({ exists: false }),
   makeDirectoryAsync: jest.fn().mockResolvedValue(undefined),
+  writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
   EncodingType: { Base64: 'base64' },
 }));
 
@@ -42,7 +43,7 @@ jest.mock('expo-crypto', () => ({
 }));
 
 jest.mock('../src/utils/constants', () => ({
-  XFYUN_KEYS: { APP_ID: 'MOCK_APPID', API_KEY: 'MOCK_API_KEY', API_SECRET: 'MOCK_API_SECRET' },
+  XFYUN_PROXY: { URL: '', TOKEN: '' },
 }));
 
 jest.mock('../src/services/AdService', () => ({
@@ -53,7 +54,16 @@ jest.mock('../src/services/AdService', () => ({
 }));
 
 describe('XfyunTtsProvider', () => {
-  beforeEach(() => jest.clearAllMocks());
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    global.fetch = jest.fn();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
 
   it('falls back to LocalTtsProvider when in mock mode (no real credentials)', async () => {
     const provider = new XfyunTtsProvider('xiaoyan');
@@ -123,6 +133,57 @@ describe('XfyunTtsProvider', () => {
       await provider.prefetch('你好');
 
       expect(getInfoAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Cloudflare proxy mode', () => {
+    beforeEach(() => {
+      jest.resetModules();
+    });
+
+    afterEach(() => {
+      jest.dontMock('../src/utils/constants');
+    });
+
+    it('posts synthesis requests to the proxy and writes returned audio to cache', async () => {
+      jest.doMock('../src/utils/constants', () => ({
+        XFYUN_PROXY: {
+          URL: 'https://tts.example.workers.dev',
+          TOKEN: 'app-token',
+        },
+      }));
+
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ audioBase64: 'BASE64_MP3' }),
+      });
+      global.fetch = fetchMock as any;
+
+      const { XfyunTtsProvider: ProxyProvider } = require('../src/services/tts/XfyunTtsProvider');
+      const FileSystem = require('expo-file-system/legacy');
+      FileSystem.getInfoAsync.mockResolvedValue({ exists: false });
+
+      const provider = new ProxyProvider('x4_yezi');
+      provider.speak('你好', {});
+
+      await new Promise(r => setTimeout(r, 30));
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://tts.example.workers.dev/tts',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'content-type': 'application/json',
+            'x-app-token': 'app-token',
+          }),
+          body: JSON.stringify({ text: '你好', voiceId: 'x4_yezi', speed: 50 }),
+        })
+      );
+      expect(FileSystem.writeAsStringAsync).toHaveBeenCalledWith(
+        'file://cache/xfyun_tts/x4_yezi/abc123hash.mp3',
+        'BASE64_MP3',
+        { encoding: 'base64' }
+      );
     });
   });
 });
