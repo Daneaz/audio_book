@@ -429,6 +429,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [currentHeaderTitle, setCurrentHeaderTitle] = useState('');
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [showAd, setShowAd] = useState(false);
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
 
   // Speech state
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -584,18 +586,42 @@ export default function ReaderScreen({ route, navigation }: any) {
     return () => { voicesCancelledRef.current = true; };
   }, [loadVoices]);
 
-  useEffect(() => {
-    let cancelled = false;
-    AdService.shouldShowBanner().then(v => { if (!cancelled) setShowAd(v); });
-    return () => { cancelled = true; };
+  const scheduleBannerReshowTimer = useCallback((cancelled: { value: boolean }) => {
+    AdService.getBannerReshowDelayMs().then(delay => {
+      if (cancelled.value || delay <= 0) return;
+      clearTimeout(bannerTimerRef.current);
+      bannerTimerRef.current = setTimeout(() => {
+        AdService.shouldShowBanner().then(setShowAd);
+      }, delay + 500);
+    });
   }, []);
+
+  const handleBannerHidden = useCallback(() => {
+    setShowAd(false);
+    const cancelled = { value: false };
+    scheduleBannerReshowTimer(cancelled);
+  }, [scheduleBannerReshowTimer]);
+
+  useEffect(() => {
+    const cancelled = { value: false };
+    AdService.shouldShowBanner().then(v => {
+      if (cancelled.value) return;
+      setShowAd(v);
+      if (!v) scheduleBannerReshowTimer(cancelled);
+    });
+    return () => { cancelled.value = true; clearTimeout(bannerTimerRef.current); };
+  }, [scheduleBannerReshowTimer]);
 
   useFocusEffect(
     useCallback(() => {
-      let cancelled = false;
-      AdService.shouldShowBanner().then(v => { if (!cancelled) setShowAd(v); });
-      return () => { cancelled = true; };
-    }, [])
+      const cancelled = { value: false };
+      AdService.shouldShowBanner().then(v => {
+        if (cancelled.value) return;
+        setShowAd(v);
+        if (!v) scheduleBannerReshowTimer(cancelled);
+      });
+      return () => { cancelled.value = true; };
+    }, [scheduleBannerReshowTimer])
   );
 
   const openVoiceSettings = useCallback(() => {
@@ -2109,7 +2135,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         <View style={[styles.footer, { paddingBottom: insets.bottom + 10, backgroundColor: readerColors.bottomBar }]}>
           <AdBanner
             visible={showAd}
-            onHidden={() => setShowAd(false)}
+            onHidden={handleBannerHidden}
             onUpgradePress={() => navigation.navigate('Membership')}
             floating={false}
           />
@@ -2392,7 +2418,6 @@ export default function ReaderScreen({ route, navigation }: any) {
             requestAccess(id, lang, {
               onGranted: (grantedId, grantedLang) => {
                 updateSettings({ voiceType: grantedId });
-                setIsTtsVoicePickerVisible(false);
                 previewVoice(grantedId, grantedLang);
               },
               onBeforeAd: () => setIsTtsVoicePickerVisible(false),
@@ -2406,7 +2431,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       </Modal>
       <AdBanner
         visible={showAd && !isMenuVisible}
-        onHidden={() => setShowAd(false)}
+        onHidden={handleBannerHidden}
         onUpgradePress={() => navigation.navigate('Membership')}
       />
     </View>

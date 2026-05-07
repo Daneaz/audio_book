@@ -8,8 +8,7 @@ jest.mock('../src/services/AdService', () => ({
   __esModule: true,
   default: {
     isCloudVoiceUnlocked: jest.fn(),
-    showRewardedAd: jest.fn(),
-    unlockCloudVoice: jest.fn(),
+    showCloudVoiceRewardedAd: jest.fn(),
   },
 }));
 
@@ -67,10 +66,9 @@ describe('useCloudVoiceAccess', () => {
     expect(alertSpy).toHaveBeenCalled();
   });
 
-  it('calls onBeforeAd, unlocks, and calls onGranted after successful ad', async () => {
+  it('calls onBeforeAd and onGranted after successful ad', async () => {
     (AdService.isCloudVoiceUnlocked as jest.Mock).mockResolvedValue(false);
-    (AdService.showRewardedAd as jest.Mock).mockResolvedValue(undefined);
-    (AdService.unlockCloudVoice as jest.Mock).mockResolvedValue(undefined);
+    (AdService.showCloudVoiceRewardedAd as jest.Mock).mockResolvedValue(undefined);
 
     let alertButtons: any[] = [];
     jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
@@ -90,14 +88,13 @@ describe('useCloudVoiceAccess', () => {
     });
 
     expect(onBeforeAd).toHaveBeenCalled();
-    expect(AdService.showRewardedAd).toHaveBeenCalled();
-    expect(AdService.unlockCloudVoice).toHaveBeenCalled();
+    expect(AdService.showCloudVoiceRewardedAd).toHaveBeenCalled();
     expect(onGranted).toHaveBeenCalledWith('x4_yezi', 'zh-CN');
   });
 
   it('does not call onGranted when ad is dismissed without reward', async () => {
     (AdService.isCloudVoiceUnlocked as jest.Mock).mockResolvedValue(false);
-    (AdService.showRewardedAd as jest.Mock).mockRejectedValue(new Error('ad closed without reward'));
+    (AdService.showCloudVoiceRewardedAd as jest.Mock).mockRejectedValue(new Error('ad closed without reward'));
 
     let alertButtons: any[] = [];
     jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
@@ -115,7 +112,6 @@ describe('useCloudVoiceAccess', () => {
       await alertButtons[1].onPress();
     });
 
-    expect(AdService.unlockCloudVoice).not.toHaveBeenCalled();
     expect(onGranted).not.toHaveBeenCalled();
   });
 
@@ -133,7 +129,7 @@ describe('useCloudVoiceAccess', () => {
     });
 
     expect(alertButtons[0].style).toBe('cancel');
-    expect(AdService.showRewardedAd).not.toHaveBeenCalled();
+    expect(AdService.showCloudVoiceRewardedAd).not.toHaveBeenCalled();
     expect(onGranted).not.toHaveBeenCalled();
   });
 });

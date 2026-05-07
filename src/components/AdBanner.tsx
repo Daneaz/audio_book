@@ -20,7 +20,7 @@ export default function AdBanner({ visible, onHidden, onUpgradePress, floating =
   const handleHidePress = async () => {
     setLoading(true);
     try {
-      await AdService.showRewardedAd();
+      await AdService.showBannerRewardedAd();
       onHidden();
     } catch {
       // 激励视频失败或用户中途关闭，不隐藏 banner

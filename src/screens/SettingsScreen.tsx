@@ -519,7 +519,6 @@ export default function SettingsScreen({ navigation }: any) {
         requestAccess(id, lang, {
           onGranted: (grantedId, grantedLang) => {
             updateSettings({ voiceType: grantedId });
-            setShowVoiceModal(false);
             previewVoice(grantedId, grantedLang);
           },
           onBeforeAd: () => setShowVoiceModal(false),

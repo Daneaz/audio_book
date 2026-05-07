@@ -41,11 +41,10 @@ export function useCloudVoiceAccess() {
             onPress: async () => {
               opts.onBeforeAd?.();
               try {
-                await AdService.showRewardedAd();
+                await AdService.showCloudVoiceRewardedAd();
               } catch {
                 return;
               }
-              await AdService.unlockCloudVoice();
               opts.onGranted(voiceId, lang);
             },
           },

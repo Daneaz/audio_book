@@ -3,12 +3,12 @@ import StorageService from './StorageService';
 import MembershipService from './MembershipService';
 import { AD_UNIT_IDS, STORAGE_KEYS } from '../utils/constants';
 
-const BANNER_HIDDEN_DURATION_MS = 60 * 60 * 1000;
+const BANNER_HIDDEN_DURATION_MS = 1 * 60 * 1000;
 const CLOUD_VOICE_UNLOCK_DURATION_MS = 30 * 60 * 1000;
 
 export interface AdState {
-  bannerHiddenUntil: string | null;
-  cloudVoiceUnlockedUntil: string | null;
+  bannerHiddenUntil?: string | null;
+  cloudVoiceUnlockedUntil?: string | null;
 }
 
 class AdService {
@@ -23,10 +23,16 @@ class AdService {
     return true;
   }
 
-  async hideBannerForOneHour(): Promise<void> {
-    const state = (await StorageService.getData(STORAGE_KEYS.AD_STATE)) ?? {};
+  private async hideBanner(): Promise<void> {
+    const state = ((await StorageService.getData(STORAGE_KEYS.AD_STATE)) as AdState | null) ?? {};
     const until = new Date(Date.now() + BANNER_HIDDEN_DURATION_MS).toISOString();
     await StorageService.storeData(STORAGE_KEYS.AD_STATE, { ...state, bannerHiddenUntil: until });
+  }
+
+  async getBannerReshowDelayMs(): Promise<number> {
+    const state: AdState | null = await StorageService.getData(STORAGE_KEYS.AD_STATE);
+    if (!state?.bannerHiddenUntil) return 0;
+    return Math.max(0, new Date(state.bannerHiddenUntil).getTime() - Date.now());
   }
 
   async isCloudVoiceUnlocked(): Promise<boolean> {
@@ -40,13 +46,14 @@ class AdService {
   }
 
   async unlockCloudVoice(): Promise<void> {
-    const state = (await StorageService.getData(STORAGE_KEYS.AD_STATE)) ?? {};
+    const state = ((await StorageService.getData(STORAGE_KEYS.AD_STATE)) as AdState | null) ?? {};
     const until = new Date(Date.now() + CLOUD_VOICE_UNLOCK_DURATION_MS).toISOString();
     await StorageService.storeData(STORAGE_KEYS.AD_STATE, { ...state, cloudVoiceUnlockedUntil: until });
   }
 
-  async showRewardedAd(): Promise<void> {
-    const rewardedAd = RewardedAd.createForAdRequest(AD_UNIT_IDS.REWARDED, {
+  private async _runRewardedAd(): Promise<void> {
+    const unitId = __DEV__ ? TestIds.REWARDED : AD_UNIT_IDS.REWARDED;
+    const rewardedAd = RewardedAd.createForAdRequest(unitId, {
       requestNonPersonalizedAdsOnly: true,
     });
 
@@ -74,9 +81,8 @@ class AdService {
 
       unsubEarned = rewardedAd.addAdEventListener(
         RewardedAdEventType.EARNED_REWARD,
-        async () => {
+        () => {
           cleanup();
-          await this.hideBannerForOneHour();
           resolve();
         }
       );
@@ -90,6 +96,16 @@ class AdService {
       });
       rewardedAd.show().catch(reject);
     });
+  }
+
+  async showBannerRewardedAd(): Promise<void> {
+    await this._runRewardedAd();
+    await this.hideBanner();
+  }
+
+  async showCloudVoiceRewardedAd(): Promise<void> {
+    await this._runRewardedAd();
+    await this.unlockCloudVoice();
   }
 }
 
