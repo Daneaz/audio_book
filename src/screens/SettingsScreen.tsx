@@ -92,11 +92,12 @@ export default function SettingsScreen({ navigation }: any) {
         language: typeof v.language === 'string' ? v.language : undefined,
         quality: typeof v.quality === 'string' ? v.quality : undefined,
       }));
-
       if (Platform.OS === 'ios') {
         const zhInstalled = raw.filter(v => {
           const lang = (v.language || '').toLowerCase();
-          return lang.startsWith('zh') || lang.startsWith('en');
+          if (lang.startsWith('zh')) return true;
+          if (lang.startsWith('en')) return v.name ? ALLOWED_ENGLISH_VOICE_NAMES.has(v.name) : false;
+          return false;
         });
         setVoices(mergeWithInstalledVoices(zhInstalled));
       } else {
@@ -105,7 +106,7 @@ export default function SettingsScreen({ navigation }: any) {
             if (!v.identifier) return false;
             const lang = (v.language || '').toLowerCase();
             if (lang.startsWith('zh')) return true;
-            if (lang.startsWith('en')) return v.name ? ALLOWED_ENGLISH_VOICE_NAMES.has(v.name) : false;
+            if (lang.startsWith('en')) return true;
             return false;
           })
           .map(v => ({
@@ -150,6 +151,9 @@ export default function SettingsScreen({ navigation }: any) {
 
     if (previewProviderRef.current) {
       await previewProviderRef.current.stop();
+      if (Platform.OS === 'android') {
+        await new Promise<void>(resolve => setTimeout(resolve, 200));
+      }
     }
 
     const provider = isXfyunVoice(voiceId)
