@@ -51,14 +51,15 @@ function makeCustomerInfo(
 }
 
 describe('MembershipService', () => {
-  const testIosApiKey = 'test_ujLWLhuhfjBhbmUelAGOqGBNhwV';
-  const testAndroidApiKey = 'test_android_key';
+  const validIosApiKey = 'appl_validRevenueCatIosKey';
+  const validAndroidApiKey = 'goog_validRevenueCatAndroidKey';
 
   beforeEach(() => {
     jest.clearAllMocks();
     (Purchases.configure as jest.Mock).mockReset();
-    REVENUECAT_API_KEYS.IOS = testIosApiKey;
-    REVENUECAT_API_KEYS.ANDROID = testAndroidApiKey;
+    (global as any).__DEV__ = true;
+    REVENUECAT_API_KEYS.IOS = validIosApiKey;
+    REVENUECAT_API_KEYS.ANDROID = validAndroidApiKey;
   });
 
   describe('initialize', () => {
@@ -67,7 +68,7 @@ describe('MembershipService', () => {
       (StorageService.storeData as jest.Mock).mockResolvedValue(undefined);
       await MembershipService.initialize();
       expect(Purchases.configure).toHaveBeenCalledWith(
-        expect.objectContaining({ apiKey: 'test_ujLWLhuhfjBhbmUelAGOqGBNhwV' })
+        expect.objectContaining({ apiKey: validIosApiKey })
       );
     });
 
@@ -78,6 +79,16 @@ describe('MembershipService', () => {
 
     it('skips RevenueCat initialization when api key is missing', async () => {
       REVENUECAT_API_KEYS.IOS = undefined;
+
+      await expect(MembershipService.initialize()).resolves.toBeUndefined();
+
+      expect(Purchases.configure).not.toHaveBeenCalled();
+      expect(Purchases.getCustomerInfo).not.toHaveBeenCalled();
+    });
+
+    it('skips simulated store api key in release builds', async () => {
+      (global as any).__DEV__ = false;
+      REVENUECAT_API_KEYS.IOS = 'test_ujLWLhuhfjBhbmUelAGOqGBNhwV';
 
       await expect(MembershipService.initialize()).resolves.toBeUndefined();
 

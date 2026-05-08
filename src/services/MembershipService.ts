@@ -25,15 +25,21 @@ function inferType(productIdentifier: string): MembershipType {
   return 'monthly';
 }
 
+function shouldSkipRevenueCatInitialization(apiKey: string | undefined): boolean {
+  const normalizedApiKey = apiKey?.trim();
+  if (!normalizedApiKey) return true;
+  return !__DEV__ && normalizedApiKey.startsWith('test_');
+}
+
 class MembershipService {
   async initialize(): Promise<void> {
     const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEYS.IOS : REVENUECAT_API_KEYS.ANDROID;
-    if (!apiKey?.trim()) {
+    if (shouldSkipRevenueCatInitialization(apiKey)) {
       return;
     }
 
     try {
-      Purchases.configure({ apiKey });
+      Purchases.configure({ apiKey: apiKey.trim() });
       const customerInfo = await Purchases.getCustomerInfo();
       await this._syncCache(customerInfo);
     } catch {
