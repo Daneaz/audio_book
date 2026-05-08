@@ -59,6 +59,12 @@ export type TranslationKey =
   | 'bookshelf.coverClipboardEmpty'
   | 'bookshelf.coverError'
   | 'bookshelf.moreOptions'
+  | 'bookshelf.demoDownload'
+  | 'bookshelf.demoExists'
+  | 'bookshelf.demoDownloadZh'
+  | 'bookshelf.demoDownloadEn'
+  | 'bookshelf.demoExistsZh'
+  | 'bookshelf.demoExistsEn'
   | 'upload.title'
   | 'upload.subtitle'
   | 'upload.pickFile'
@@ -225,6 +231,12 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.coverClipboardEmpty': '剪贴板中没有图片',
     'bookshelf.coverError': '封面加载失败，请检查链接',
     'bookshelf.moreOptions': '更多操作',
+    'bookshelf.demoDownload': '下载示例书（中英双语）',
+    'bookshelf.demoExists': '示例书已在书架中',
+    'bookshelf.demoDownloadZh': '下载中文示例书',
+    'bookshelf.demoDownloadEn': '下载英文示例书',
+    'bookshelf.demoExistsZh': '中文示例书已在书架中',
+    'bookshelf.demoExistsEn': '英文示例书已在书架中',
     'upload.title': '导入书籍',
     'upload.subtitle': '选择导入方式，将书籍添加到书架',
     'upload.pickFile': '从设备选择文件',
@@ -317,7 +329,7 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.trialActive': '试用中 · 还剩 {days} 天',
     'membership.manageSubscription': '管理订阅',
     'membership.subscribed': '已订阅',
-    'membership.upgrade': '升级',
+    'membership.upgrade': '升级会员',
     'membership.buyNow': '立即购买',
     'voice.cloud': '云端',
     'settings.clearVoiceCache': '清除语音缓存',
@@ -388,6 +400,12 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'bookshelf.coverClipboardEmpty': 'No image found in clipboard',
     'bookshelf.coverError': 'Failed to load cover, please check the URL',
     'bookshelf.moreOptions': 'More Options',
+    'bookshelf.demoDownload': 'Download Demo Books (ZH+EN)',
+    'bookshelf.demoExists': 'Demo books already in your shelf',
+    'bookshelf.demoDownloadZh': 'Download Chinese Demo Book',
+    'bookshelf.demoDownloadEn': 'Download English Demo Book',
+    'bookshelf.demoExistsZh': 'Chinese demo book already in your shelf',
+    'bookshelf.demoExistsEn': 'English demo book already in your shelf',
     'upload.title': 'Import Books',
     'upload.subtitle': 'Choose a method to add books to your shelf',
     'upload.pickFile': 'Select File from Device',
@@ -480,7 +498,7 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.trialActive': 'Trial · {days} days left',
     'membership.manageSubscription': 'Manage Subscription',
     'membership.subscribed': 'Subscribed',
-    'membership.upgrade': 'Upgrade',
+    'membership.upgrade': 'Upgrade Membership',
     'membership.buyNow': 'Buy Now',
     'voice.cloud': 'Cloud',
     'settings.clearVoiceCache': 'Clear Voice Cache',

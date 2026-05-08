@@ -4,6 +4,7 @@ import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdService from '../services/AdService';
 import { AD_UNIT_IDS } from '../utils/constants';
+import useI18n from '../i18n';
 export const AD_BANNER_HEIGHT = 78;
 
 interface AdBannerProps {
@@ -15,6 +16,7 @@ interface AdBannerProps {
 
 export default function AdBanner({ visible, onHidden, onUpgradePress, floating = true }: AdBannerProps) {
   const [loading, setLoading] = useState(false);
+  const { t, language } = useI18n();
   const insets = useSafeAreaInsets();
 
   const handleHidePress = async () => {
@@ -40,7 +42,7 @@ export default function AdBanner({ visible, onHidden, onUpgradePress, floating =
           disabled={loading}
           activeOpacity={0.75}
         >
-          <Text style={styles.upgradeText}>⭐ 升级会员</Text>
+          <Text style={styles.upgradeText}>⭐ {t('membership.upgrade')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.hideButton}

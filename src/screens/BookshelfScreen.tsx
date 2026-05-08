@@ -6,9 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BookService from '../services/BookService';
+import ChapterService from '../services/ChapterService';
+import StorageService from '../services/StorageService';
 import { Book } from '../types';
 import useSettings from '../hooks/useSettings';
 import useI18n from '../i18n';
+import { STORAGE_KEYS } from '../utils/constants';
+import { DEMO_BOOK_EN_CONTENT, DEMO_BOOK_EN_FILE_NAME, DEMO_BOOK_EN_TITLE, DEMO_BOOK_ZH_CONTENT, DEMO_BOOK_ZH_FILE_NAME, DEMO_BOOK_ZH_TITLE } from '../utils/demoBook';
+import { cacheDirectory, EncodingType, writeAsStringAsync } from 'expo-file-system/legacy';
 
 const COVER_PALETTES = [
   ['#F7C873', '#D88A46', '#7A3B1C'],
@@ -32,6 +37,7 @@ function getCoverLabel(title: string) {
 export default function BookshelfScreen({ navigation }: any) {
   const [books, setBooks] = useState<Book[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [modalMode, setModalMode] = useState<'rename' | 'rename-author' | 'cover' | null>(null);
   const [activeBook, setActiveBook] = useState<Book | null>(null);
   const [inputText, setInputText] = useState('');
@@ -96,6 +102,60 @@ export default function BookshelfScreen({ navigation }: any) {
     setRefreshing(true);
     await loadBooks();
     setRefreshing(false);
+  };
+
+  const importDemoBook = async (kind: 'zh' | 'en'): Promise<boolean> => {
+    const fileName = kind === 'zh' ? DEMO_BOOK_ZH_FILE_NAME : DEMO_BOOK_EN_FILE_NAME;
+    const content = kind === 'zh' ? DEMO_BOOK_ZH_CONTENT : DEMO_BOOK_EN_CONTENT;
+    const title = kind === 'zh' ? DEMO_BOOK_ZH_TITLE : DEMO_BOOK_EN_TITLE;
+
+    const existing = (await BookService.getBooks()).find(b => b.fileName === fileName);
+    if (existing) return false;
+
+    let sourceUri = '';
+    if (Platform.OS === 'web') {
+      sourceUri = `data:text/plain;charset=utf-8,${encodeURIComponent(content)}`;
+    } else {
+      if (!cacheDirectory) throw new Error('cacheDirectory unavailable');
+      const tempUri = `${cacheDirectory}demo_${kind}_${Date.now()}.txt`;
+      await writeAsStringAsync(tempUri, content, { encoding: EncodingType.UTF8 });
+      sourceUri = tempUri;
+    }
+
+    const newBook = await BookService.addBook(sourceUri, fileName);
+    newBook.title = title;
+    newBook.author = 'InkVoice';
+    const chapters = await ChapterService.parseChapters(newBook.id, newBook.filePath);
+    newBook.totalChapters = chapters.length;
+    await BookService.updateBook(newBook);
+    await StorageService.storeData(`${STORAGE_KEYS.CHAPTERS_PREFIX}${newBook.id}`, chapters);
+    return true;
+  };
+
+  const handleDownloadDemo = async () => {
+    if (demoLoading) return;
+    setDemoLoading(true);
+    try {
+      let createdZh = false;
+      let createdEn = false;
+      try {
+        createdZh = await importDemoBook('zh');
+      } catch {}
+      try {
+        createdEn = await importDemoBook('en');
+      } catch {}
+
+      if (!createdZh && !createdEn) {
+        Alert.alert(t('bookshelf.demoExists'));
+        return;
+      }
+      await loadBooks();
+      Alert.alert(t('upload.successTitle'), t('upload.successMessage'));
+    } catch {
+      Alert.alert(t('upload.errorTitle'), t('upload.errorMessage'));
+    } finally {
+      setDemoLoading(false);
+    }
   };
 
   const handleDelete = async (bookId: string) => {
@@ -307,6 +367,17 @@ export default function BookshelfScreen({ navigation }: any) {
             <Text style={[styles.emptySubTitle, { color: colors.textSub }]}>{t('bookshelf.emptySubtitle')}</Text>
             <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.fab }]} onPress={() => navigation.navigate('Upload')}>
               <Text style={styles.emptyButtonText}>{t('bookshelf.uploadButton')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.emptyButtonSecondary, { borderColor: colors.border }]}
+              onPress={handleDownloadDemo}
+              disabled={demoLoading}
+            >
+              {demoLoading ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <Text style={[styles.emptyButtonSecondaryText, { color: colors.textPrimary }]}>{t('bookshelf.demoDownload')}</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -657,6 +728,20 @@ const styles = StyleSheet.create({
   },
   emptyButtonText: {
     color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  emptyButtonSecondary: {
+    marginTop: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyButtonSecondaryText: {
     fontSize: 15,
     fontWeight: '700',
   },
