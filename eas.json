@@ -18,7 +18,17 @@
     },
     "prod": {
       "autoIncrement": true,
-      "channel": "prod"
+      "channel": "prod",
+      "env": {
+        "EXPO_PUBLIC_XFYUN_PROXY_URL": "https://inkvoice-xfyun-tts-proxy.eugenewwj.workers.dev",
+        "EXPO_PUBLIC_XFYUN_PROXY_TOKEN": "8OLat8JglYyK7EuyjDN/pM6vrx1kNdasm+ACaLhz18Y=",
+        "EXPO_PUBLIC_AD_BANNER_IOS": "ca-app-pub-3842092557707512/8003628031",
+        "EXPO_PUBLIC_AD_BANNER_ANDROID": "ca-app-pub-3842092557707512/7052886321",
+        "EXPO_PUBLIC_AD_REWARDED_IOS": "ca-app-pub-3842092557707512/8347242968",
+        "EXPO_PUBLIC_AD_REWARDED_ANDROID": "ca-app-pub-3842092557707512/4426722985",
+        "EXPO_PUBLIC_REVENUECAT_IOS": "test_ujLWLhuhfjBhbmUelAGOqGBNhwV",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID": "test_ujLWLhuhfjBhbmUelAGOqGBNhwV"
+      }
     }
   },
   "submit": {

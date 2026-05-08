@@ -28,12 +28,16 @@ function inferType(productIdentifier: string): MembershipType {
 class MembershipService {
   async initialize(): Promise<void> {
     const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEYS.IOS : REVENUECAT_API_KEYS.ANDROID;
-    Purchases.configure({ apiKey });
+    if (!apiKey?.trim()) {
+      return;
+    }
+
     try {
+      Purchases.configure({ apiKey });
       const customerInfo = await Purchases.getCustomerInfo();
       await this._syncCache(customerInfo);
     } catch {
-      // 忽略网络错误，fallback 到本地缓存
+      // 忽略启动期 RevenueCat 错误，fallback 到本地缓存，避免原生 SDK 异常导致启动崩溃
     }
   }
 

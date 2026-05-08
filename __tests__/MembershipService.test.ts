@@ -51,7 +51,15 @@ function makeCustomerInfo(
 }
 
 describe('MembershipService', () => {
-  beforeEach(() => jest.clearAllMocks());
+  const testIosApiKey = 'test_ujLWLhuhfjBhbmUelAGOqGBNhwV';
+  const testAndroidApiKey = 'test_android_key';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (Purchases.configure as jest.Mock).mockReset();
+    REVENUECAT_API_KEYS.IOS = testIosApiKey;
+    REVENUECAT_API_KEYS.ANDROID = testAndroidApiKey;
+  });
 
   describe('initialize', () => {
     it('calls Purchases.configure with ios api key', async () => {
@@ -66,6 +74,25 @@ describe('MembershipService', () => {
     it('does not throw when getCustomerInfo fails on initialize', async () => {
       (Purchases.getCustomerInfo as jest.Mock).mockRejectedValue(new Error('network'));
       await expect(MembershipService.initialize()).resolves.toBeUndefined();
+    });
+
+    it('skips RevenueCat initialization when api key is missing', async () => {
+      REVENUECAT_API_KEYS.IOS = undefined;
+
+      await expect(MembershipService.initialize()).resolves.toBeUndefined();
+
+      expect(Purchases.configure).not.toHaveBeenCalled();
+      expect(Purchases.getCustomerInfo).not.toHaveBeenCalled();
+    });
+
+    it('does not throw when configure fails on initialize', async () => {
+      (Purchases.configure as jest.Mock).mockImplementation(() => {
+        throw new Error('invalid api key');
+      });
+
+      await expect(MembershipService.initialize()).resolves.toBeUndefined();
+
+      expect(Purchases.getCustomerInfo).not.toHaveBeenCalled();
     });
 
     it('calls Purchases.configure with android api key on android', async () => {
