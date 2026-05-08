@@ -115,6 +115,29 @@ describe('useCloudVoiceAccess', () => {
     expect(onGranted).not.toHaveBeenCalled();
   });
 
+  it('calls onGranted when rewarded ad is unavailable but service grants fallback access', async () => {
+    (AdService.isCloudVoiceUnlocked as jest.Mock).mockResolvedValue(false);
+    (AdService.showCloudVoiceRewardedAd as jest.Mock).mockResolvedValue(undefined);
+
+    let alertButtons: any[] = [];
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      alertButtons = buttons ?? [];
+    });
+
+    const { result } = renderHook(() => useCloudVoiceAccess());
+    const onGranted = jest.fn();
+
+    await act(async () => {
+      result.current.requestAccess('x4_yezi', 'zh-CN', { onGranted });
+    });
+
+    await act(async () => {
+      await alertButtons[1].onPress();
+    });
+
+    expect(onGranted).toHaveBeenCalledWith('x4_yezi', 'zh-CN');
+  });
+
   it('does not show ad or call onGranted when user taps cancel', async () => {
     (AdService.isCloudVoiceUnlocked as jest.Mock).mockResolvedValue(false);
     let alertButtons: any[] = [];

@@ -97,14 +97,23 @@ class AdService {
     });
   }
 
+  private async _runRewardedAdWithUnavailableFallback(onReward: () => Promise<void>): Promise<void> {
+    try {
+      await this._runRewardedAd();
+    } catch (e: any) {
+      if (e?.message === 'ad closed without reward') {
+        throw e;
+      }
+    }
+    await onReward();
+  }
+
   async showBannerRewardedAd(): Promise<void> {
-    await this._runRewardedAd();
-    await this.hideBanner();
+    await this._runRewardedAdWithUnavailableFallback(() => this.hideBanner());
   }
 
   async showCloudVoiceRewardedAd(): Promise<void> {
-    await this._runRewardedAd();
-    await this.unlockCloudVoice();
+    await this._runRewardedAdWithUnavailableFallback(() => this.unlockCloudVoice());
   }
 }
 
