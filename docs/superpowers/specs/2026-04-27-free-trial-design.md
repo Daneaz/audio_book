@@ -10,7 +10,7 @@
 - RevenueCat 管理 IAP
 - 三档套餐：月度（`monthly`）、年度（`yearly`）、永久（`lifetime`）
 - 权益：去广告
-- Entitlement ID：`InkVoice Pro`
+- Entitlement ID：`premium`
 
 ## 范围
 

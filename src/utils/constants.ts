@@ -35,7 +35,7 @@ export const MEMBERSHIP_PRODUCT_IDS = {
   LIFETIME: 'lifetime',
 };
 
-export const MEMBERSHIP_ENTITLEMENT = 'InkVoice Pro';
+export const MEMBERSHIP_ENTITLEMENT = 'premium';
 
 export const XFYUN_PROXY = {
   URL: process.env.EXPO_PUBLIC_XFYUN_PROXY_URL ?? '',
