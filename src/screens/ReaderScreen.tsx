@@ -1028,9 +1028,11 @@ export default function ReaderScreen({ route, navigation }: any) {
       if (settings.flipMode === 'scroll') {
         setTimeout(() => {
           const layout = chapterLayoutsRef.current[ch.id];
-          if (layout) {
+          const absY = getChapterAbsoluteY(ch.id);
+          if (layout && absY !== null) {
+            const target = Math.max(0, absY + layout.height - window.height * 0.8);
             flatListRef.current?.scrollToOffset({
-              offset: Math.max(0, layout.y + layout.height - window.height * 0.8),
+              offset: target,
               animated: false,
             });
           }
@@ -1061,6 +1063,21 @@ export default function ReaderScreen({ route, navigation }: any) {
   handleStartReachedRef.current = handleStartReached;
   handleOverscrollBackLoadRef.current = handleOverscrollBackLoad;
 
+  // FlatList row 上 onLayout 报告的 y 始终是 0（row 内位置），不能用于章节绝对偏移。
+  // 通过累加前面章节的 height + margin 计算章节在 contentContainer 中的绝对 y。
+  const getChapterAbsoluteY = (chapterId: string): number | null => {
+    const data = chaptersDataRef.current;
+    const idx = data.findIndex(c => c.chapter.id === chapterId);
+    if (idx === -1) return null;
+    let y = VERTICAL_CONTENT_PADDING_TOP;
+    for (let i = 0; i < idx; i++) {
+      const l = chapterLayoutsRef.current[data[i].chapter.id];
+      if (!l) return null;
+      y += l.height + CHAPTER_MARGIN_BOTTOM;
+    }
+    return y;
+  };
+
   const getChapterReadProgress = (): number => {
     const isHoriz = settings.flipMode === 'horizontal';
     const currentId = chapterWindow.currentId;
@@ -1077,7 +1094,9 @@ export default function ReaderScreen({ route, navigation }: any) {
     } else {
       const layout = chapterLayoutsRef.current[currentId];
       if (!layout || layout.height === 0) return 0;
-      return Math.min(1, Math.max(0, (scrollPos.value - layout.y) / layout.height));
+      const absY = getChapterAbsoluteY(currentId);
+      if (absY === null) return 0;
+      return Math.min(1, Math.max(0, (scrollPos.value - absY) / layout.height));
     }
   };
 
