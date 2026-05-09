@@ -374,7 +374,7 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.primaryVoice': 'Primary Voice',
     'settings.backupVoice': 'Backup Voice',
     'settings.voicePreviewHint': 'Selecting a voice will play a preview',
-    'settings.voicePreviewZh': 'This is a short Chinese voice preview.',
+    'settings.voicePreviewZh': '这是一段中文语音试听',
     'settings.voicePreviewEn': 'This is a short English voice preview.',
     'settings.voiceHintIos': 'For a more natural voice, go to iOS Settings → Accessibility → Spoken Content → Voices and download an "Enhanced" voice',
     'settings.voiceHintAndroid': 'For better Chinese quality, go to System Settings → Language & Input → Text-to-Speech and switch to "Google Text-to-Speech"',

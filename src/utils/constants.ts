@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 export const STORAGE_KEYS = {
   BOOKS: '@audio_book_books',
@@ -9,13 +10,18 @@ export const STORAGE_KEYS = {
   AD_STATE: '@audio_book_ad_state',
 };
 
+// export const AD_UNIT_IDS = {
+//   BANNER: Platform.OS === 'ios'
+//     ? 'ca-app-pub-3842092557707512/8003628031'
+//     : 'ca-app-pub-3842092557707512/7052886321',
+//   REWARDED: Platform.OS === 'ios'
+//     ? 'ca-app-pub-3842092557707512/8347242968'
+//     : 'ca-app-pub-3842092557707512/4426722985',
+// };
+
 export const AD_UNIT_IDS = {
-  BANNER: Platform.OS === 'ios'
-    ? process.env.EXPO_PUBLIC_AD_BANNER_IOS ?? ""
-    : process.env.EXPO_PUBLIC_AD_BANNER_ANDROID ?? "",
-  REWARDED: Platform.OS === 'ios'
-    ? process.env.EXPO_PUBLIC_AD_REWARDED_IOS ?? ""
-    : process.env.EXPO_PUBLIC_AD_REWARDED_ANDROID ?? "",
+  BANNER: TestIds.BANNER,
+  REWARDED: TestIds.REWARDED
 };
 
 export const REVENUECAT_API_KEYS = {

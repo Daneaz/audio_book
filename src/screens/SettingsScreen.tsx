@@ -54,6 +54,7 @@ export default function SettingsScreen({ navigation }: any) {
       let total = 0;
       for (const entry of entries) {
         const entryPath = `${dir}${entry}`;
+        // @ts-ignore
         const entryInfo = await FileSystem.getInfoAsync(entryPath, { size: true });
         if (!entryInfo.exists) continue;
         if (entryInfo.isDirectory) {
