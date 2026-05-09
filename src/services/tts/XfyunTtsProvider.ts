@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Crypto from 'expo-crypto';
-import { AudioPlayer, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { AudioPlayer, createAudioPlayer, setAudioModeAsync, setIsAudioActiveAsync } from 'expo-audio';
 import { TtsOptions, TtsProvider } from './TtsProvider';
 import { LocalTtsProvider } from './LocalTtsProvider';
 import { XFYUN_PROXY } from '../../utils/constants';
@@ -8,6 +8,7 @@ import { isXfyunVoice } from '../../utils/voiceUtils';
 import AdService from '../../services/AdService';
 
 const isProxyConfigured = XFYUN_PROXY.URL.length > 0;
+const WATCHDOG_GRACE_MS = 1500;
 
 // ----------------------------------------------------------------
 
@@ -15,6 +16,7 @@ export class XfyunTtsProvider implements TtsProvider {
   private readonly voiceId: string;
   private readonly fallback: LocalTtsProvider;
   private currentSound: AudioPlayer | null = null;
+  private currentWatchdog: ReturnType<typeof setTimeout> | null = null;
   private _gen = 0;
 
   constructor(voiceId: string, backupVoiceId: string = 'default') {
@@ -55,10 +57,18 @@ export class XfyunTtsProvider implements TtsProvider {
 
   private async _stopCurrentPlayer(): Promise<void> {
     await this.fallback.stop();
+    this._cancelWatchdog();
     if (this.currentSound) {
       try { this.currentSound.pause(); } catch {}
       this.currentSound.remove();
       this.currentSound = null;
+    }
+  }
+
+  private _cancelWatchdog(): void {
+    if (this.currentWatchdog) {
+      clearTimeout(this.currentWatchdog);
+      this.currentWatchdog = null;
     }
   }
 
@@ -96,16 +106,34 @@ export class XfyunTtsProvider implements TtsProvider {
 
   private async _playFile(path: string, options: TtsOptions): Promise<void> {
     await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true });
-    const player = createAudioPlayer({ uri: path });
+    const player = createAudioPlayer({ uri: path }, { keepAudioSessionActive: true });
     this.currentSound = player;
     if (options.rate && options.rate !== 1.0) {
       player.setPlaybackRate(options.rate);
     }
+    let watchdogScheduled = false;
+    const finish = () => {
+      if (this.currentSound !== player) return;
+      this._cancelWatchdog();
+      try { player.remove(); } catch {}
+      if (this.currentSound === player) this.currentSound = null;
+      options.onDone?.();
+    };
     player.addListener('playbackStatusUpdate', status => {
+      if (this.currentSound !== player) return;
+      if (!watchdogScheduled && status.isLoaded && status.duration > 0) {
+        watchdogScheduled = true;
+        const rate = options.rate && options.rate > 0 ? options.rate : 1.0;
+        const expectedMs = (status.duration / rate) * 1000 + WATCHDOG_GRACE_MS;
+        this._cancelWatchdog();
+        this.currentWatchdog = setTimeout(() => {
+          if (this.currentSound !== player) return;
+          console.warn('[XfyunTts] watchdog: didJustFinish missing, forcing onDone');
+          finish();
+        }, expectedMs);
+      }
       if (status.didJustFinish) {
-        player.remove();
-        if (this.currentSound === player) this.currentSound = null;
-        options.onDone?.();
+        finish();
       }
     });
     player.play();
@@ -129,6 +157,7 @@ export class XfyunTtsProvider implements TtsProvider {
   async stop(): Promise<void> {
     this._gen++;
     await this._stopCurrentPlayer();
+    try { await setIsAudioActiveAsync(false); } catch {}
   }
 
   private async _getCachePath(text: string): Promise<string> {
