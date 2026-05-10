@@ -1,10 +1,12 @@
 {
   "name": "expo-now-playing-plugin",
   "version": "1.0.0",
+  "description": "Expo config plugin for ExpoNowPlaying. After editing src/, run 'npm run build'.",
   "private": true,
   "main": "build/withExpoNowPlaying.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "postinstall": "tsc"
   },
   "devDependencies": {
     "@expo/config-plugins": "~9.0.0",
