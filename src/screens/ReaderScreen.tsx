@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, ViewToken, useColorScheme, FlatListProps, AppState, Modal, Animated as RNAnimated } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, StatusBar, Platform, PermissionsAndroid, ViewToken, useColorScheme, FlatListProps, AppState, Modal, Animated as RNAnimated } from 'react-native';
 import Animated, { useAnimatedRef, useSharedValue, scrollTo, useFrameCallback, useAnimatedScrollHandler, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import MusicControl from '../utils/musicControl';
+import nowPlaying from '../utils/nowPlaying';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import BookService from '../services/BookService';
 import ChapterService from '../services/ChapterService';
@@ -29,6 +29,22 @@ import AdBanner, { AD_BANNER_HEIGHT } from '../components/AdBanner';
 import { useCloudVoiceAccess } from '../hooks/useCloudVoiceAccess';
 import EpubBlock from '../components/EpubBlock';
 import AdService from '../services/AdService';
+
+async function ensurePostNotificationsPermission(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  if (Platform.Version < 33) return;
+  try {
+    const granted = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+    );
+    if (granted) return;
+    await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+    );
+  } catch (e) {
+    console.warn('[ReaderScreen] POST_NOTIFICATIONS request error:', e);
+  }
+}
 
 interface ChapterData {
   chapter: Chapter;
@@ -443,6 +459,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   const speakSentenceRef = useRef<(cId: string, sIdx: number) => void>(() => { });
   const prevVoiceTypeRef = useRef<string>('');
   const pausedPositionRef = useRef<{ chapterId: string; sentenceIndex: number } | null>(null);
+  const wasPlayingBeforeInterruptionRef = useRef(false);
+  const handleRemoteSkipRef = useRef<(delta: 1 | -1) => void>(() => {});
   const [currentSpeakingChapterId, setCurrentSpeakingChapterId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [selectedSentence, setSelectedSentence] = useState<{ chapterId: string; sentenceIndex: number } | null>(null);
@@ -1210,7 +1228,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     setIsTypographyPanelVisible((visible) => !visible);
   };
 
-  const startSpeech = (duration: number | null = timerDuration, hidePanel: boolean = true) => {
+  const startSpeech = async (duration: number | null = timerDuration, hidePanel: boolean = true) => {
     speakSessionRef.current++;
     console.log('Starting speech with duration:', duration);
     setIsSpeaking(true);
@@ -1275,27 +1293,14 @@ export default function ReaderScreen({ route, navigation }: any) {
 
     lastUserScrollRef.current = 0;
 
-    // @ts-ignore
-    MusicControl.enableControl('play', true);
-    // @ts-ignore
-    MusicControl.enableControl('pause', true);
-    // @ts-ignore
-    MusicControl.enableControl('stop', true);
-    // @ts-ignore
-    MusicControl.enableControl('nextTrack', false);
-    // @ts-ignore
-    MusicControl.enableControl('previousTrack', false);
-
     const startingChapter = chaptersData.find(c => c.chapter.id === startChapterId);
-    // @ts-ignore
-    MusicControl.setNowPlaying({
+    await ensurePostNotificationsPermission();
+    nowPlaying.update({
       title: book?.title ?? '',
-      artist: startingChapter?.chapter.title ?? '',
+      subtitle: startingChapter?.chapter.title ?? '',
+      artworkUri: book?.coverImageUri ?? undefined,
     });
-    // @ts-ignore
-    MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
-    // @ts-ignore
-    if (Platform.OS === 'ios') MusicControl.handleAudioInterruptions(true);
+    nowPlaying.setState('playing');
 
     if (startChapterId) {
       speakSentence(startChapterId, startSentenceIndex);
@@ -1306,7 +1311,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     speakSessionRef.current++;
     tts.stop();
     pausedPositionRef.current = null;
-    MusicControl.resetNowPlaying();
+    nowPlaying.reset();
     setIsSpeaking(false);
     isSpeakingRef.current = false;
     setIsTtsFallback(false);
@@ -1327,17 +1332,13 @@ export default function ReaderScreen({ route, navigation }: any) {
     }
     setIsSpeaking(false);
     isSpeakingRef.current = false;
-    // @ts-ignore
-    if (Platform.OS === 'ios') MusicControl.enableBackgroundMode(true);
-
     const chData = chaptersData.find(c => c.chapter.id === pausedChapterId);
-    // @ts-ignore
-    MusicControl.setNowPlaying({
+    nowPlaying.update({
       title: book?.title ?? '',
-      artist: chData?.chapter.title ?? '',
+      subtitle: chData?.chapter.title ?? '',
+      artworkUri: book?.coverImageUri ?? undefined,
     });
-    // @ts-ignore
-    MusicControl.updatePlayback({ state: MusicControl.STATE_PAUSED });
+    nowPlaying.setState('paused');
   };
 
   const resumeSpeech = () => {
@@ -1348,13 +1349,12 @@ export default function ReaderScreen({ route, navigation }: any) {
       setIsSpeaking(true);
       isSpeakingRef.current = true;
       const chData = chaptersData.find(c => c.chapter.id === savedPos.chapterId);
-      // @ts-ignore
-      MusicControl.setNowPlaying({
+      nowPlaying.update({
         title: book?.title ?? '',
-        artist: chData?.chapter.title ?? '',
+        subtitle: chData?.chapter.title ?? '',
+        artworkUri: book?.coverImageUri ?? undefined,
       });
-      // @ts-ignore
-      MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
+      nowPlaying.setState('playing');
       speakSentence(savedPos.chapterId, savedPos.sentenceIndex);
     } else {
       startSpeechRef.current();
@@ -1367,6 +1367,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     pauseSpeechRef.current = pauseSpeech;
     resumeSpeechRef.current = resumeSpeech;
     speakSentenceRef.current = speakSentence;
+    handleRemoteSkipRef.current = handleRemoteSkip;
   });
 
   useEffect(() => {
@@ -1379,29 +1380,38 @@ export default function ReaderScreen({ route, navigation }: any) {
   }, [settings.voiceType, currentSpeakingChapterId, currentSentenceIndex]);
 
   useEffect(() => {
-    // @ts-ignore
-    MusicControl.enableBackgroundMode(true);
-    // @ts-ignore
-    MusicControl.on('play', () => {
+    const unsubs: Array<() => void> = [];
+
+    unsubs.push(nowPlaying.addListener('play', () => {
       if (!isSpeakingRef.current) resumeSpeechRef.current();
-    });
-    // @ts-ignore
-    MusicControl.on('pause', () => {
+    }));
+    unsubs.push(nowPlaying.addListener('pause', () => {
       if (isSpeakingRef.current) pauseSpeechRef.current();
-    });
-    // @ts-ignore
-    MusicControl.on('stop', () => {
-      stopSpeechRef.current();
-    });
+    }));
+    unsubs.push(nowPlaying.addListener('next', () => {
+      handleRemoteSkipRef.current(+1);
+    }));
+    unsubs.push(nowPlaying.addListener('previous', () => {
+      handleRemoteSkipRef.current(-1);
+    }));
+    unsubs.push(nowPlaying.addListener('interruption-begin', () => {
+      if (isSpeakingRef.current) {
+        wasPlayingBeforeInterruptionRef.current = true;
+        pauseSpeechRef.current();
+      } else {
+        wasPlayingBeforeInterruptionRef.current = false;
+      }
+    }));
+    unsubs.push(nowPlaying.addListener('interruption-end', () => {
+      if (wasPlayingBeforeInterruptionRef.current) {
+        wasPlayingBeforeInterruptionRef.current = false;
+        resumeSpeechRef.current();
+      }
+    }));
 
     return () => {
-      // @ts-ignore
-      MusicControl.off('play');
-      // @ts-ignore
-      MusicControl.off('pause');
-      // @ts-ignore
-      MusicControl.off('stop');
-      MusicControl.resetNowPlaying();
+      unsubs.forEach(u => u());
+      nowPlaying.reset();
     };
   }, []);
 
@@ -1458,6 +1468,41 @@ export default function ReaderScreen({ route, navigation }: any) {
       },
       onFallback: () => setIsTtsFallback(true),
     });
+  };
+
+  const handleRemoteSkip = (delta: 1 | -1) => {
+    const cId = currentSpeakingChapterId;
+    if (cId === null) return;
+    const chData = chaptersData.find(c => c.chapter.id === cId);
+    if (!chData) return;
+
+    const targetIdx = currentSentenceIndex + delta;
+
+    if (targetIdx >= 0 && targetIdx < chData.sentences.length) {
+      speakSessionRef.current++;
+      tts.stop();
+      speakSentence(cId, targetIdx);
+      return;
+    }
+
+    const chIdx = chaptersData.findIndex(c => c.chapter.id === cId);
+    if (delta === 1) {
+      const nextCh = chaptersData[chIdx + 1];
+      if (nextCh) {
+        speakSessionRef.current++;
+        tts.stop();
+        speakSentence(nextCh.chapter.id, 0);
+      } else {
+        stopSpeech();
+      }
+    } else {
+      const prevCh = chaptersData[chIdx - 1];
+      if (prevCh && prevCh.sentences.length > 0) {
+        speakSessionRef.current++;
+        tts.stop();
+        speakSentence(prevCh.chapter.id, prevCh.sentences.length - 1);
+      }
+    }
   };
 
   // Effects for timer
@@ -1806,13 +1851,11 @@ export default function ReaderScreen({ route, navigation }: any) {
   useEffect(() => {
     if (!isSpeaking || !currentSpeakingChapterId) return;
     const chData = chaptersData.find(c => c.chapter.id === currentSpeakingChapterId);
-    // @ts-ignore
-    MusicControl.setNowPlaying({
+    nowPlaying.update({
       title: book?.title ?? '',
-      artist: chData?.chapter.title ?? '',
+      subtitle: chData?.chapter.title ?? '',
+      artworkUri: book?.coverImageUri ?? undefined,
     });
-    // @ts-ignore
-    MusicControl.updatePlayback({ state: MusicControl.STATE_PLAYING });
   }, [currentSpeakingChapterId, isSpeaking, book, chaptersData]);
 
   const handleChapterLayout = useCallback((chapterId: string, y: number, height: number) => {
