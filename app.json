@@ -80,7 +80,8 @@
         }
       ],
       "expo-font",
-      "expo-audio"
+      "expo-audio",
+      "./modules/expo-now-playing/app.plugin.js"
     ]
   }
 }
