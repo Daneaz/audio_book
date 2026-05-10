@@ -24,10 +24,12 @@ public class ExpoNowPlayingModule: Module {
       }
     }
 
-    OnDestroy {
-      RemoteCommandHandler.shared.unregister()
-      AudioInterruptionObserver.shared.stop()
-      deactivateAudioSessionIfActive()
+    OnDestroy { [weak self] in
+      DispatchQueue.main.async {
+        RemoteCommandHandler.shared.unregister()
+        AudioInterruptionObserver.shared.stop()
+        self?.deactivateAudioSessionIfActive()
+      }
     }
 
     AsyncFunction("update") { (metadata: [String: Any]) in

@@ -36,12 +36,16 @@ final class AudioInterruptionObserver {
 
     switch type {
     case .began:
-      onBegin?()
+      DispatchQueue.main.async { [weak self] in
+        self?.onBegin?()
+      }
     case .ended:
       let optsRaw = info[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
       let opts = AVAudioSession.InterruptionOptions(rawValue: optsRaw)
       if opts.contains(.shouldResume) {
-        onEnd?()
+        DispatchQueue.main.async { [weak self] in
+          self?.onEnd?()
+        }
       }
     @unknown default:
       break
