@@ -76,10 +76,12 @@ public class ExpoNowPlayingModule: Module {
   private func activateAudioSessionIfNeeded() {
     guard !sessionActivated else { return }
     do {
-      try AVAudioSession.sharedInstance().setActive(true, options: [])
+      let session = AVAudioSession.sharedInstance()
+      try session.setCategory(.playback, mode: .spokenAudio, options: [])
+      try session.setActive(true, options: [])
       sessionActivated = true
     } catch {
-      print("[ExpoNowPlaying] AVAudioSession setActive(true) failed:", error)
+      print("[ExpoNowPlaying] AVAudioSession activate failed:", error)
     }
   }
 
