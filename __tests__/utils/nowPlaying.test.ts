@@ -27,40 +27,38 @@ describe('nowPlaying adapter', () => {
   });
 
   it('addListener returns an unsubscribe function that detaches the handler', () => {
-    const mockNative = getMockNative();
-    let stored: (() => void) | null = null;
-    mockNative.addListener.mockImplementation((event: string, handler: () => void) => {
-      stored = handler;
-      return { remove: () => { stored = null; } };
-    });
+    const remove = jest.fn();
+    const native = jest.requireMock('../../modules/expo-now-playing/src/ExpoNowPlayingModule').default;
+    native.addListener.mockReturnValue({ remove });
 
     const handler = jest.fn();
     const unsub = nowPlaying.addListener('play', handler);
-    expect(mockNative.addListener).toHaveBeenCalledWith('play', handler);
+    expect(native.addListener).toHaveBeenCalledWith('play', handler);
+    expect(remove).not.toHaveBeenCalled();
 
     unsub();
-    expect(stored).toBeNull();
+    expect(remove).toHaveBeenCalledTimes(1);
   });
 
   it('multiple listeners for same event are independent', () => {
-    const mockNative = getMockNative();
-    const subs: Array<{ remove: () => void; handler: () => void }> = [];
-    mockNative.addListener.mockImplementation((_e: string, handler: () => void) => {
-      const s = { handler, remove: () => { /* removed flag */ } };
-      subs.push(s);
-      return s;
+    const native = jest.requireMock('../../modules/expo-now-playing/src/ExpoNowPlayingModule').default;
+    const removes: jest.Mock[] = [];
+    native.addListener.mockImplementation(() => {
+      const remove = jest.fn();
+      removes.push(remove);
+      return { remove };
     });
 
-    const h1 = jest.fn();
-    const h2 = jest.fn();
-    const u1 = nowPlaying.addListener('next', h1);
-    const u2 = nowPlaying.addListener('next', h2);
+    const u1 = nowPlaying.addListener('next', jest.fn());
+    const u2 = nowPlaying.addListener('next', jest.fn());
+    expect(removes.length).toBe(2);
 
-    expect(subs.length).toBe(2);
     u1();
+    expect(removes[0]).toHaveBeenCalledTimes(1);
+    expect(removes[1]).not.toHaveBeenCalled();
+
     u2();
-    expect(typeof u1).toBe('function');
-    expect(typeof u2).toBe('function');
+    expect(removes[1]).toHaveBeenCalledTimes(1);
   });
 });
 
