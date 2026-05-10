@@ -3,12 +3,15 @@ package expo.modules.nowplaying
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class ExpoNowPlayingModule : Module(), NowPlayingService.Callbacks {
 
   private var serviceStarted = false
+  private val mainHandler = Handler(Looper.getMainLooper())
 
   override fun definition() = ModuleDefinition {
     Name("ExpoNowPlaying")
@@ -19,9 +22,11 @@ class ExpoNowPlayingModule : Module(), NowPlayingService.Callbacks {
       NowPlayingService.eventCallbacks = this@ExpoNowPlayingModule
     }
     OnDestroy {
-      NowPlayingService.eventCallbacks = null
-      NowPlayingService.instance?.stopFromRn()
-      serviceStarted = false
+      mainHandler.post {
+        NowPlayingService.eventCallbacks = null
+        NowPlayingService.instance?.stopFromRn()
+        serviceStarted = false
+      }
     }
 
     AsyncFunction("update") { metadata: Map<String, Any?> ->
@@ -30,29 +35,35 @@ class ExpoNowPlayingModule : Module(), NowPlayingService.Callbacks {
       val artworkStr = metadata["artworkUri"] as? String
       val artworkUri = artworkStr?.let { Uri.parse(it) }
 
-      NowPlayingService.instance?.updateMetadata(title, subtitle, artworkUri)
+      mainHandler.post {
+        NowPlayingService.instance?.updateMetadata(title, subtitle, artworkUri)
+      }
     }
 
     AsyncFunction("setState") { state: String ->
-      when (state) {
-        "playing" -> {
-          ensureServiceStarted()
-          NowPlayingService.instance?.applyState("playing")
-        }
-        "paused" -> {
-          NowPlayingService.instance?.applyState("paused")
-        }
-        "stopped" -> {
-          NowPlayingService.instance?.applyState("stopped")
-          NowPlayingService.instance?.stopFromRn()
-          serviceStarted = false
+      mainHandler.post {
+        when (state) {
+          "playing" -> {
+            ensureServiceStarted()
+            NowPlayingService.instance?.applyState("playing")
+          }
+          "paused" -> {
+            NowPlayingService.instance?.applyState("paused")
+          }
+          "stopped" -> {
+            NowPlayingService.instance?.applyState("stopped")
+            NowPlayingService.instance?.stopFromRn()
+            serviceStarted = false
+          }
         }
       }
     }
 
     AsyncFunction("reset") {
-      NowPlayingService.instance?.stopFromRn()
-      serviceStarted = false
+      mainHandler.post {
+        NowPlayingService.instance?.stopFromRn()
+        serviceStarted = false
+      }
     }
   }
 
