@@ -482,6 +482,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [isVoiceDropdownVisible, setIsVoiceDropdownVisible] = useState(false);
   const [isTtsVoicePickerVisible, setIsTtsVoicePickerVisible] = useState(false);
   const speechTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerEndRef = useRef<number | null>(null);
   const speakSessionRef = useRef(0);
 
   const { settings, updateSettings } = useSettings();
@@ -1237,8 +1238,11 @@ export default function ReaderScreen({ route, navigation }: any) {
 
     setTimerDuration(duration);
     if (duration !== null) {
+      const endMs = Date.now() + duration * 60 * 1000;
+      timerEndRef.current = endMs;
       setTimerRemaining(duration * 60);
     } else {
+      timerEndRef.current = null;
       setTimerRemaining(null);
     }
 
@@ -1317,6 +1321,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     setIsTtsFallback(false);
     setTimerDuration(null);
     setTimerRemaining(null);
+    timerEndRef.current = null;
     if (speechTimerRef.current) {
       clearInterval(speechTimerRef.current);
       speechTimerRef.current = null;
@@ -1362,7 +1367,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   useEffect(() => {
-    startSpeechRef.current = startSpeech;
+    startSpeechRef.current = startSpeechWithTimer;
     stopSpeechRef.current = stopSpeech;
     pauseSpeechRef.current = pauseSpeech;
     resumeSpeechRef.current = resumeSpeech;
@@ -1434,17 +1439,65 @@ export default function ReaderScreen({ route, navigation }: any) {
       return;
     }
 
-    const sentence = prepareSentenceForTts(chData.sentences[sIndex].text, 'offline');
+    setCurrentSpeakingChapterId(cId);
 
+    const useLocalBatch = !isXfyunVoice(settings.voiceType);
+
+    if (useLocalBatch) {
+      // Batch-enqueue the rest of the chapter into Android TextToSpeech.
+      // Once queued natively, sequential playback no longer depends on the JS
+      // thread, so audio keeps going when the app is backgrounded (RN pauses
+      // setTimeout via onHostPause). Cross-chapter advance still needs JS.
+      for (let i = sIndex; i < chData.sentences.length; i++) {
+        const sentenceText = prepareSentenceForTts(chData.sentences[i].text, 'offline');
+        if (!sentenceText) continue;
+
+        const idxAtEnqueue = i;
+        const isLastInChapter = i === chData.sentences.length - 1;
+
+        tts.speak(sentenceText, {
+          language: 'zh-CN',
+          rate: settingsRef.current.speechRate,
+          onStart: () => {
+            if (speakSessionRef.current !== session) return;
+            setCurrentSentenceIndex(idxAtEnqueue);
+          },
+          onDone: () => {
+            if (speakSessionRef.current !== session || !isSpeakingRef.current) return;
+            if (timerEndRef.current !== null && Date.now() >= timerEndRef.current) {
+              stopSpeech();
+              return;
+            }
+            if (!isLastInChapter) return;
+            const chIdx = chaptersData.findIndex(c => c.chapter.id === cId);
+            const nextCh = chaptersData[chIdx + 1];
+            if (nextCh) {
+              speakSentence(nextCh.chapter.id, 0);
+            } else {
+              stopSpeech();
+            }
+          },
+          onStopped: () => {},
+          onError: (e) => {
+            console.error('Speech error', e);
+            stopSpeech();
+          },
+          onFallback: () => setIsTtsFallback(true),
+        });
+      }
+      return;
+    }
+
+    // Cloud TTS path: keep one-sentence-at-a-time scheduling (cloud provider
+    // re-stops the current player on each speak, so batching doesn't work).
+    setCurrentSentenceIndex(sIndex);
+
+    const sentence = prepareSentenceForTts(chData.sentences[sIndex].text, 'offline');
     if (!sentence) {
       if (isSpeakingRef.current && speakSessionRef.current === session) speakSentence(cId, sIndex + 1);
       return;
     }
 
-    setCurrentSpeakingChapterId(cId);
-    setCurrentSentenceIndex(sIndex);
-
-    // Prefetch next 2 sentences in background (no-op for local TTS)
     for (const offset of [1, 2]) {
       const nextIdx = sIndex + offset;
       if (nextIdx < chData.sentences.length) {
@@ -1507,26 +1560,36 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   // Effects for timer
   useEffect(() => {
-    if (isSpeaking && timerRemaining !== null) {
-      speechTimerRef.current = setInterval(() => {
-        setTimerRemaining(prev => {
-          if (prev === null || prev <= 0) {
-            stopSpeech();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else if (!isSpeaking && speechTimerRef.current) {
-      clearInterval(speechTimerRef.current);
-      speechTimerRef.current = null;
-    }
+    if (!isSpeaking || timerEndRef.current === null) return;
+    speechTimerRef.current = setInterval(() => {
+      const end = timerEndRef.current;
+      if (end === null) return;
+      const remaining = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      setTimerRemaining(remaining);
+      if (remaining <= 0) stopSpeech();
+    }, 1000);
     return () => {
       if (speechTimerRef.current) {
         clearInterval(speechTimerRef.current);
+        speechTimerRef.current = null;
       }
     };
-  }, [isSpeaking, timerRemaining]);
+  }, [isSpeaking]);
+
+  // 朗读中更改定时器设置时，立即重算终止时间
+  useEffect(() => {
+    if (!isSpeakingRef.current) return;
+    if (isSpeechTimerEnabled && speechTimerMinutes > 0) {
+      const endMs = Date.now() + speechTimerMinutes * 60 * 1000;
+      timerEndRef.current = endMs;
+      setTimerDuration(speechTimerMinutes);
+      setTimerRemaining(speechTimerMinutes * 60);
+    } else {
+      timerEndRef.current = null;
+      setTimerDuration(null);
+      setTimerRemaining(null);
+    }
+  }, [isSpeechTimerEnabled, speechTimerMinutes]);
 
   // Clean up
   useEffect(() => {
@@ -1567,7 +1630,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   const decreaseLineSpacing = () => updateSettings({ lineSpacing: Math.max(1.2, Number((settings.lineSpacing - 0.1).toFixed(1))) });
 
   const startSpeechWithTimer = () => {
-    console.log('Starting speech with timer. Timer enabled:', isSpeechTimerEnabled, 'Timer minutes:', speechTimerMinutes);
     const duration = isSpeechTimerEnabled && speechTimerMinutes > 0 ? speechTimerMinutes : null;
     startSpeech(duration);
   };
@@ -1597,16 +1659,6 @@ export default function ReaderScreen({ route, navigation }: any) {
       onStopped: () => setPreviewingVoiceId(current => current === voiceId ? null : current),
       onError: () => setPreviewingVoiceId(current => current === voiceId ? null : current),
     });
-  };
-
-  const getTimerText = () => {
-    if (timerDuration === null) return t('reader.timerNone');
-    if (isSpeaking && timerRemaining !== null) {
-      const mins = Math.floor(timerRemaining / 60);
-      const secs = timerRemaining % 60;
-      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-    }
-    return `${timerDuration}m`;
   };
 
   useEffect(() => {
@@ -2465,7 +2517,7 @@ export default function ReaderScreen({ route, navigation }: any) {
             <TouchableOpacity
               style={[styles.ttsChip, { backgroundColor: readerColors.iconBox }]}
               onPress={() => {
-                const options = [1, 15, 30, 60, 0];
+                const options = __DEV__ ? [1, 5, 0] :[15, 30, 60, 120, 0];
                 const next = options[(options.indexOf(speechTimerMinutes) + 1) % options.length];
                 setSpeechTimerMinutes(next);
                 setIsSpeechTimerEnabled(next > 0);

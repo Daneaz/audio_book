@@ -6,7 +6,7 @@ export interface ParsedSentence {
 
 const TRAILING_SENTENCE_CLOSERS_REGEX = /^[”’"'`）〕】〉》」』〗\]\)\s\n\r]*$/;
 const LEADING_SENTENCE_CLOSERS_REGEX = /^[”’"'`）〕】〉》」』〗\]\)\s\n\r]+/;
-const SPEECH_ONLY_SYMBOLS_REGEX = /^[`"'“”‘’（）()〔〕【】〈〉《》「」『』〖〗\[\]\-_=+~^|\\/<>.,!?;:，。！？；：、\s\n\r]+$/;
+const SPEECH_ONLY_SYMBOLS_REGEX = /^[`”’””’’（）()〔〕【】〈〉《》「」『』〖〗\[\]\-—–_=+~^|\\/<>.,!?;:，。！？；：、\s\n\r]+$/;
 const SPEECH_STRIP_EDGE_SYMBOLS_REGEX = /^[`"'“”‘’（）()〔〕【】〈〉《》「」『』〖〗\[\]\s]+|[`"'“”‘’（）()〔〕【】〈〉《》「」『』〖〗\[\]\s]+$/g;
 
 export function parseSentences(content: string): ParsedSentence[] {
@@ -95,7 +95,7 @@ export function sanitizeSentenceForSpeech(sentence: string): string {
     return '';
   }
 
-  return normalized.replace(SPEECH_STRIP_EDGE_SYMBOLS_REGEX, '').replace(/-/g, '').trim();
+  return normalized.replace(SPEECH_STRIP_EDGE_SYMBOLS_REGEX, '').replace(/[-—–]+/g, '').trim();
 }
 
 export function prepareSentenceForTts(sentence: string, mode: 'offline' | 'online'): string {

@@ -1,6 +1,7 @@
 export interface TtsOptions {
   rate?: number;
   language?: string;
+  onStart?: () => void;
   onDone?: () => void;
   onStopped?: () => void;
   onError?: (e: Error) => void;
