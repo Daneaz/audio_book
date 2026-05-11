@@ -2252,7 +2252,7 @@ export default function ReaderScreen({ route, navigation }: any) {
               {/* 字号 + 行距 并排 */}
               <View style={styles.typoTopRow}>
                 <View style={[styles.typoCol, { backgroundColor: readerColors.surface }]}>
-                  <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>字号</Text>
+                  <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>{t('reader.fontSizeLabel')}</Text>
                   <View style={styles.typoStepperRow}>
                     <TouchableOpacity onPress={decreaseFontSize} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
                       <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>−</Text>
@@ -2265,7 +2265,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                 </View>
 
                 <View style={[styles.typoCol, { backgroundColor: readerColors.surface }]}>
-                  <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>行距</Text>
+                  <Text style={[styles.typoColLabel, { color: readerColors.textSub }]}>{t('reader.lineSpacingLabel')}</Text>
                   <View style={styles.typoStepperRow}>
                     <TouchableOpacity onPress={decreaseLineSpacing} style={[styles.typoStepBtn, { backgroundColor: readerColors.iconBox }]}>
                       <Text style={[styles.typoStepBtnText, { color: readerColors.accent }]}>−</Text>
@@ -2279,7 +2279,7 @@ export default function ReaderScreen({ route, navigation }: any) {
               </View>
 
               {/* 字体芯片 */}
-              <Text style={[styles.typoChipsLabel, { color: readerColors.textSub }]}>字体</Text>
+              <Text style={[styles.typoChipsLabel, { color: readerColors.textSub }]}>{t('reader.typography')}</Text>
               <View style={styles.typoChipsRow}>
                 {typographyFontOptions.map((option) => {
                   const selected = settings.fontPreset === option.id;
@@ -2319,7 +2319,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                   <Text style={[styles.ctrlAaLarge, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>A</Text>
                 </View>
                 <Text style={[styles.ctrlLabel, { color: isTypographyPanelVisible ? readerColors.accent : readerColors.textSub }]}>
-                  {t('settings.fontSize')}
+                  {t('reader.typography')}
                 </Text>
               </TouchableOpacity>
 

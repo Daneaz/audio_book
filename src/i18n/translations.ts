@@ -105,6 +105,9 @@ export type TranslationKey =
   | 'reader.fontPreview'
   | 'reader.lineSpacingPreview'
   | 'reader.chapterCountUnit'
+  | 'reader.typography'
+  | 'reader.fontSizeLabel'
+  | 'reader.lineSpacingLabel'
   | 'settings.fontSystemDefault'
   | 'settings.fontHei'
   | 'settings.fontKai'
@@ -190,7 +193,7 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.themeSystem': '跟随系统',
     'settings.themeDark': '深色',
     'settings.themeLight': '浅色',
-    'settings.fontSize': '字体',
+    'settings.fontSize': '字号',
     'settings.lineSpacing': '行间距',
     'settings.fontFamily': '阅读字体',
     'settings.readingMode': '阅读模式',
@@ -277,6 +280,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'reader.fontPreview': '春江潮水连海平，海上明月共潮生。',
     'reader.lineSpacingPreview': '山光悦鸟性，\n潭影空人心。\n万籁此都寂，\n但余钟磬音。',
     'reader.chapterCountUnit': '章',
+    'reader.typography': '字体',
+    'reader.fontSizeLabel': '字号',
+    'reader.lineSpacingLabel': '行距',
     'settings.fontSystemDefault': '系统默认',
     'settings.fontHei': '黑体',
     'settings.fontKai': '楷体',
@@ -359,7 +365,7 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'settings.themeSystem': 'System',
     'settings.themeDark': 'Dark',
     'settings.themeLight': 'Light',
-    'settings.fontSize': 'Font',
+    'settings.fontSize': 'Font Size',
     'settings.lineSpacing': 'Line Height',
     'settings.fontFamily': 'Reading Font',
     'settings.readingMode': 'Reading Mode',
@@ -446,6 +452,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'reader.fontPreview': 'The moon rises with the tide over the spring sea.',
     'reader.lineSpacingPreview': 'Mountain light delights the birds,\nPool shadows calm the mind.\nAll sounds fall into silence,\nLeaving only the temple bell.',
     'reader.chapterCountUnit': 'chapters',
+    'reader.typography': 'Font',
+    'reader.fontSizeLabel': 'Font Size',
+    'reader.lineSpacingLabel': 'Line Spacing',
     'settings.fontSystemDefault': 'System Default',
     'settings.fontHei': 'Hei',
     'settings.fontKai': 'Kai',
