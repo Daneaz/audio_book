@@ -10,8 +10,15 @@ public class ExpoNowPlayingModule: Module {
     Events("play", "pause", "next", "previous", "interruption-begin", "interruption-end")
 
     OnCreate {
-      RemoteCommandHandler.shared.onPlay = { [weak self] in self?.sendEvent("play") }
-      RemoteCommandHandler.shared.onPause = { [weak self] in self?.sendEvent("pause") }
+      RemoteCommandHandler.shared.onPlay = { [weak self] in
+        NowPlayingController.shared.setPlaying(true)
+        self?.sendEvent("play")
+      }
+      RemoteCommandHandler.shared.onPause = { [weak self] in
+        NowPlayingController.shared.setPlaying(false)
+        self?.silenceAudioOutput()
+        self?.sendEvent("pause")
+      }
       RemoteCommandHandler.shared.onNext = { [weak self] in self?.sendEvent("next") }
       RemoteCommandHandler.shared.onPrevious = { [weak self] in self?.sendEvent("previous") }
 
@@ -82,6 +89,15 @@ public class ExpoNowPlayingModule: Module {
       sessionActivated = true
     } catch {
       print("[ExpoNowPlaying] AVAudioSession activate failed:", error)
+    }
+  }
+
+  private func silenceAudioOutput() {
+    do {
+      try AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+      sessionActivated = false
+    } catch {
+      print("[ExpoNowPlaying] AVAudioSession silence failed:", error)
     }
   }
 

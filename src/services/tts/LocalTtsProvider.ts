@@ -24,7 +24,6 @@ export class LocalTtsProvider implements TtsProvider {
       language: options.language ?? 'zh-CN',
       rate: options.rate,
       voice: this.voiceIdentifier,
-      ...(Platform.OS === 'ios' && { useApplicationAudioSession: false }),
       onDone: () => {
         if (this._stopped) return;
         if (idx < subclauses.length - 1) {

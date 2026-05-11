@@ -29,6 +29,9 @@ final class NowPlayingController {
     var info: [String: Any] = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
     info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
     MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    if #available(iOS 13.0, *) {
+      MPNowPlayingInfoCenter.default().playbackState = isPlaying ? .playing : .paused
+    }
   }
 
   func reset() {
