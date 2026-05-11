@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Crypto from 'expo-crypto';
 import { AudioPlayer, createAudioPlayer, setAudioModeAsync, setIsAudioActiveAsync } from 'expo-audio';
+import { Platform } from 'react-native';
 import { TtsOptions, TtsProvider } from './TtsProvider';
 import { LocalTtsProvider } from './LocalTtsProvider';
 import { XFYUN_PROXY } from '../../utils/constants';
@@ -105,8 +106,23 @@ export class XfyunTtsProvider implements TtsProvider {
   }
 
   private async _playFile(path: string, options: TtsOptions): Promise<void> {
-    await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true });
-    const player = createAudioPlayer({ uri: path }, { keepAudioSessionActive: true });
+    if (Platform.OS === 'ios') {
+      await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true });
+    } else {
+      // Re-enable audio in case stop() previously called setIsAudioActiveAsync(false)
+      try { await setIsAudioActiveAsync(true); } catch {}
+    }
+
+    const info = await FileSystem.getInfoAsync(path, { size: true } as any);
+    if (!info.exists || (info as any).size === 0) {
+      try { await FileSystem.deleteAsync(path, { idempotent: true }); } catch {}
+      throw new Error('cached audio file missing or empty');
+    }
+
+    const player = createAudioPlayer(
+      { uri: path },
+      Platform.OS === 'ios' ? { keepAudioSessionActive: true } : {},
+    );
     this.currentSound = player;
     if (options.rate && options.rate !== 1.0) {
       player.setPlaybackRate(options.rate);
@@ -157,7 +173,12 @@ export class XfyunTtsProvider implements TtsProvider {
   async stop(): Promise<void> {
     this._gen++;
     await this._stopCurrentPlayer();
-    try { await setIsAudioActiveAsync(false); } catch {}
+    // iOS: deactivate audio session so other apps can resume audio
+    // Android: do NOT call setIsAudioActiveAsync(false) — it sets audioEnabled=false
+    //          and permanently blocks subsequent player.play() calls
+    if (Platform.OS === 'ios') {
+      try { await setIsAudioActiveAsync(false); } catch {}
+    }
   }
 
   private async _getCachePath(text: string): Promise<string> {

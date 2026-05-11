@@ -155,6 +155,8 @@ export default function SettingsScreen({ navigation }: any) {
       if (Platform.OS === 'android') {
         await new Promise<void>(resolve => setTimeout(resolve, 200));
       }
+    } else if (Platform.OS === 'ios') {
+      await Speech.stop();
     }
 
     const provider = isXfyunVoice(voiceId)
@@ -163,6 +165,11 @@ export default function SettingsScreen({ navigation }: any) {
 
     previewProviderRef.current = provider;
     setPreviewingVoiceId(voiceId);
+
+    if (Platform.OS === 'ios') {
+      await new Promise<void>(resolve => setTimeout(resolve, 100));
+      if (previewProviderRef.current !== provider) return;
+    }
 
     provider.speak(previewText, {
       language: speechLanguage,

@@ -466,8 +466,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [selectedSentence, setSelectedSentence] = useState<{ chapterId: string; sentenceIndex: number } | null>(null);
 
   // Timer
-  const [timerDuration, setTimerDuration] = useState<number | null>(null);
-  const [timerRemaining, setTimerRemaining] = useState<number | null>(null);
   const [isTypographyPanelVisible, setIsTypographyPanelVisible] = useState(false);
   const [isTtsOverlayVisible, setIsTtsOverlayVisible] = useState(false);
   const waveAnims = useRef(
@@ -475,7 +473,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   ).current;
   const [isSpeechTimerEnabled, setIsSpeechTimerEnabled] = useState(false);
   const [speechTimerMinutes, setSpeechTimerMinutes] = useState(0);
-  const [speechTimerWidth, setSpeechTimerWidth] = useState(0);
   const [voicesLoading, setVoicesLoading] = useState(false);
   const [voices, setVoices] = useState<VoiceEntry[]>([]);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
@@ -1229,22 +1226,17 @@ export default function ReaderScreen({ route, navigation }: any) {
     setIsTypographyPanelVisible((visible) => !visible);
   };
 
-  const startSpeech = async (duration: number | null = timerDuration, hidePanel: boolean = true) => {
+  const computeTimerEndMs = (minutes: number) =>
+    Date.now() + minutes * 60 * 1000 * (__DEV__ ? 0.1 : 1);
+
+  const startSpeech = async (duration: number | null = null, hidePanel: boolean = true) => {
     speakSessionRef.current++;
     console.log('Starting speech with duration:', duration);
     setIsSpeaking(true);
     isSpeakingRef.current = true;
     setIsTtsFallback(false);
 
-    setTimerDuration(duration);
-    if (duration !== null) {
-      const endMs = Date.now() + duration * 60 * 1000;
-      timerEndRef.current = endMs;
-      setTimerRemaining(duration * 60);
-    } else {
-      timerEndRef.current = null;
-      setTimerRemaining(null);
-    }
+    timerEndRef.current = duration !== null ? computeTimerEndMs(duration) : null;
 
     // Determine start point
     let startChapterId = chaptersData[0]?.chapter.id;
@@ -1319,8 +1311,6 @@ export default function ReaderScreen({ route, navigation }: any) {
     setIsSpeaking(false);
     isSpeakingRef.current = false;
     setIsTtsFallback(false);
-    setTimerDuration(null);
-    setTimerRemaining(null);
     timerEndRef.current = null;
     if (speechTimerRef.current) {
       clearInterval(speechTimerRef.current);
@@ -1558,16 +1548,17 @@ export default function ReaderScreen({ route, navigation }: any) {
     }
   };
 
-  // Effects for timer
+  // Start/stop countdown interval when speaking state changes
   useEffect(() => {
     if (!isSpeaking || timerEndRef.current === null) return;
-    speechTimerRef.current = setInterval(() => {
-      const end = timerEndRef.current;
-      if (end === null) return;
-      const remaining = Math.max(0, Math.ceil((end - Date.now()) / 1000));
-      setTimerRemaining(remaining);
-      if (remaining <= 0) stopSpeech();
-    }, 1000);
+    const startInterval = () => {
+      if (speechTimerRef.current) clearInterval(speechTimerRef.current);
+      speechTimerRef.current = setInterval(() => {
+        const end = timerEndRef.current;
+        if (end !== null && Date.now() >= end) stopSpeech();
+      }, 1000);
+    };
+    startInterval();
     return () => {
       if (speechTimerRef.current) {
         clearInterval(speechTimerRef.current);
@@ -1576,18 +1567,19 @@ export default function ReaderScreen({ route, navigation }: any) {
     };
   }, [isSpeaking]);
 
-  // 朗读中更改定时器设置时，立即重算终止时间
+  // Recalculate end time when timer settings change mid-speech
   useEffect(() => {
     if (!isSpeakingRef.current) return;
     if (isSpeechTimerEnabled && speechTimerMinutes > 0) {
-      const endMs = Date.now() + speechTimerMinutes * 60 * 1000;
-      timerEndRef.current = endMs;
-      setTimerDuration(speechTimerMinutes);
-      setTimerRemaining(speechTimerMinutes * 60);
+      timerEndRef.current = computeTimerEndMs(speechTimerMinutes);
+      if (!speechTimerRef.current) {
+        speechTimerRef.current = setInterval(() => {
+          const end = timerEndRef.current;
+          if (end !== null && Date.now() >= end) stopSpeech();
+        }, 1000);
+      }
     } else {
       timerEndRef.current = null;
-      setTimerDuration(null);
-      setTimerRemaining(null);
     }
   }, [isSpeechTimerEnabled, speechTimerMinutes]);
 
@@ -1700,8 +1692,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   const horizontalContentHeight = Math.max(window.height - horizontalTopPadding - horizontalBottomPadding, horizontalLineHeight);
   const charsPerLine = Math.max(Math.floor(horizontalContentWidth / (debouncedFontSize * 1.05)), 1);
   const linesPerPage = Math.max(Math.floor(horizontalContentHeight / horizontalLineHeight) - 1, 1);
-  const speechTimerRatio = speechTimerMinutes / 120;
-  const speechTimerThumbOffset = speechTimerRatio * speechTimerWidth;
   const selectedVoiceLabel = useMemo(() => {
     const displayVoiceId = isTtsFallback ? (settings.backupVoice ?? 'default') : settings.voiceType;
     if (!displayVoiceId || displayVoiceId === 'default') return t('common.default');
@@ -1725,39 +1715,6 @@ export default function ReaderScreen({ route, navigation }: any) {
     () => FONT_PRESET_OPTIONS.filter((option) => option.id !== 'system'),
     []
   );
-
-  const updateSpeechTimerFromPosition = (x: number) => {
-    console.log('Updating speech timer from position:', x);
-    if (speechTimerWidth <= 0) return;
-    const ratio = Math.max(0, Math.min(1, x / speechTimerWidth));
-    const rawMinutes = Math.round(ratio * 120);
-    const nearestStrongSnapPoint = STRONG_SPEECH_TIMER_SNAP_POINTS.reduce((closest, point) =>
-      Math.abs(point - rawMinutes) < Math.abs(closest - rawMinutes) ? point : closest
-    );
-    const nearestWeakSnapPoint = WEAK_SPEECH_TIMER_SNAP_POINTS.reduce((closest, point) =>
-      Math.abs(point - rawMinutes) < Math.abs(closest - rawMinutes) ? point : closest,
-      WEAK_SPEECH_TIMER_SNAP_POINTS[0] ?? rawMinutes
-    );
-    const snappedMinutes =
-      Math.abs(nearestStrongSnapPoint - rawMinutes) <= STRONG_SPEECH_TIMER_SNAP_THRESHOLD
-        ? nearestStrongSnapPoint
-        : Math.abs(nearestWeakSnapPoint - rawMinutes) <= WEAK_SPEECH_TIMER_SNAP_THRESHOLD
-          ? nearestWeakSnapPoint
-          : rawMinutes;
-    setSpeechTimerMinutes(snappedMinutes);
-    setIsSpeechTimerEnabled(snappedMinutes > 0);
-
-    // If already speaking, update the running timer immediately
-    if (isSpeakingRef.current) {
-      if (snappedMinutes > 0) {
-        setTimerDuration(snappedMinutes);
-        setTimerRemaining(snappedMinutes * 60);
-      } else {
-        setTimerDuration(null);
-        setTimerRemaining(null);
-      }
-    }
-  };
 
   const horizontalPages = useMemo<PageData[]>(() => {
     if (settings.flipMode !== 'horizontal') {
