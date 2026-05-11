@@ -338,6 +338,11 @@ export default function BookshelfScreen({ navigation }: any) {
           <Text style={[styles.metaTitle, { color: colors.textPrimary }]} numberOfLines={2}>
             {item.title}
           </Text>
+          {item.author ? (
+            <Text style={[styles.metaAuthor, { color: isDark ? '#B8A070' : '#7A5A30' }]} numberOfLines={1}>
+              {item.author}
+            </Text>
+          ) : null}
           <Text style={[styles.metaSubtitle, { color: colors.textSub }]} numberOfLines={1}>
             {item.totalChapters > 0 ? t('bookshelf.chapterCount', { count: item.totalChapters }) : t('bookshelf.pendingParse')}
           </Text>
@@ -646,7 +651,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 19,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  metaAuthor: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginBottom: 3,
   },
   metaSubtitle: {
     fontSize: 12,
