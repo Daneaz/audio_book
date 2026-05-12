@@ -7,6 +7,9 @@ import { Chapter } from '../types';
 import useSettings from '../hooks/useSettings';
 import useI18n from '../i18n';
 
+const ITEM_HEIGHT = 53; // paddingVertical(16*2) + fontSize:16 line height (~21) + hairline
+const LIST_PADDING = 16;
+
 export default function ChaptersScreen({ route, navigation }: any) {
   const { bookId, currentChapterId } = route.params;
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -38,7 +41,7 @@ export default function ChaptersScreen({ route, navigation }: any) {
     if (index === -1) return;
     hasScrolled.current = true;
     setTimeout(() => {
-      flatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.4 });
+      flatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
     }, 100);
   }, [chapters, currentChapterId]);
 
@@ -77,8 +80,13 @@ export default function ChaptersScreen({ route, navigation }: any) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={<Text style={[styles.emptyText, { color: textColor }]}>{t('common.loading')}</Text>}
+        getItemLayout={(_data, index) => ({
+          length: ITEM_HEIGHT,
+          offset: LIST_PADDING + ITEM_HEIGHT * index,
+          index,
+        })}
         onScrollToIndexFailed={(info) => {
-          flatListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
+          flatListRef.current?.scrollToOffset({ offset: LIST_PADDING + ITEM_HEIGHT * info.index, animated: true });
         }}
       />
     </View>
