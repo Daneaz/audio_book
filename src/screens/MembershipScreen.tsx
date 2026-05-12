@@ -17,7 +17,11 @@ export default function MembershipScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+
+  const legalBaseUrl = `https://daneaz.github.io/audio_book/?lang=${language}`;
+  const privacyUrl = `${legalBaseUrl}#p1`;
+  const termsUrl = `${legalBaseUrl}#s1`;
 
   useEffect(() => {
     MembershipService.getAvailablePackages()
@@ -182,6 +186,20 @@ export default function MembershipScreen({ navigation }: any) {
         <TouchableOpacity onPress={handleRestore} disabled={isLoading} style={styles.restoreButton}>
           <Text style={[styles.restoreText, { color: colors.subText }]}>{t('membership.restore')}</Text>
         </TouchableOpacity>
+
+        <Text style={[styles.autoRenewText, { color: colors.subText }]}>
+          {t('membership.autoRenewNotice')}
+        </Text>
+
+        <View style={styles.legalLinks}>
+          <TouchableOpacity onPress={() => Linking.openURL(termsUrl).catch(() => {})} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={[styles.legalLinkText, { color: colors.subText }]}>{t('membership.termsOfUse')}</Text>
+          </TouchableOpacity>
+          <Text style={[styles.legalLinkSep, { color: colors.subText }]}>·</Text>
+          <TouchableOpacity onPress={() => Linking.openURL(privacyUrl).catch(() => {})} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={[styles.legalLinkText, { color: colors.subText }]}>{t('membership.privacyPolicy')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -220,4 +238,8 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.6 },
   restoreButton: { alignItems: 'center', paddingVertical: 12 },
   restoreText: { fontSize: 13 },
+  autoRenewText: { fontSize: 11, lineHeight: 16, textAlign: 'center', paddingHorizontal: 8, marginTop: 4 },
+  legalLinks: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 10 },
+  legalLinkText: { fontSize: 12, textDecorationLine: 'underline' },
+  legalLinkSep: { fontSize: 12, marginHorizontal: 8 },
 });
