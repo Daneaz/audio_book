@@ -641,6 +641,12 @@ export default function ReaderScreen({ route, navigation }: any) {
     }, [scheduleBannerReshowTimer])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      return () => { stopSpeechRef.current(); };
+    }, [])
+  );
+
   const openVoiceSettings = useCallback(() => {
     promptThenOpenSystemSettings(t('settings.voiceHintIos'), t('common.cancel'), t('common.ok'));
   }, [t]);
