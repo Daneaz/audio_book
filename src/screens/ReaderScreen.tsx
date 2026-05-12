@@ -14,7 +14,7 @@ import { Book, Chapter, ReadingProgress, RichTextBlock } from '../types';
 import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, estimateCharWidthFactor } from '../utils/textUtils';
 import { splitChapterIntoPages } from '../utils/paginationUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
-import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex } from '../utils/readingProgress';
+import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex, findScrollModeStartSentence } from '../utils/readingProgress';
 import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices, isXfyunVoice } from '../utils/voiceUtils';
 import { VoicePickerModal } from '../components/VoicePickerModal';
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
@@ -641,6 +641,12 @@ export default function ReaderScreen({ route, navigation }: any) {
     }, [scheduleBannerReshowTimer])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      return () => { stopSpeechRef.current(); };
+    }, [])
+  );
+
   const openVoiceSettings = useCallback(() => {
     promptThenOpenSystemSettings(t('settings.voiceHintIos'), t('common.cancel'), t('common.ok'));
   }, [t]);
@@ -1260,29 +1266,24 @@ export default function ReaderScreen({ route, navigation }: any) {
           startSentenceIndex = sIdx !== -1 ? sIdx : 0;
         }
       } else {
-        // Scroll mode: find first sentence at the top of visible content
-        const focusY = scrollPos.value + 2;
-        let accY = VERTICAL_CONTENT_PADDING_TOP;
-        for (const cd of chaptersData) {
-          const cl = chapterLayoutsRef.current[cd.chapter.id];
-          if (!cl) continue;
-          const chapterAbsY = accY;
-          accY += cl.height + CHAPTER_MARGIN_BOTTOM;
-          if (focusY >= chapterAbsY && focusY < chapterAbsY + cl.height) {
-            startChapterId = cd.chapter.id;
-            const ratio = Math.max(0, Math.min(1, (focusY - chapterAbsY) / cl.height));
-            const estimatedCharOffset = Math.floor(ratio * cd.content.length);
-
-            let pStart = estimatedCharOffset;
-            while (pStart > 0 && cd.content[pStart - 1] !== '\n') {
-              pStart--;
-            }
-
-            const sIdx = cd.sentences.findIndex(s => s.start >= pStart);
-            startSentenceIndex = sIdx !== -1 ? sIdx : 0;
-            break;
-          }
+        // Scroll mode: start from the sentence at the top of the viewport so
+        // TTS picks up at the user's current page, not the chapter header.
+        const startPoint = findScrollModeStartSentence({
+          scrollY: scrollPos.value,
+          contentPaddingTop: VERTICAL_CONTENT_PADDING_TOP,
+          chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+          chapters: chaptersData.map(c => ({
+            id: c.chapter.id,
+            contentLength: c.content.length,
+            sentences: c.sentences,
+          })),
+          layouts: chapterLayoutsRef.current,
+          fallbackChapterId: startChapterId,
+        });
+        if (startPoint.chapterId) {
+          startChapterId = startPoint.chapterId;
         }
+        startSentenceIndex = startPoint.sentenceIndex;
       }
     }
 
