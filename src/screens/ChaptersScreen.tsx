@@ -23,8 +23,9 @@ export default function ChaptersScreen({ route, navigation }: any) {
   const bgColor = isDark ? '#121212' : '#ffffff';
   const textColor = isDark ? '#e0e0e0' : '#333333';
   const borderColor = isDark ? '#333' : '#eee';
-  const highlightBg = isDark ? '#2a3a2a' : '#e8f5e9';
-  const highlightText = isDark ? '#81c784' : '#2e7d32';
+  const highlightBg = isDark ? 'rgba(196,169,106,0.12)' : 'rgba(160,98,26,0.08)';
+  const highlightText = isDark ? '#C4A96A' : '#A0621A';
+  const highlightBorder = isDark ? '#C4A96A' : '#A0621A';
 
   useEffect(() => {
     loadChapters();
@@ -58,7 +59,7 @@ export default function ChaptersScreen({ route, navigation }: any) {
     const isCurrent = item.id === currentChapterId;
     return (
       <TouchableOpacity
-        style={[styles.item, { borderBottomColor: borderColor }, isCurrent && { backgroundColor: highlightBg }]}
+        style={[styles.item, { borderBottomColor: borderColor }, isCurrent && { backgroundColor: highlightBg, borderLeftWidth: 3, borderLeftColor: highlightBorder, paddingLeft: 5 }]}
         onPress={() => handleChapterPress(item)}
       >
         <Text
