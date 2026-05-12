@@ -58,6 +58,13 @@ export type FindScrollModeStartSentenceParams = {
   chapters: ScrollModeChapter[];
   layouts: Record<string, ScrollModeLayout | undefined>;
   fallbackChapterId?: string | null;
+  /**
+   * Pixels below `scrollY` that count as the focus point inside the viewport.
+   * Default is 2 (top of the visible area). Pass `viewportHeight * ratio` to
+   * align the start point with where TTS auto-scroll keeps the speaking
+   * sentence (e.g. 40% from the top of the viewport).
+   */
+  focusOffset?: number;
 };
 
 export type ScrollModeStartSentence = {
@@ -75,7 +82,7 @@ export type ScrollModeStartSentence = {
  * `content` is assembled by joining block texts without newline separators —
  * the walk-back always reached char 0 and TTS would restart at the chapter
  * header instead of the user's current page. This function instead finds the
- * sentence that visually overlaps the top of the viewport directly.
+ * sentence that visually overlaps the focus point inside the viewport.
  */
 export function findScrollModeStartSentence({
   scrollY,
@@ -84,12 +91,13 @@ export function findScrollModeStartSentence({
   chapters,
   layouts,
   fallbackChapterId,
+  focusOffset,
 }: FindScrollModeStartSentenceParams): ScrollModeStartSentence {
   if (chapters.length === 0) {
     return { chapterId: fallbackChapterId ?? null, sentenceIndex: 0 };
   }
 
-  const focusY = scrollY + 2;
+  const focusY = scrollY + (focusOffset ?? 2);
   let cursorY = contentPaddingTop;
 
   for (const chapter of chapters) {
@@ -144,6 +152,12 @@ export type DetermineTtsStartPointParams = {
   scrollY: number;
   contentPaddingTop: number;
   chapterMarginBottom: number;
+  /**
+   * Scroll-mode only. Pixels below `scrollY` that mark the visual focus point.
+   * Pass `viewportHeight * followAnchorRatio` so the sentence picked when TTS
+   * starts is the same one auto-scroll keeps anchored while TTS is playing.
+   */
+  scrollFocusOffset?: number;
 };
 
 export type DetermineTtsStartPointResult = {
@@ -196,6 +210,7 @@ export function determineTtsStartPoint(
     })),
     layouts: params.chapterLayouts,
     fallbackChapterId: startChapterId ?? null,
+    focusOffset: params.scrollFocusOffset,
   });
   if (scrollPoint.chapterId) {
     startChapterId = scrollPoint.chapterId;

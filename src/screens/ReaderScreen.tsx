@@ -70,6 +70,10 @@ interface HighlightFragment {
 
 const VERTICAL_CONTENT_PADDING_TOP = 40; // contentContainerStyle.paddingVertical
 const CHAPTER_MARGIN_BOTTOM = 40; // styles.chapterContainer.marginBottom
+// Fraction of the viewport from the top where TTS keeps the speaking sentence
+// while auto-scrolling. Reused as the focus anchor for picking the TTS start
+// sentence so that "where TTS starts" matches "where TTS follows".
+const FOLLOW_ANCHOR_RATIO = 0.4;
 const TAP_MOVE_THRESHOLD = 10;
 const AUTO_SCROLL_MIN_SPEED = 10;
 const AUTO_SCROLL_MAX_SPEED = 80;
@@ -753,7 +757,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       prevSpeakingChapterIdRef.current = currentSpeakingChapterId;
 
-      const targetOffset = Math.max(0, estimatedY - screenHeight * 0.4);
+      const targetOffset = Math.max(0, estimatedY - screenHeight * FOLLOW_ANCHOR_RATIO);
       // Only scroll forward (don't jump back above current reading position)
       if (targetOffset <= scrollPos.value) return;
       if (isAutoScrolling.value) {
@@ -1248,7 +1252,10 @@ export default function ReaderScreen({ route, navigation }: any) {
     const now = Date.now();
     const lastSel = lastSelectionRef.current;
 
-    // 2. Determine start point from current scroll / visible page.
+    // 2. Determine start point from current scroll / visible page. In scroll
+    //    mode we anchor on the same fraction-of-viewport where TTS keeps the
+    //    speaking sentence while playing — so "where TTS starts" matches
+    //    "where TTS follows".
     const firstVisible = viewableItemsRef.current[0]?.item as PageData | ChapterData | undefined;
     const startPoint = determineTtsStartPoint({
       flipMode: settings.flipMode === 'horizontal' ? 'horizontal' : 'scroll',
@@ -1263,6 +1270,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       scrollY: scrollPos.value,
       contentPaddingTop: VERTICAL_CONTENT_PADDING_TOP,
       chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+      scrollFocusOffset: window.height * FOLLOW_ANCHOR_RATIO,
     });
     let startChapterId = startPoint.chapterId;
     let startSentenceIndex = startPoint.sentenceIndex;
