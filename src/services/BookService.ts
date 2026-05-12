@@ -18,7 +18,14 @@ class BookService {
                 fileType: book.fileType ?? 'txt',
             };
             if (updated.fileName && !updated.filePath.startsWith('blob:') && !updated.filePath.startsWith('data:')) {
-                return { ...updated, filePath: `${documentDirectory}${updated.fileName}` };
+                updated.filePath = `${documentDirectory}${updated.fileName}`;
+            }
+            if (updated.coverImageUri && documentDirectory) {
+                const [rawUri, queryString] = updated.coverImageUri.split('?');
+                const coverFileName = rawUri.includes('/') ? rawUri.split('/').pop() : rawUri;
+                if (coverFileName) {
+                    updated.coverImageUri = `${documentDirectory}${coverFileName}${queryString ? '?' + queryString : ''}`;
+                }
             }
             return updated;
         });
