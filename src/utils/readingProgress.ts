@@ -122,3 +122,84 @@ export function findScrollModeStartSentence({
     sentenceIndex: 0,
   };
 }
+
+export type TtsStartFlipMode = 'horizontal' | 'scroll';
+
+export type TtsStartChapter = {
+  chapter: { id: string };
+  content: string;
+  sentences: SentenceRange[];
+};
+
+export type TtsStartViewableItem = {
+  chapter: { id: string };
+  charStart?: number;
+};
+
+export type DetermineTtsStartPointParams = {
+  flipMode: TtsStartFlipMode;
+  chaptersData: TtsStartChapter[];
+  viewableFirstItem?: TtsStartViewableItem | null;
+  chapterLayouts: Record<string, ScrollModeLayout | undefined>;
+  scrollY: number;
+  contentPaddingTop: number;
+  chapterMarginBottom: number;
+};
+
+export type DetermineTtsStartPointResult = {
+  chapterId: string | undefined;
+  sentenceIndex: number;
+};
+
+/**
+ * Picks the chapter + sentence index where TTS should start when the user
+ * presses play. In scroll mode the decision is driven purely by the current
+ * scroll position — we deliberately do NOT gate it on `viewableFirstItem`
+ * because that ref is reset on chapter jump and the FlatList's viewability
+ * callback may not have refired by the time the user scrolls + taps TTS.
+ * Gating on it would make TTS restart from the chapter header (the regression
+ * this helper guards against).
+ */
+export function determineTtsStartPoint(
+  params: DetermineTtsStartPointParams
+): DetermineTtsStartPointResult {
+  let startChapterId: string | undefined = params.chaptersData[0]?.chapter.id;
+  let startSentenceIndex = 0;
+
+  if (params.viewableFirstItem) {
+    startChapterId = params.viewableFirstItem.chapter.id;
+  }
+
+  if (params.flipMode === 'horizontal') {
+    const firstVisible = params.viewableFirstItem;
+    if (firstVisible && typeof firstVisible.charStart === 'number') {
+      const chData = params.chaptersData.find(
+        (c) => c.chapter.id === startChapterId
+      );
+      if (chData) {
+        const pageStartNorm = firstVisible.charStart;
+        const sIdx = chData.sentences.findIndex((s) => s.end > pageStartNorm);
+        startSentenceIndex = sIdx !== -1 ? sIdx : 0;
+      }
+    }
+    return { chapterId: startChapterId, sentenceIndex: startSentenceIndex };
+  }
+
+  const scrollPoint = findScrollModeStartSentence({
+    scrollY: params.scrollY,
+    contentPaddingTop: params.contentPaddingTop,
+    chapterMarginBottom: params.chapterMarginBottom,
+    chapters: params.chaptersData.map((c) => ({
+      id: c.chapter.id,
+      contentLength: c.content.length,
+      sentences: c.sentences,
+    })),
+    layouts: params.chapterLayouts,
+    fallbackChapterId: startChapterId ?? null,
+  });
+  if (scrollPoint.chapterId) {
+    startChapterId = scrollPoint.chapterId;
+  }
+  startSentenceIndex = scrollPoint.sentenceIndex;
+  return { chapterId: startChapterId, sentenceIndex: startSentenceIndex };
+}
