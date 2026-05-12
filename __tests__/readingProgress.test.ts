@@ -1,8 +1,10 @@
 import {
   getChapterRelativePageIndex,
   findScrollModeStartSentence,
+  determineTtsStartPoint,
   ScrollModeChapter,
   ScrollModeLayout,
+  TtsStartChapter,
 } from '../src/utils/readingProgress';
 
 describe('getChapterRelativePageIndex', () => {
@@ -200,5 +202,181 @@ describe('findScrollModeStartSentence', () => {
       fallbackChapterId: 'ch1',
     });
     expect(result).toEqual({ chapterId: 'ch1', sentenceIndex: 0 });
+  });
+});
+
+describe('determineTtsStartPoint', () => {
+  const CONTENT_PADDING_TOP = 40;
+  const CHAPTER_MARGIN_BOTTOM = 40;
+
+  const makeTtsChapter = (
+    id: string,
+    contentLength: number,
+    sentenceCount: number
+  ): TtsStartChapter => {
+    const sentenceLen = Math.floor(contentLength / sentenceCount);
+    const sentences = Array.from({ length: sentenceCount }, (_, i) => ({
+      start: i * sentenceLen,
+      end: i === sentenceCount - 1 ? contentLength : (i + 1) * sentenceLen,
+    }));
+    return {
+      chapter: { id },
+      content: 'x'.repeat(contentLength),
+      sentences,
+    };
+  };
+
+  it('uses scroll position in scroll mode even when viewableFirstItem is null (chapter-jump regression)', () => {
+    // Repro of the reported bug: after jumping to a chapter via the TOC, the
+    // user scrolls down a page or two and then taps TTS. Because viewability
+    // events haven't refired since the jump, viewableFirstItem is null. The
+    // previous code gated the whole start-point calculation on that ref and
+    // fell through to sentence 0. With the fix, we still derive the start
+    // sentence from the live scroll position.
+    const chapter = makeTtsChapter('jumped-to', 2000, 40);
+    const result = determineTtsStartPoint({
+      flipMode: 'scroll',
+      chaptersData: [chapter],
+      viewableFirstItem: null, // not yet populated after chapter jump
+      chapterLayouts: { 'jumped-to': { height: 5000 } },
+      scrollY: 2540, // ~50% into the chapter
+      contentPaddingTop: CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+    });
+    expect(result.chapterId).toBe('jumped-to');
+    expect(result.sentenceIndex).toBeGreaterThan(0);
+    // 2540 - 40 = 2500; 2500/5000 = 0.5; 0.5 * 2000 = 1000;
+    // sentence covering chars [1000, 1050) → index 20
+    expect(result.sentenceIndex).toBe(20);
+  });
+
+  it('returns chapter head in scroll mode when scrollY is 0 (fresh chapter jump, no manual scroll)', () => {
+    const chapter = makeTtsChapter('jumped-to', 2000, 40);
+    const result = determineTtsStartPoint({
+      flipMode: 'scroll',
+      chaptersData: [chapter],
+      viewableFirstItem: null,
+      chapterLayouts: { 'jumped-to': { height: 5000 } },
+      scrollY: 0,
+      contentPaddingTop: CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+    });
+    expect(result).toEqual({ chapterId: 'jumped-to', sentenceIndex: 0 });
+  });
+
+  it('prefers viewableFirstItem.chapter.id as fallback chapter when scroll layout has no match', () => {
+    const chapter = makeTtsChapter('ch1', 1000, 20);
+    const result = determineTtsStartPoint({
+      flipMode: 'scroll',
+      chaptersData: [chapter],
+      viewableFirstItem: { chapter: { id: 'ch1' } },
+      chapterLayouts: {}, // no layouts → for-loop in findScrollModeStartSentence won't match
+      scrollY: 1000,
+      contentPaddingTop: CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+    });
+    expect(result.chapterId).toBe('ch1');
+    expect(result.sentenceIndex).toBe(0);
+  });
+
+  it('horizontal mode: uses page charStart to find the start sentence', () => {
+    const chapter = makeTtsChapter('ch1', 1000, 20);
+    const result = determineTtsStartPoint({
+      flipMode: 'horizontal',
+      chaptersData: [chapter],
+      viewableFirstItem: { chapter: { id: 'ch1' }, charStart: 500 },
+      chapterLayouts: {},
+      scrollY: 0,
+      contentPaddingTop: CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+    });
+    expect(result.chapterId).toBe('ch1');
+    // sentence covering chars [500, 550) → index 10 (s.end=550 > 500)
+    expect(result.sentenceIndex).toBe(10);
+  });
+
+  it('horizontal mode: returns sentence 0 when no viewable page is provided', () => {
+    const chapter = makeTtsChapter('ch1', 1000, 20);
+    const result = determineTtsStartPoint({
+      flipMode: 'horizontal',
+      chaptersData: [chapter],
+      viewableFirstItem: null,
+      chapterLayouts: {},
+      scrollY: 0,
+      contentPaddingTop: CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+    });
+    expect(result).toEqual({ chapterId: 'ch1', sentenceIndex: 0 });
+  });
+
+  it('returns undefined chapterId with sentenceIndex=0 when chaptersData is empty', () => {
+    const result = determineTtsStartPoint({
+      flipMode: 'scroll',
+      chaptersData: [],
+      viewableFirstItem: null,
+      chapterLayouts: {},
+      scrollY: 1000,
+      contentPaddingTop: CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+    });
+    expect(result.sentenceIndex).toBe(0);
+    expect(result.chapterId).toBeFalsy();
+  });
+
+  it('aligns the start sentence with the follow-anchor when scrollFocusOffset is provided', () => {
+    // ReaderScreen anchors the speaking sentence at 40% from the top of the
+    // viewport while TTS auto-scrolls. The start point must use the same
+    // anchor so the sentence picked when TTS begins is the same one auto-scroll
+    // keeps in view. Without the offset (focusOffset defaults to 2) we'd start
+    // at a sentence near the top of the viewport — i.e. content the user has
+    // typically already read past.
+    const chapter = makeTtsChapter('ch1', 2000, 40);
+    const viewportHeight = 800;
+    const focus = viewportHeight * 0.4; // 320
+
+    // Anchored at top of viewport (legacy behavior, kept as default):
+    const atTop = determineTtsStartPoint({
+      flipMode: 'scroll',
+      chaptersData: [chapter],
+      viewableFirstItem: { chapter: { id: 'ch1' } },
+      chapterLayouts: { ch1: { height: 5000 } },
+      scrollY: 1000,
+      contentPaddingTop: CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+    });
+    // focusY = 1002; ratio = (1002-40)/5000 = 0.1924; offset = 384;
+    // sentence covering chars [350, 400) → index 7
+    expect(atTop.sentenceIndex).toBe(7);
+
+    // Anchored at the follow point (~40% from top):
+    const aligned = determineTtsStartPoint({
+      flipMode: 'scroll',
+      chaptersData: [chapter],
+      viewableFirstItem: { chapter: { id: 'ch1' } },
+      chapterLayouts: { ch1: { height: 5000 } },
+      scrollY: 1000,
+      contentPaddingTop: CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+      scrollFocusOffset: focus,
+    });
+    // focusY = 1000 + 320 = 1320; ratio = (1320-40)/5000 = 0.256; offset = 512;
+    // sentence covering chars [500, 550) → index 10
+    expect(aligned.sentenceIndex).toBe(10);
+    expect(aligned.sentenceIndex).toBeGreaterThan(atTop.sentenceIndex);
+  });
+
+  it('scrollFocusOffset is ignored in horizontal mode', () => {
+    const chapter = makeTtsChapter('ch1', 1000, 20);
+    const result = determineTtsStartPoint({
+      flipMode: 'horizontal',
+      chaptersData: [chapter],
+      viewableFirstItem: { chapter: { id: 'ch1' }, charStart: 500 },
+      chapterLayouts: {},
+      scrollY: 0,
+      contentPaddingTop: CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+      scrollFocusOffset: 320, // should not affect horizontal mode
+    });
+    expect(result.sentenceIndex).toBe(10);
   });
 });

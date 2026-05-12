@@ -14,7 +14,7 @@ import { Book, Chapter, ReadingProgress, RichTextBlock } from '../types';
 import { parseSentences, ParsedSentence, prepareSentenceForTts, normalizeDisplayParagraphSpacing, estimateCharWidthFactor } from '../utils/textUtils';
 import { splitChapterIntoPages } from '../utils/paginationUtils';
 import { FONT_PRESET_OPTIONS, getFontFamilyForPreset } from '../utils/fontUtils';
-import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex, findScrollModeStartSentence } from '../utils/readingProgress';
+import { getChapterRelativePageIndex, getChapterRelativePageIndexFromGlobalIndex, determineTtsStartPoint } from '../utils/readingProgress';
 import { VoiceEntry, mergeWithInstalledVoices, prependXfyunVoices, isXfyunVoice } from '../utils/voiceUtils';
 import { VoicePickerModal } from '../components/VoicePickerModal';
 import { promptThenOpenSystemSettings } from '../utils/systemSettings';
@@ -70,6 +70,10 @@ interface HighlightFragment {
 
 const VERTICAL_CONTENT_PADDING_TOP = 40; // contentContainerStyle.paddingVertical
 const CHAPTER_MARGIN_BOTTOM = 40; // styles.chapterContainer.marginBottom
+// Fraction of the viewport from the top where TTS keeps the speaking sentence
+// while auto-scrolling. Reused as the focus anchor for picking the TTS start
+// sentence so that "where TTS starts" matches "where TTS follows".
+const FOLLOW_ANCHOR_RATIO = 0.4;
 const TAP_MOVE_THRESHOLD = 10;
 const AUTO_SCROLL_MIN_SPEED = 10;
 const AUTO_SCROLL_MAX_SPEED = 80;
@@ -753,7 +757,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
       prevSpeakingChapterIdRef.current = currentSpeakingChapterId;
 
-      const targetOffset = Math.max(0, estimatedY - screenHeight * 0.4);
+      const targetOffset = Math.max(0, estimatedY - screenHeight * FOLLOW_ANCHOR_RATIO);
       // Only scroll forward (don't jump back above current reading position)
       if (targetOffset <= scrollPos.value) return;
       if (isAutoScrolling.value) {
@@ -1244,48 +1248,32 @@ export default function ReaderScreen({ route, navigation }: any) {
 
     timerEndRef.current = duration !== null ? computeTimerEndMs(duration) : null;
 
-    // Determine start point
-    let startChapterId = chaptersData[0]?.chapter.id;
-    let startSentenceIndex = 0;
-
-    // 1. Check selection
+    // 1. Check selection (currently unused; kept for future per-selection start)
     const now = Date.now();
     const lastSel = lastSelectionRef.current;
 
-    // 2. From current page start
-    const computedPageIdx = Math.round(scrollPos.value / Math.max(window.width, 1));
-    if (viewableItemsRef.current.length > 0) {
-      const firstVisible = viewableItemsRef.current[0].item as PageData | ChapterData;
-      startChapterId = firstVisible.chapter.id;
-      if ('charStart' in firstVisible) {
-        // Horizontal page mode: find first sentence on this page
-        const chData = chaptersData.find(c => c.chapter.id === startChapterId);
-        if (chData) {
-          const pageStartNorm = firstVisible.charStart;
-          const sIdx = chData.sentences.findIndex(s => s.end > pageStartNorm);
-          startSentenceIndex = sIdx !== -1 ? sIdx : 0;
-        }
-      } else {
-        // Scroll mode: start from the sentence at the top of the viewport so
-        // TTS picks up at the user's current page, not the chapter header.
-        const startPoint = findScrollModeStartSentence({
-          scrollY: scrollPos.value,
-          contentPaddingTop: VERTICAL_CONTENT_PADDING_TOP,
-          chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
-          chapters: chaptersData.map(c => ({
-            id: c.chapter.id,
-            contentLength: c.content.length,
-            sentences: c.sentences,
-          })),
-          layouts: chapterLayoutsRef.current,
-          fallbackChapterId: startChapterId,
-        });
-        if (startPoint.chapterId) {
-          startChapterId = startPoint.chapterId;
-        }
-        startSentenceIndex = startPoint.sentenceIndex;
-      }
-    }
+    // 2. Determine start point from current scroll / visible page. In scroll
+    //    mode we anchor on the same fraction-of-viewport where TTS keeps the
+    //    speaking sentence while playing — so "where TTS starts" matches
+    //    "where TTS follows".
+    const firstVisible = viewableItemsRef.current[0]?.item as PageData | ChapterData | undefined;
+    const startPoint = determineTtsStartPoint({
+      flipMode: settings.flipMode === 'horizontal' ? 'horizontal' : 'scroll',
+      chaptersData,
+      viewableFirstItem: firstVisible
+        ? {
+            chapter: firstVisible.chapter,
+            charStart: 'charStart' in firstVisible ? firstVisible.charStart : undefined,
+          }
+        : null,
+      chapterLayouts: chapterLayoutsRef.current,
+      scrollY: scrollPos.value,
+      contentPaddingTop: VERTICAL_CONTENT_PADDING_TOP,
+      chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
+      scrollFocusOffset: window.height * FOLLOW_ANCHOR_RATIO,
+    });
+    let startChapterId = startPoint.chapterId;
+    let startSentenceIndex = startPoint.sentenceIndex;
 
 
     lastUserScrollRef.current = 0;
