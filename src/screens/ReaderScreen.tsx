@@ -2112,7 +2112,7 @@ export default function ReaderScreen({ route, navigation }: any) {
             {currentHeaderTitle || book?.title}
           </Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => navigation.navigate('Chapters', { bookId })} style={styles.iconButton}>
+            <TouchableOpacity onPress={() => navigation.navigate('Chapters', { bookId, currentChapterId: chapterWindow.currentId })} style={styles.iconButton}>
               <Ionicons name="list" size={24} color={textColor} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.iconButton}>
