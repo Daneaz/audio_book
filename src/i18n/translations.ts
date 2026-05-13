@@ -162,6 +162,9 @@ export type TranslationKey =
   | 'membership.subscribed'
   | 'membership.upgrade'
   | 'membership.buyNow'
+  | 'membership.privacyPolicy'
+  | 'membership.termsOfUse'
+  | 'membership.autoRenewNotice'
   | 'voice.cloud'
   | 'settings.clearVoiceCache'
   | 'settings.xfyunCacheEmpty'
@@ -337,6 +340,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.subscribed': '已订阅',
     'membership.upgrade': '升级会员',
     'membership.buyNow': '立即购买',
+    'membership.privacyPolicy': '隐私政策',
+    'membership.termsOfUse': '使用条款（EULA）',
+    'membership.autoRenewNotice': '订阅将自动续期，除非在当前周期结束前至少 24 小时取消。续期费用将通过你的 Apple ID 账户收取。订阅可随时在 App Store 账户设置中管理与取消。',
     'voice.cloud': '云端',
     'settings.clearVoiceCache': '清除语音缓存',
     'settings.xfyunCacheEmpty': '无缓存',
@@ -509,6 +515,9 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'membership.subscribed': 'Subscribed',
     'membership.upgrade': 'Upgrade Membership',
     'membership.buyNow': 'Buy Now',
+    'membership.privacyPolicy': 'Privacy Policy',
+    'membership.termsOfUse': 'Terms of Use (EULA)',
+    'membership.autoRenewNotice': 'Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period. Your Apple ID account will be charged for renewal. You can manage and cancel your subscription anytime in your App Store account settings.',
     'voice.cloud': 'Cloud',
     'settings.clearVoiceCache': 'Clear Voice Cache',
     'settings.xfyunCacheEmpty': 'No cache',
