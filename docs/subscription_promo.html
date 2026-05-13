@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>墨声会员 Promotional Image</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #1a1510;
+    font-family: 'Noto Serif SC', serif;
+  }
+
+  .canvas {
+    width: 1024px;
+    height: 1024px;
+    background: #0E0C0A;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* === 背景墨晕纹理 === */
+  .bg-ink {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 85% 15%, rgba(196,169,106,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 70% at 10% 90%, rgba(196,169,106,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 90% 60% at 50% 50%, rgba(28,25,22,0.8) 0%, transparent 100%);
+  }
+
+  /* 顶部光晕 */
+  .glow-top {
+    position: absolute;
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 300px;
+    background: radial-gradient(ellipse, rgba(196,169,106,0.12) 0%, transparent 70%);
+    filter: blur(40px);
+  }
+
+  /* 底部光晕 */
+  .glow-bottom {
+    position: absolute;
+    bottom: -80px;
+    right: -100px;
+    width: 500px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(184,134,11,0.08) 0%, transparent 70%);
+    filter: blur(60px);
+  }
+
+  /* === 装饰线条 === */
+  .line-top {
+    position: absolute;
+    top: 72px;
+    left: 72px;
+    right: 72px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(196,169,106,0.6), rgba(196,169,106,0.8), rgba(196,169,106,0.6), transparent);
+  }
+
+  .line-bottom {
+    position: absolute;
+    bottom: 72px;
+    left: 72px;
+    right: 72px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(196,169,106,0.4), rgba(196,169,106,0.6), rgba(196,169,106,0.4), transparent);
+  }
+
+  /* 左侧竖线装饰 */
+  .line-left {
+    position: absolute;
+    top: 72px;
+    bottom: 72px;
+    left: 72px;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(196,169,106,0.4) 30%, rgba(196,169,106,0.4) 70%, transparent);
+  }
+
+  /* 右侧竖线装饰 */
+  .line-right {
+    position: absolute;
+    top: 72px;
+    bottom: 72px;
+    right: 72px;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(196,169,106,0.4) 30%, rgba(196,169,106,0.4) 70%, transparent);
+  }
+
+  /* 四角装饰 */
+  .corner {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+  }
+  .corner::before, .corner::after {
+    content: '';
+    position: absolute;
+    background: rgba(196,169,106,0.7);
+  }
+  .corner::before { width: 100%; height: 1.5px; top: 0; left: 0; }
+  .corner::after  { width: 1.5px; height: 100%; top: 0; left: 0; }
+
+  .corner.tl { top: 72px; left: 72px; }
+  .corner.tr { top: 72px; right: 72px; transform: scaleX(-1); }
+  .corner.bl { bottom: 72px; left: 72px; transform: scaleY(-1); }
+  .corner.br { bottom: 72px; right: 72px; transform: scale(-1); }
+
+  /* === 主内容区 === */
+  .content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 90px;
+  }
+
+  /* 顶部标签 */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(196,169,106,0.5);
+    border-radius: 20px;
+    padding: 6px 18px;
+    margin-bottom: 52px;
+    background: rgba(196,169,106,0.06);
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #C4A96A;
+    box-shadow: 0 0 8px rgba(196,169,106,0.8);
+  }
+
+  .badge-text {
+    font-family: 'EB Garamond', serif;
+    font-size: 14px;
+    letter-spacing: 0.25em;
+    color: rgba(196,169,106,0.9);
+    text-transform: uppercase;
+  }
+
+  /* APP 名称 */
+  .app-name-block {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .app-name-zh {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 72px;
+    font-weight: 700;
+    color: #E8E0D0;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-shadow: 0 2px 40px rgba(196,169,106,0.15);
+  }
+
+  .app-name-en {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    letter-spacing: 0.3em;
+    color: rgba(196,169,106,0.7);
+    margin-top: 10px;
+    text-transform: lowercase;
+  }
+
+  /* 分隔装饰 */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 40px 0;
+    width: 340px;
+  }
+
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(196,169,106,0.5));
+  }
+
+  .divider-line.rev {
+    background: linear-gradient(90deg, rgba(196,169,106,0.5), transparent);
+  }
+
+  .divider-diamond {
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid rgba(196,169,106,0.7);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  /* 会员标题 */
+  .membership-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: #C4A96A;
+    letter-spacing: 0.2em;
+    margin-bottom: 52px;
+    text-align: center;
+  }
+
+  /* 权益列表 */
+  .benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 64px;
+  }
+
+  .benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 22px 32px;
+    background: rgba(28,25,22,0.8);
+    border: 1px solid rgba(196,169,106,0.18);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .benefit-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #C4A96A, rgba(196,169,106,0.3));
+    border-radius: 3px 0 0 3px;
+  }
+
+  .benefit-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    opacity: 0.9;
+  }
+
+  .benefit-texts {
+    flex: 1;
+  }
+
+  .benefit-zh {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #E8E0D0;
+    letter-spacing: 0.05em;
+  }
+
+  .benefit-en {
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    color: rgba(196,169,106,0.6);
+    letter-spacing: 0.12em;
+    margin-top: 3px;
+    text-transform: uppercase;
+  }
+
+  .benefit-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(196,169,106,0.15);
+    border: 1.5px solid rgba(196,169,106,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #C4A96A;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* 试用 CTA */
+  .cta-block {
+    text-align: center;
+  }
+
+  .cta-trial {
+    display: inline-block;
+    background: linear-gradient(135deg, #C4A96A 0%, #A0821A 50%, #C4A96A 100%);
+    background-size: 200% 100%;
+    border-radius: 40px;
+    padding: 18px 56px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(196,169,106,0.25), 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  .cta-main-text {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0E0C0A;
+    letter-spacing: 0.08em;
+    display: block;
+  }
+
+  .cta-sub-text {
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    color: rgba(14,12,10,0.65);
+    letter-spacing: 0.15em;
+    margin-top: 3px;
+    display: block;
+  }
+
+  .cta-note {
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    color: rgba(232,224,208,0.35);
+    letter-spacing: 0.1em;
+  }
+
+  /* 墨滴装饰（SVG 内联） */
+  .ink-drop-1 {
+    position: absolute;
+    top: 130px;
+    right: 120px;
+    width: 80px;
+    height: 80px;
+    opacity: 0.04;
+    background: radial-gradient(circle, #C4A96A, transparent);
+    border-radius: 60% 40% 55% 45%;
+    filter: blur(2px);
+  }
+
+  .ink-drop-2 {
+    position: absolute;
+    bottom: 180px;
+    left: 100px;
+    width: 120px;
+    height: 60px;
+    opacity: 0.03;
+    background: radial-gradient(ellipse, #C4A96A, transparent);
+    border-radius: 40% 60% 45% 55%;
+    filter: blur(4px);
+  }
+
+  /* 小字印 */
+  .seal {
+    position: absolute;
+    bottom: 100px;
+    right: 108px;
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid rgba(196,169,106,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .seal-text {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(196,169,106,0.45);
+    letter-spacing: 0.05em;
+    text-align: center;
+    line-height: 1.3;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <!-- 背景 -->
+  <div class="bg-ink"></div>
+  <div class="glow-top"></div>
+  <div class="glow-bottom"></div>
+  <div class="ink-drop-1"></div>
+  <div class="ink-drop-2"></div>
+
+  <!-- 边框装饰 -->
+  <div class="line-top"></div>
+  <div class="line-bottom"></div>
+  <div class="line-left"></div>
+  <div class="line-right"></div>
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <!-- 印章 -->
+  <div class="seal">
+    <div class="seal-text">会员<br>专享</div>
+    <div style="position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'EB Garamond',serif;font-size:9px;letter-spacing:0.15em;color:rgba(196,169,106,0.35);text-transform:uppercase;">Premium</div>
+  </div>
+
+  <!-- 主内容 -->
+  <div class="content">
+
+    <div class="badge">
+      <div class="badge-dot"></div>
+      <span class="badge-text">Premium · 高级会员</span>
+    </div>
+
+    <div class="app-name-block">
+      <div class="app-name-zh">墨声</div>
+      <div class="app-name-en">inkvoice</div>
+    </div>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-diamond"></div>
+      <div class="divider-line rev"></div>
+    </div>
+
+    <div class="membership-title">
+      <div>会 员 权 益</div>
+      <div style="font-family:'EB Garamond',serif;font-size:14px;font-weight:400;letter-spacing:0.3em;color:rgba(196,169,106,0.55);margin-top:8px;text-transform:uppercase;">Member Benefits</div>
+    </div>
+
+    <div class="benefits">
+      <div class="benefit-item">
+        <div class="benefit-icon">🔕</div>
+        <div class="benefit-texts">
+          <div class="benefit-zh">无广告阅读体验</div>
+          <div class="benefit-en">Ad-free reading</div>
+        </div>
+        <div class="benefit-check">✓</div>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-icon">🎙</div>
+        <div class="benefit-texts">
+          <div class="benefit-zh">高质量音色朗读</div>
+          <div class="benefit-en">High-quality voices</div>
+        </div>
+        <div class="benefit-check">✓</div>
+      </div>
+    </div>
+
+    <div class="cta-block">
+      <div class="cta-trial">
+        <span class="cta-main-text">立即订阅会员</span>
+        <span class="cta-sub-text">Subscribe Now</span>
+      </div>
+      <div class="cta-note">订阅后自动续费 · Auto-renewing subscription</div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
