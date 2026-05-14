@@ -57,13 +57,22 @@ export default function MembershipScreen({ navigation }: any) {
     return pkg.hasIntroOffer ? `${base}  ·  ${t('membership.trialBadge')}` : base;
   }
 
+  function formatPrice(price: number, currencyCode: string): string {
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).format(price);
+    } catch {
+      return `${price} ${currencyCode}`;
+    }
+  }
+
   function planPrice(pkg: AvailablePackage): string {
+    const formatted = formatPrice(pkg.price, pkg.currencyCode);
     switch (pkg.packageType) {
-      case 'MONTHLY': return pkg.priceString + t('membership.perMonth');
-      case 'THREE_MONTH': return pkg.priceString + t('membership.perQuarter');
-      case 'ANNUAL':  return pkg.priceString + t('membership.perYear');
-      case 'LIFETIME': return pkg.priceString;
-      default:        return pkg.priceString;
+      case 'MONTHLY': return formatted + t('membership.perMonth');
+      case 'THREE_MONTH': return formatted + t('membership.perQuarter');
+      case 'ANNUAL':  return formatted + t('membership.perYear');
+      case 'LIFETIME': return formatted;
+      default:        return formatted;
     }
   }
 

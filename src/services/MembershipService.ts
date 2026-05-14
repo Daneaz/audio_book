@@ -7,6 +7,8 @@ export interface AvailablePackage {
   productId: string;
   packageType: string;
   priceString: string;
+  price: number;
+  currencyCode: string;
   hasIntroOffer: boolean;
 }
 
@@ -67,6 +69,8 @@ class MembershipService {
         productId: pkg.product.identifier,
         packageType: pkg.packageType,
         priceString: pkg.product.priceString,
+        price: pkg.product.price,
+        currencyCode: pkg.product.currencyCode,
         hasIntroOffer: !!pkg.product.introPrice,
       }))
       .sort((a, b) => (ORDER[a.packageType] ?? 99) - (ORDER[b.packageType] ?? 99));
