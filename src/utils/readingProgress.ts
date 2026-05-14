@@ -192,7 +192,7 @@ export function determineTtsStartPoint(
       );
       if (chData) {
         const pageStartNorm = firstVisible.charStart;
-        const sIdx = chData.sentences.findIndex((s) => s.end > pageStartNorm);
+        const sIdx = chData.sentences.findIndex((s) => s.start >= pageStartNorm);
         startSentenceIndex = sIdx !== -1 ? sIdx : 0;
       }
     }

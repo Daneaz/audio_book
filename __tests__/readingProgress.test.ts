@@ -291,7 +291,7 @@ describe('determineTtsStartPoint', () => {
       chapterMarginBottom: CHAPTER_MARGIN_BOTTOM,
     });
     expect(result.chapterId).toBe('ch1');
-    // sentence covering chars [500, 550) → index 10 (s.end=550 > 500)
+    // sentence covering chars [500, 550) → index 10 (s.start=500 >= 500)
     expect(result.sentenceIndex).toBe(10);
   });
 
