@@ -75,8 +75,13 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3842092557707512~5792917189",
-          "iosAppId": "ca-app-pub-3842092557707512~6818538870",
-          "userTrackingUsageDescription": "This identifier may be used to show non-personalized ads. You can change this in Settings at any time."
+          "iosAppId": "ca-app-pub-3842092557707512~6818538870"
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "This identifier will only be used to serve non-personalized ads. You can change this in Settings at any time."
         }
       ],
       "expo-font",

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Platform, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
 import * as SplashScreen from 'expo-splash-screen';
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import AppNavigator from './src/navigation/AppNavigator';
 import MembershipService from './src/services/MembershipService';
 
@@ -41,7 +42,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    MembershipService.initialize();
+    async function initializeApp() {
+      // 请求 ATT 权限（仅 iOS，Android 自动返回 granted）
+      if (Platform.OS === 'ios') {
+        await requestTrackingPermissionsAsync();
+      }
+      MembershipService.initialize();
+    }
+    initializeApp();
   }, []);
 
   useEffect(() => {
