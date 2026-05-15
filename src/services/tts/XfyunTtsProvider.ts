@@ -26,6 +26,11 @@ export class XfyunTtsProvider implements TtsProvider {
       ? undefined
       : backupVoiceId;
     this.fallback = new LocalTtsProvider(localId);
+    // Set background playback mode once at init time, before ExpoNowPlayingModule activates
+    // the session. This lets ExpoNowPlayingModule's .spokenAudio mode win at play time.
+    if (Platform.OS === 'ios') {
+      setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch(() => {});
+    }
   }
 
   speak(text: string, options: TtsOptions = {}): void {
@@ -106,10 +111,8 @@ export class XfyunTtsProvider implements TtsProvider {
   }
 
   private async _playFile(path: string, options: TtsOptions): Promise<void> {
-    if (Platform.OS === 'ios') {
-      await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true });
-    } else {
-      // Re-enable audio in case stop() previously called setIsAudioActiveAsync(false)
+    if (Platform.OS !== 'ios') {
+      // Re-enable audio focus after stop(); iOS session is managed by ExpoNowPlayingModule.
       try { await setIsAudioActiveAsync(true); } catch {}
     }
 
@@ -173,12 +176,9 @@ export class XfyunTtsProvider implements TtsProvider {
   async stop(): Promise<void> {
     this._gen++;
     await this._stopCurrentPlayer();
-    // iOS: deactivate audio session so other apps can resume audio
-    // Android: do NOT call setIsAudioActiveAsync(false) — it sets audioEnabled=false
-    //          and permanently blocks subsequent player.play() calls
-    if (Platform.OS === 'ios') {
-      try { await setIsAudioActiveAsync(false); } catch {}
-    }
+    // Do NOT call setIsAudioActiveAsync(false): on iOS it drops the lock screen media player
+    // (session must stay active while paused); on Android it permanently blocks play().
+    // Full deactivation is handled by nowPlaying.reset() in ExpoNowPlayingModule.
   }
 
   private async _getCachePath(text: string): Promise<string> {
