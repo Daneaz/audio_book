@@ -49,9 +49,9 @@ jest.mock('../src/services/MembershipService', () => ({
 }));
 
 const MOCK_PACKAGES = [
-  { productId: 'monthly', packageType: 'MONTHLY', priceString: '$2.99', hasIntroOffer: true },
-  { productId: 'yearly', packageType: 'ANNUAL', priceString: '$19.99', hasIntroOffer: true },
-  { productId: 'lifetime', packageType: 'LIFETIME', priceString: '$49.99', hasIntroOffer: false },
+  { productId: 'monthly', packageType: 'MONTHLY', priceString: '$2.99', price: 2.99, currencyCode: 'USD', hasIntroOffer: true },
+  { productId: 'yearly', packageType: 'ANNUAL', priceString: '$19.99', price: 19.99, currencyCode: 'USD', hasIntroOffer: true },
+  { productId: 'lifetime', packageType: 'LIFETIME', priceString: '$49.99', price: 49.99, currencyCode: 'USD', hasIntroOffer: false },
 ];
 
 const makeDefaultHookState = (overrides = {}) => ({
