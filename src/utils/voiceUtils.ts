@@ -12,8 +12,6 @@ const XFYUN_VOICES: VoiceEntry[] = [
   { identifier: 'x4_yezi',        name: '小露',   language: 'zh-CN', quality: 'Cloud', installed: true, description: '温柔细腻，适合睡前轻读', gender: 'female' },
   { identifier: 'x4_xiaoyan',     name: '小燕',   language: 'zh-CN', quality: 'Cloud', installed: true, description: '清脆明快，播音主持风格', gender: 'female' },
   { identifier: 'xiaoyu',         name: '小宇',   language: 'zh-CN', quality: 'Cloud', installed: true, description: '沉稳大气，男声朗读',   gender: 'male'   },
-  { identifier: 'x4_xiaoxi',      name: '水哥',   language: 'zh-CN', quality: 'Cloud', installed: true, description: '稳重专业，男播音',     gender: 'male'   },
-  { identifier: 'x4_lingbosong',  name: '聆伯松', language: 'zh-CN', quality: 'Cloud', installed: true, description: '深沉浑厚，磁性男声',   gender: 'male'   },
 ];
 
 
