@@ -86,7 +86,8 @@
       ],
       "expo-font",
       "expo-audio",
-      "./modules/expo-now-playing/app.plugin.js"
+      "./modules/expo-now-playing/app.plugin.js",
+      "./plugins/localize-app-name"
     ]
   }
 }
