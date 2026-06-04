@@ -18,7 +18,6 @@ export default function AdBanner({ visible, onHidden, onUpgradePress, floating =
   const [loading, setLoading] = useState(false);
   const { t, language } = useI18n();
   const insets = useSafeAreaInsets();
-
   const handleHidePress = async () => {
     setLoading(true);
     try {
@@ -60,8 +59,9 @@ export default function AdBanner({ visible, onHidden, onUpgradePress, floating =
       </View>
       <BannerAd
         unitId={AD_UNIT_IDS.BANNER}
-        size={BannerAdSize.BANNER}
-        requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+        requestOptions={{ requestNonPersonalizedAdsOnly: false }}
+        onAdFailedToLoad={(error) => console.warn('AdBanner failed:', error.code, error.message)}
       />
     </View>
   );
