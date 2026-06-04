@@ -14,7 +14,7 @@ function withIosLocalizedAppName(config) {
   });
 
   config = withDangerousMod(config, ['ios', (c) => {
-    const projectDir = path.join(c.modRequest.platformProjectRoot, c.modRequest.projectName);
+    const projectDir = c.modRequest.platformProjectRoot;
     for (const [locale, name] of Object.entries(NAMES)) {
       const lprojDir = path.join(projectDir, `${locale}.lproj`);
       fs.mkdirSync(lprojDir, { recursive: true });
