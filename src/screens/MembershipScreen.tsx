@@ -31,7 +31,7 @@ export default function MembershipScreen({ navigation }: any) {
         const preferred = pkgs.find(p => p.packageType === 'ANNUAL') ?? pkgs[0];
         if (preferred) setSelectedPlan(preferred.productId);
       })
-      .catch(() => {})
+      .catch(e => console.error('[MembershipScreen] getAvailablePackages failed:', e))
       .finally(() => setIsLoadingPackages(false));
   }, []);
 
