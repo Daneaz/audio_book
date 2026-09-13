@@ -425,6 +425,8 @@ export default function ReaderScreen({ route, navigation }: any) {
 
   const [book, setBook] = useState<Book | null>(null);
   const [allChapters, setAllChapters] = useState<Chapter[]>([]);
+  const allChaptersRef = useRef<Chapter[]>([]);
+  allChaptersRef.current = allChapters;
 
   // Data for FlatList
   const [chaptersData, setChaptersData] = useState<ChapterData[]>([]);
@@ -1399,8 +1401,55 @@ export default function ReaderScreen({ route, navigation }: any) {
     };
   }, []);
 
+  // The next chapter is normally preloaded when the reader scrolls past 80% of
+  // the current one. TTS can reach the chapter end before that happens (screen
+  // off = no scrolling), so load it on demand instead of stopping playback.
+  const loadNextChapterForTts = async (cId: string): Promise<ChapterData | null> => {
+    const all = allChaptersRef.current;
+    const allIdx = all.findIndex(c => c.id === cId);
+    if (allIdx === -1 || allIdx >= all.length - 1) return null;
+
+    const nextChapter = all[allIdx + 1];
+    const already = chaptersDataRef.current.find(c => c.chapter.id === nextChapter.id);
+    if (already) return already;
+    if (!book) return null;
+
+    let content: string;
+    let blocks: RichTextBlock[] | undefined;
+    if (book.fileType === 'epub' && nextChapter.htmlFilePath) {
+      blocks = await ChapterService.getChapterBlocks(nextChapter.htmlFilePath);
+      content = blocks.map(b => b.text).join('');
+    } else {
+      content = await ChapterService.getChapterContent(book.filePath, nextChapter.startPosition, nextChapter.endPosition);
+    }
+    const data: ChapterData = { chapter: nextChapter, content, sentences: parseSentences(content), blocks };
+
+    loadedChapterIdsRef.current.add(nextChapter.id);
+    chaptersDataRef.current = [...chaptersDataRef.current, data];
+    setChaptersData(prev => prev.some(c => c.chapter.id === nextChapter.id) ? prev : [...prev, data]);
+    setChapterWindow(prev => ({ ...prev, nextId: nextChapter.id }));
+    return data;
+  };
+
+  const advanceToNextChapter = (cId: string, session: number) => {
+    loadNextChapterForTts(cId)
+      .then(nextCh => {
+        if (speakSessionRef.current !== session || !isSpeakingRef.current) return;
+        if (nextCh) {
+          speakSentence(nextCh.chapter.id, 0);
+        } else {
+          stopSpeech();
+        }
+      })
+      .catch(e => {
+        console.error('Error loading next chapter for TTS', e);
+        stopSpeech();
+      });
+  };
+
   const speakSentence = (cId: string, sIndex: number) => {
     const session = speakSessionRef.current;
+    const chaptersData = chaptersDataRef.current;
     const chData = chaptersData.find(c => c.chapter.id === cId);
     if (!chData) {
       stopSpeech();
@@ -1408,13 +1457,7 @@ export default function ReaderScreen({ route, navigation }: any) {
     }
 
     if (sIndex >= chData.sentences.length) {
-      const chIdx = chaptersData.findIndex(c => c.chapter.id === cId);
-      const nextCh = chaptersData[chIdx + 1];
-      if (nextCh) {
-        speakSentence(nextCh.chapter.id, 0);
-      } else {
-        stopSpeech();
-      }
+      advanceToNextChapter(cId, session);
       return;
     }
 
@@ -1448,13 +1491,7 @@ export default function ReaderScreen({ route, navigation }: any) {
               return;
             }
             if (!isLastInChapter) return;
-            const chIdx = chaptersData.findIndex(c => c.chapter.id === cId);
-            const nextCh = chaptersData[chIdx + 1];
-            if (nextCh) {
-              speakSentence(nextCh.chapter.id, 0);
-            } else {
-              stopSpeech();
-            }
+            advanceToNextChapter(cId, session);
           },
           onStopped: () => {},
           onError: (e) => {
