@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import ReaderScreen from '../src/screens/ReaderScreen';
 import StorageService from '../src/services/StorageService';
+import ChapterService from '../src/services/ChapterService';
 import nowPlaying from '../src/utils/nowPlaying';
 
 import 'react-native-gesture-handler/jestSetup';
@@ -114,9 +115,7 @@ jest.mock('../src/services/BookService', () => ({
 }));
 
 jest.mock('../src/services/ChapterService', () => ({
-  getChapterContent: jest.fn((_path: string, start: number) =>
-    Promise.resolve(start === 0 ? '第一句。第二句。' : '第三句。')
-  ),
+  getChapterContent: jest.fn(),
 }));
 
 jest.mock('../src/services/StorageService', () => ({
@@ -187,9 +186,16 @@ const getRemoteHandler = (event: string) => {
   return call?.[1] as () => void;
 };
 
+const mockChapterContents = (first: string, second: string) => {
+  (ChapterService.getChapterContent as jest.Mock).mockImplementation((_path: string, start: number) =>
+    Promise.resolve(start === 0 ? first : second)
+  );
+};
+
 describe('ReaderScreen TTS chapter advance', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockChapterContents('第一句。第二句。', '第三句。');
     (StorageService.getData as jest.Mock).mockImplementation((key: string) => {
       if (key.includes('chapters')) {
         return Promise.resolve([
@@ -218,6 +224,34 @@ describe('ReaderScreen TTS chapter advance', () => {
     expect(spokenTexts).toEqual(['第一句。', '第二句。']);
 
     // Last sentence of chapter 1 finishes — chapter 2 is not in chaptersData yet.
+    const lastOptions = mockTtsSpeak.mock.calls[mockTtsSpeak.mock.calls.length - 1][1];
+    await act(async () => {
+      lastOptions.onDone();
+      await new Promise(resolve => setTimeout(resolve, 300));
+    });
+
+    expect(mockTtsSpeak.mock.calls.map(c => c[0])).toEqual(['第一句。', '第二句。', '第三句。']);
+  });
+
+  it('advances when the chapter ends with a sentence that is not speakable', async () => {
+    // A separator line at the end of the chapter is stripped to '' by
+    // prepareSentenceForTts, so it is never enqueued.
+    mockChapterContents('第一句。第二句。———', '第三句。');
+
+    renderReader();
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    await act(async () => {
+      getRemoteHandler('play')();
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    expect(mockTtsSpeak.mock.calls.map(c => c[0])).toEqual(['第一句。', '第二句。']);
+
+    // '第二句。' is the last sentence actually spoken — finishing it must move on.
     const lastOptions = mockTtsSpeak.mock.calls[mockTtsSpeak.mock.calls.length - 1][1];
     await act(async () => {
       lastOptions.onDone();

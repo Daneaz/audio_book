@@ -1470,12 +1470,24 @@ export default function ReaderScreen({ route, navigation }: any) {
       // Once queued natively, sequential playback no longer depends on the JS
       // thread, so audio keeps going when the app is backgrounded (RN pauses
       // setTimeout via onHostPause). Cross-chapter advance still needs JS.
+      // Sentences that sanitize to '' (separator lines, stray punctuation) are
+      // never enqueued, so "last in chapter" must be the last SPEAKABLE one —
+      // otherwise nothing carries the cross-chapter advance and playback dies
+      // at the end of the chapter.
+      const speakable: Array<{ index: number; text: string }> = [];
       for (let i = sIndex; i < chData.sentences.length; i++) {
-        const sentenceText = prepareSentenceForTts(chData.sentences[i].text, 'offline');
-        if (!sentenceText) continue;
+        const text = prepareSentenceForTts(chData.sentences[i].text, 'offline');
+        if (text) speakable.push({ index: i, text });
+      }
 
-        const idxAtEnqueue = i;
-        const isLastInChapter = i === chData.sentences.length - 1;
+      if (speakable.length === 0) {
+        advanceToNextChapter(cId, session);
+        return;
+      }
+
+      speakable.forEach(({ index, text: sentenceText }, k) => {
+        const idxAtEnqueue = index;
+        const isLastInChapter = k === speakable.length - 1;
 
         tts.speak(sentenceText, {
           language: 'zh-CN',
@@ -1500,7 +1512,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           },
           onFallback: () => setIsTtsFallback(true),
         });
-      }
+      });
       return;
     }
 
