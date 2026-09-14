@@ -37,6 +37,10 @@ export const MEMBERSHIP_PRODUCT_IDS = {
 
 export const MEMBERSHIP_ENTITLEMENT = 'premium';
 
+// 设备白名单：命中的设备直接视为会员，完全不经过 RevenueCat。
+// 填 iOS identifierForVendor（启动时 __DEV__ 下会 console.log 出来）。
+export const MEMBERSHIP_DEVICE_WHITELIST: string[] = [];
+
 export const XFYUN_PROXY = {
   URL: process.env.EXPO_PUBLIC_XFYUN_PROXY_URL ?? '',
   TOKEN: process.env.EXPO_PUBLIC_XFYUN_PROXY_TOKEN ?? '',

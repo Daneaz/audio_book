@@ -1,7 +1,8 @@
 import Purchases, { CustomerInfo } from 'react-native-purchases';
 import { Platform } from 'react-native';
 import StorageService from './StorageService';
-import { STORAGE_KEYS, REVENUECAT_API_KEYS, MEMBERSHIP_ENTITLEMENT } from '../utils/constants';
+import { STORAGE_KEYS, REVENUECAT_API_KEYS, MEMBERSHIP_ENTITLEMENT, MEMBERSHIP_DEVICE_WHITELIST } from '../utils/constants';
+import { getDeviceId } from '../utils/deviceId';
 
 export interface AvailablePackage {
   productId: string;
@@ -49,7 +50,17 @@ class MembershipService {
     }
   }
 
+  async isWhitelistedDevice(): Promise<boolean> {
+    if (MEMBERSHIP_DEVICE_WHITELIST.length === 0) return false;
+    const deviceId = await getDeviceId();
+    if (!deviceId) return false;
+    const normalized = deviceId.trim().toLowerCase();
+    return MEMBERSHIP_DEVICE_WHITELIST.some(id => id.trim().toLowerCase() === normalized);
+  }
+
   async isActive(): Promise<boolean> {
+    if (await this.isWhitelistedDevice()) return true;
+
     try {
       const customerInfo = await Purchases.getCustomerInfo();
       await this._syncCache(customerInfo);

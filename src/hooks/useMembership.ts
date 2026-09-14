@@ -36,9 +36,19 @@ export default function useMembership(): UseMembershipReturn {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 白名单设备直接按终身会员呈现，且不允许被 RevenueCat 推送覆盖
+    const whitelisted = { current: false };
+    MembershipService.isWhitelistedDevice().then(hit => {
+      whitelisted.current = hit;
+      if (hit) {
+        setIsActive(true);
+        setMembershipType('lifetime');
+      }
+    });
     MembershipService.isActive().then(setIsActive);
 
     const listener = (info: CustomerInfo) => {
+      if (whitelisted.current) return;
       const state = extractState(info);
       setIsActive(state.isActive);
       setMembershipType(state.membershipType);

@@ -15,6 +15,7 @@ jest.mock('../src/services/MembershipService', () => ({
   __esModule: true,
   default: {
     isActive: jest.fn(),
+    isWhitelistedDevice: jest.fn().mockResolvedValue(false),
   },
 }));
 

@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import AppNavigator from './src/navigation/AppNavigator';
 import MembershipService from './src/services/MembershipService';
+import { getDeviceId } from './src/utils/deviceId';
 
 SplashScreen.preventAutoHideAsync();
 const splashStartTime = Date.now();
@@ -48,6 +49,9 @@ export default function App() {
         await requestTrackingPermissionsAsync();
       }
       MembershipService.initialize();
+      if (__DEV__) {
+        getDeviceId().then(id => console.log('[deviceId]', id));
+      }
     }
     initializeApp();
   }, []);
