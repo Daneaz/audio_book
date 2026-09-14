@@ -126,6 +126,8 @@ export type TranslationKey =
   | 'voice.qualityPremium'
   | 'settings.about'
   | 'settings.appVersion'
+  | 'settings.deviceIdCopied'
+  | 'settings.deviceIdUnavailable'
   | 'settings.otaVersion'
   | 'settings.otaBuiltin'
   | 'settings.otaChannel'
@@ -304,6 +306,8 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'voice.qualityPremium': '精品',
     'settings.about': '关于',
     'settings.appVersion': '版本',
+    'settings.deviceIdCopied': '设备 ID 已复制',
+    'settings.deviceIdUnavailable': '当前平台无法获取设备 ID',
     'settings.otaVersion': 'OTA 更新',
     'settings.otaBuiltin': '内置版本',
     'settings.otaChannel': '渠道',
@@ -479,6 +483,8 @@ export const translations: Record<'zh' | 'en', TranslationMap> = {
     'voice.qualityPremium': 'Premium',
     'settings.about': 'About',
     'settings.appVersion': 'Version',
+    'settings.deviceIdCopied': 'Device ID copied',
+    'settings.deviceIdUnavailable': 'Device ID is unavailable on this platform',
     'settings.otaVersion': 'OTA Update',
     'settings.otaBuiltin': 'Built-in',
     'settings.otaChannel': 'Channel',

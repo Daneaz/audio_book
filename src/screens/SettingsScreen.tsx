@@ -15,6 +15,8 @@ import { LocalTtsProvider } from '../services/tts/LocalTtsProvider';
 import { XfyunTtsProvider } from '../services/tts/XfyunTtsProvider';
 import { VoicePickerModal } from '../components/VoicePickerModal';
 import { useCloudVoiceAccess } from '../hooks/useCloudVoiceAccess';
+import * as Clipboard from 'expo-clipboard';
+import { getDeviceId } from '../utils/deviceId';
 
 const ALLOWED_ENGLISH_VOICE_NAMES = new Set([
   'Daniel',
@@ -141,6 +143,16 @@ export default function SettingsScreen({ navigation }: any) {
 
   const openVoiceSettings = useCallback(() => {
     promptThenOpenSystemSettings(t('settings.voiceHintIos'), t('common.cancel'), t('common.ok'));
+  }, [t]);
+
+  const handleCopyDeviceId = useCallback(async () => {
+    const deviceId = await getDeviceId();
+    if (!deviceId) {
+      Alert.alert(t('settings.deviceIdUnavailable'), '');
+      return;
+    }
+    await Clipboard.setStringAsync(deviceId);
+    Alert.alert(t('settings.deviceIdCopied'), deviceId);
   }, [t]);
 
   const previewProviderRef = useRef<LocalTtsProvider | XfyunTtsProvider | null>(null);
@@ -520,10 +532,15 @@ export default function SettingsScreen({ navigation }: any) {
       {/* ===== 关于 ===== */}
       <Text style={[styles.groupLabel, { color: sc.accent }]}>{t('settings.about')}</Text>
       <View style={[styles.groupCard, { backgroundColor: sc.surface, borderColor: sc.border }]}>
-        <View style={styles.settingsRow}>
+        <TouchableOpacity
+          testID="app-version-row"
+          style={styles.settingsRow}
+          activeOpacity={1}
+          onLongPress={handleCopyDeviceId}
+        >
           <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.appVersion')}</Text>
           <Text style={[styles.rowValue, { color: sc.textSub }]}>{Constants.expoConfig?.version ?? '—'}</Text>
-        </View>
+        </TouchableOpacity>
         <View style={[styles.rowDivider, { backgroundColor: sc.border }]} />
         <View style={styles.settingsRow}>
           <Text style={[styles.rowLabel, { color: sc.textPrimary }]}>{t('settings.otaChannel')}</Text>

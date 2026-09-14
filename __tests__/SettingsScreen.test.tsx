@@ -1,7 +1,10 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import SettingsScreen from '../src/screens/SettingsScreen';
 import useMembershipHook from '../src/hooks/useMembership';
+import * as Clipboard from 'expo-clipboard';
+import { Alert } from 'react-native';
+import { getDeviceId } from '../src/utils/deviceId';
 
 jest.mock('react-native-google-mobile-ads', () => ({
   TestIds: { BANNER: 'test-banner-id', REWARDED: 'test-rewarded-id' },
@@ -82,6 +85,15 @@ jest.mock('expo-constants', () => ({
   default: { expoConfig: { version: '1.0.0' } },
 }));
 
+jest.mock('expo-clipboard', () => ({
+  setStringAsync: jest.fn().mockResolvedValue(true),
+}));
+
+jest.mock('../src/utils/deviceId', () => ({
+  __esModule: true,
+  getDeviceId: jest.fn(),
+}));
+
 jest.mock('../src/hooks/useCloudVoiceAccess', () => ({
   useCloudVoiceAccess: () => ({ requestAccess: jest.fn() }),
 }));
@@ -136,5 +148,47 @@ describe('SettingsScreen — 会员入口行', () => {
     const { getByTestId } = render(<SettingsScreen navigation={navigation} />);
     fireEvent.press(getByTestId('membership-row'));
     expect(navigation.navigate).toHaveBeenCalledWith('Membership');
+  });
+});
+
+describe('SettingsScreen — 长按版本号复制设备 ID', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseMembership.mockReturnValue(makeHookState());
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  });
+
+  it('长按版本行把设备 ID 写入剪贴板', async () => {
+    (getDeviceId as jest.Mock).mockResolvedValue('IDFV-ABC');
+    const { getByTestId } = render(<SettingsScreen navigation={makeNavigation()} />);
+
+    await act(async () => {
+      fireEvent(getByTestId('app-version-row'), 'longPress');
+    });
+
+    expect(Clipboard.setStringAsync).toHaveBeenCalledWith('IDFV-ABC');
+  });
+
+  it('复制后弹窗展示设备 ID', async () => {
+    (getDeviceId as jest.Mock).mockResolvedValue('IDFV-ABC');
+    const { getByTestId } = render(<SettingsScreen navigation={makeNavigation()} />);
+
+    await act(async () => {
+      fireEvent(getByTestId('app-version-row'), 'longPress');
+    });
+
+    expect(Alert.alert).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('IDFV-ABC'));
+  });
+
+  it('拿不到设备 ID 时不写剪贴板，只提示不可用', async () => {
+    (getDeviceId as jest.Mock).mockResolvedValue(null);
+    const { getByTestId } = render(<SettingsScreen navigation={makeNavigation()} />);
+
+    await act(async () => {
+      fireEvent(getByTestId('app-version-row'), 'longPress');
+    });
+
+    expect(Clipboard.setStringAsync).not.toHaveBeenCalled();
+    expect(Alert.alert).toHaveBeenCalled();
   });
 });
