@@ -95,7 +95,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "需要访问相册，以便你从照片中选择图片，设置为书籍封面。",
+          "photosPermission": "Allows you to pick a photo from your library to use as a book cover. ",
           "cameraPermission": false,
           "microphonePermission": false
         }
