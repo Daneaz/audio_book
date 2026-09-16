@@ -85,7 +85,21 @@
         }
       ],
       "expo-font",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "需要访问相册，以便你从照片中选择图片，设置为书籍封面。",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       "./modules/expo-now-playing/app.plugin.js",
       "./plugins/localize-app-name"
     ]
