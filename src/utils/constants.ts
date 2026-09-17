@@ -40,7 +40,7 @@ export const MEMBERSHIP_ENTITLEMENT = 'premium';
 // 设备白名单：命中的设备直接视为会员，完全不经过 RevenueCat。
 // 填 iOS identifierForVendor（启动时 __DEV__ 下会 console.log 出来）。
 export const MEMBERSHIP_DEVICE_WHITELIST: string[] = [
-  '2CBD755A-F739-456A-9620-A44DC06262A2',
+  '0C560632-1C6B-4DE5-B399-98683F14973A',
 ];
 
 export const XFYUN_PROXY = {
